@@ -29,7 +29,7 @@
     "crypto": "^1.0.1",
     "csv-parser": "^3.0.0",
     "csvtojson": "^2.0.10",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.7",
     "express": "^4.19.2",
     "fast-two-sms": "^3.0.0",
     "fs": "^0.0.1-security",
