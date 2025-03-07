@@ -113,7 +113,7 @@ const serviceCenterDeposit = require("./src/routers/serviceCenterDeposit");
 const serviceCenterPayment = require("./src/routers/servicePayment");
 
 app.use(express.json());
-
+ 
 // app.use(cors({
 //     origin: '*',
 //     methods: ['GET', 'POST','PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -161,6 +161,8 @@ app.use(express.json());
 //     next();
 // });
 
+
+// Allow requests from all origins (mobile, desktop, any network)
 const corsOptions = {
     origin: "*", // Allow all origins
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
@@ -182,6 +184,8 @@ app.use((req, res, next) => {
     next();
 });
 
+ 
+ 
 
 const PORT = process.env.PORT || 5000;
 

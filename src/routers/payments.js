@@ -13,8 +13,8 @@ const WalletModel = require("../models/wallet")
 
 const fs = require("fs");
 const { default: axios } = require("axios");
-require("dotenv");
-const instance = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+require("dotenv").config();
+const instance = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID  , key_secret: process.env.RAZORPAY_KEY_SECRET   });
 //const instance = new Razorpay({ key_id: "rzp_live_aOxuRwOwtnZ9v0", key_secret: "Obz13GEJNLLX3Fch2ziVGiA0" });
 
 
