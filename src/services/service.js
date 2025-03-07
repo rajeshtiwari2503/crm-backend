@@ -1,5 +1,5 @@
-const fast2sms = require("fast-two-sms");
-const nodemailer = require("nodemailer");
+// const fast2sms = require("fast-two-sms");
+// const nodemailer = require("nodemailer");
 const multer = require("multer");
 const multers3 = require("multer-s3");
 const aws = require("aws-sdk");
@@ -7,19 +7,19 @@ const aws = require("aws-sdk");
 require('dotenv').config();
 // const {S3Client,PutObjectCommand,GetObjectCommand } = require("@aws-sdk/client-s3");
 
-async function smsSend(otp, mobile) {
-  try {
-    let options = {
-      authorization: "Ik2U0hmvgBQ9doVNpXTAfP8HJ3xuaFtyicwMqje1KD75EbC4S6gi3BjVoPRaEMKA9wdGyxc76FNYZ80S",
-      message: otp,
-      numbers: [mobile]
-    }
-    let sms = await fast2sms.sendMessage(options);
-    // console.log(sms)
-  } catch (err) {
-    console.log(err);
-  }
-}
+// async function smsSend(otp, mobile) {
+//   try {
+//     let options = {
+//       authorization: "Ik2U0hmvgBQ9doVNpXTAfP8HJ3xuaFtyicwMqje1KD75EbC4S6gi3BjVoPRaEMKA9wdGyxc76FNYZ80S",
+//       message: otp,
+//       numbers: [mobile]
+//     }
+//     let sms = await fast2sms.sendMessage(options);
+//     // console.log(sms)
+//   } catch (err) {
+//     console.log(err);
+//   }
+// }
 
 // async function careerOrContactMail(name, contact, email, otp) {
 
@@ -84,37 +84,37 @@ async function smsSend(otp, mobile) {
 //     console.log('Error: ', err);
 //   }
 // }
-async function sendMail(email, pass, isForget) {
-  let transporter = nodemailer.createTransport({
-    host: "smtp.zoho.in",
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: {
-      // user:"jesus.mueller87@ethereal.email",
-      user: "hi@sparetrade.in",
-      pass: "ST@lybley9"
-      //pass:"zT95Aax114tCZtwD1B"
-    }
-  })
+// async function sendMail(email, pass, isForget) {
+//   let transporter = nodemailer.createTransport({
+//     host: "smtp.zoho.in",
+//     port: 587,
+//     secure: false,
+//     requireTLS: true,
+//     auth: {
+//       // user:"jesus.mueller87@ethereal.email",
+//       user: "hi@sparetrade.in",
+//       pass: "ST@lybley9"
+//       //pass:"zT95Aax114tCZtwD1B"
+//     }
+//   })
 
-  try {
-    let sub = isForget ? "SpareTrade Password changed" : "Lybley Verification";
-    let info = await transporter.sendMail({
-      from: '"SpareTrade  " <hi@sparetrade.in>',
-      to: email,
-      subject: sub,
-      html: `<h4>${isForget ? "Your Password has been changed." : "Thank you for your Verifictaion."}<h4>
-            ${isForget ? "You have successfully changed your password." : "You have successfully registered on LY3LEY."}
-           <P></P>
-          ${isForget ? "" : `Username:<a href="#">${email}</a> <br/>`}
-          ${isForget ? "New Password" : "Password"}:<a href="#">${pass}</a>`
-    });
+//   try {
+//     let sub = isForget ? "SpareTrade Password changed" : "Lybley Verification";
+//     let info = await transporter.sendMail({
+//       from: '"SpareTrade  " <hi@sparetrade.in>',
+//       to: email,
+//       subject: sub,
+//       html: `<h4>${isForget ? "Your Password has been changed." : "Thank you for your Verifictaion."}<h4>
+//             ${isForget ? "You have successfully changed your password." : "You have successfully registered on LY3LEY."}
+//            <P></P>
+//           ${isForget ? "" : `Username:<a href="#">${email}</a> <br/>`}
+//           ${isForget ? "New Password" : "Password"}:<a href="#">${pass}</a>`
+//     });
 
-  } catch (err) {
-    console.log("err", err);
-  }
-}
+//   } catch (err) {
+//     console.log("err", err);
+//   }
+// }
 
 // async function sendMail(email,pass,isForget){
 //      let transporter = nodemailer.createTransport({
@@ -187,7 +187,7 @@ const upload = () => multer({
 // }
 
 module.exports = {
-  smsSend,
+  // smsSend,
   upload,
-  sendMail
+  // sendMail
 }
