@@ -69,6 +69,7 @@ const complaintSchema = new mongoose.Schema({
   pincode: { type: String },
   district: { type: String },
   state: { type: String },
+  orderId:{ type: String },
   serviceAddress: { type: String },
   status: { type: String, default: "PENDING" },
   payment: { type: Number, default: 0 },
