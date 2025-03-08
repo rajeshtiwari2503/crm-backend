@@ -162,27 +162,22 @@ app.use(express.json());
 // });
 
 
-// Allow requests from all origins (mobile, desktop, any network)
-const corsOptions = {
-    origin: "*", // Allow all origins
-    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // If using cookies or authentication, set this carefully
-};
+ 
+app.use(cors());
 
-app.use(cors(corsOptions));
-
-// Handle OPTIONS preflight requests
-app.options("*", cors(corsOptions));
-
-// Set security headers (allows access from any network)
-app.use((req, res, next) => {
-    res.header("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.header("Access-Control-Allow-Origin", "*"); // Allow all origins
-    res.header("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+app.use(function (req, res, next){
+    res.header("Access-Control-Allow-Origin","*");
+    res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD"
+    );
+    res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept"
+    );
     next();
 });
+
 
  
  
