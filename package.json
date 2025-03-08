@@ -3,24 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rajeshtiwari2503/LybleyCRM-Backend.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/rajeshtiwari2503/LybleyCRM-Backend/issues"
-  },
-  "homepage": "https://github.com/rajeshtiwari2503/LybleyCRM-Backend#readme",
+  
+  
   "dependencies": {
     "aws-sdk": "^2.1353.0",
     "axios": "^1.4.0",
