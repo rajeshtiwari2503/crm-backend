@@ -473,46 +473,67 @@ const editIssueImage = async (req, res) => {
 
 
 
- const getAllComplaint = async (req, res) => {
-    try {
-      let data = await ComplaintModal.find({}).sort({ _id: -1 });     res.send(data)    } catch (err) {     res.status(400).send(err);
- }
-}
+//  const getAllComplaint = async (req, res) => {
+//     try {
+//       let data = await ComplaintModal.find({}).sort({ _id: -1 });     res.send(data)    } catch (err) {     res.status(400).send(err);
+//  }
+// }
 
-const getAllComplaintqq = async (req, res) => {
+// const getAllComplaint = async (req, res) => {
+//    try {
+//      const page = parseInt(req.query.page) || 1;
+//      const limit = 400; // Fixed limit of 200 complaints
+//      const skip = (page - 1) * limit;
+ 
+//      // Get the total count of complaints
+//      const totalComplaints = await ComplaintModal.countDocuments();
+ 
+//      // Fetch 200 complaints with pagination
+//      const complaints = await ComplaintModal.find({})
+//        .sort({ _id: -1 })
+//        .skip(skip)
+//        .limit(limit)
+//        .lean(); // Improve performance by returning plain JS objects
+ 
+//      // Send response with complaints and total count
+//      res.status(200).json({
+//        success: true,
+//        total: totalComplaints,
+//        page,
+//        limit,
+//        data: complaints,
+//      });
+//    } catch (err) {
+//      console.error("Error fetching complaints:", err);
+//      res.status(500).json({
+//        success: false,
+//        message: "Internal Server Error",
+//        error: err.message,
+//      });
+//    }
+//  };
+ 
+const getAllComplaint = async (req, res) => {
    try {
      const page = parseInt(req.query.page) || 1;
-     const limit = 400; // Fixed limit of 200 complaints
+     const limit = parseInt(req.query.limit) || 500;
      const skip = (page - 1) * limit;
  
-     // Get the total count of complaints
+     // Get the total count of documents
      const totalComplaints = await ComplaintModal.countDocuments();
  
-     // Fetch 200 complaints with pagination
-     const complaints = await ComplaintModal.find({})
+     // Fetch the data with pagination
+     let data = await ComplaintModal.find({})
        .sort({ _id: -1 })
        .skip(skip)
-       .limit(limit)
-       .lean(); // Improve performance by returning plain JS objects
+       .limit(limit);
  
-     // Send response with complaints and total count
-     res.status(200).json({
-       success: true,
-       total: totalComplaints,
-       page,
-       limit,
-       data: complaints,
-     });
+     // Send response with data and total count
+     res.send({ data, totalComplaints });
    } catch (err) {
-     console.error("Error fetching complaints:", err);
-     res.status(500).json({
-       success: false,
-       message: "Internal Server Error",
-       error: err.message,
-     });
+     res.status(400).send(err);
    }
  };
- 
 
 const getComplaintById = async (req, res) => {
    try {
