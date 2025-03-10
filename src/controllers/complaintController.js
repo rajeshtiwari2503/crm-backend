@@ -473,16 +473,13 @@ const editIssueImage = async (req, res) => {
 
 
 
-// const getAllComplaint = async (req, res) => {
-//    try {
-//       let data = await ComplaintModal.find({}).sort({ _id: -1 });
-//       res.send(data);
-//    } catch (err) {
-//       res.status(400).send(err);
-//    }
-// }
+ const getAllComplaint = async (req, res) => {
+    try {
+      let data = await ComplaintModal.find({}).sort({ _id: -1 });     res.send(data)    } catch (err) {     res.status(400).send(err);
+ }
+}
 
-const getAllComplaint = async (req, res) => {
+const getAllComplaintqq = async (req, res) => {
    try {
      const page = parseInt(req.query.page) || 1;
      const limit = 400; // Fixed limit of 200 complaints
