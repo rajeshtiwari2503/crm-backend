@@ -494,7 +494,78 @@ router.post("/getFilteredComplaintsByBrand", async (req, res) => {
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
+router.post("/getFilteredComplaintsByDealer", async (req, res) => {
+  try {
+    const { userData, startDate, endDate, selectedStatuses } = req.body;
 
+    if (!userData) {
+      return res.status(400).json({ status: false, msg: "User data is required." });
+    }
+
+    const dealerId = userData.role === "DEALER" ? userData._id : userData.dealerId;
+
+    // Build query dynamically
+    const query = { dealerId };
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        let adjustedEndDate = new Date(endDate);
+        adjustedEndDate.setHours(23, 59, 59, 999); // Ensure it includes the full day
+        query.createdAt.$lte = adjustedEndDate;
+      }
+    }
+
+    if (selectedStatuses?.length) {
+      query.status = { $in: selectedStatuses };
+    }
+
+    // Fetch complaints from the database
+    const complaints = await ComplaintModal.find(query);
+
+    res.status(200).json(complaints);
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+router.post("/getFilteredComplaintsByServiceCenter", async (req, res) => {
+  try {
+    const { userData, startDate, endDate, selectedStatuses } = req.body;
+
+    if (!userData) {
+      return res.status(400).json({ status: false, msg: "User data is required." });
+    }
+
+    const assignServiceCenterId = userData.role === "SERVICE" ? userData._id : userData?._id;
+
+    // Build query dynamically
+    const query = { assignServiceCenterId };
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        let adjustedEndDate = new Date(endDate);
+        adjustedEndDate.setHours(23, 59, 59, 999); // Ensure it includes the full day
+        query.createdAt.$lte = adjustedEndDate;
+      }
+    }
+
+    if (selectedStatuses?.length) {
+      query.status = { $in: selectedStatuses };
+    }
+
+    // Fetch complaints from the database
+    const complaints = await ComplaintModal.find(query);
+
+    res.status(200).json(complaints);
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
 
   module.exports = router;
   
