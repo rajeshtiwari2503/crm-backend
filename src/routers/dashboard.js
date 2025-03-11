@@ -1116,7 +1116,7 @@ router.get('/getNoServiceableAreaComplaints', async (req, res) => {
     // Aggregation pipeline to get pending complaints with no associated service center, including userName and district
     const complaints = await Complaints.aggregate([
       { $match: { status: 'PENDING', assignServiceCenter: { $exists: false } } },  // Filter for pending complaints without service center
-      { $project: { userName: 1, district: 1, state: 1, phoneNumber: 1 } }                             // Project only userName and district fields
+      { $project: { fullName: 1, district: 1, state: 1, phoneNumber: 1 } }                             // Project only userName and district fields
     ]);
 
     res.status(200).json(complaints);  // Send response with list of complaints
