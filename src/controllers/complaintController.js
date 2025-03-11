@@ -516,7 +516,7 @@ const editIssueImage = async (req, res) => {
 const getAllComplaint = async (req, res) => {
    try {
      const page = parseInt(req.query.page) || 1;
-     const limit = parseInt(req.query.limit) || 500;
+     const limit = parseInt(req.query.limit) || 50;
      const skip = (page - 1) * limit;
  
      // Get the total count of documents
@@ -534,6 +534,45 @@ const getAllComplaint = async (req, res) => {
      res.status(400).send(err);
    }
  };
+
+
+ const getAllComplaintByRole = async (req, res) => {
+   try {
+     const page = parseInt(req.query.page) || 1;
+     const limit = parseInt(req.query.limit) || 10;
+     const skip = (page - 1) * limit;
+ 
+     // Extract filters from query params
+     const { brandId, serviceCenterId, technicianId, userId ,dealerId} = req.query;
+ 
+     // Build the filter object
+     let filterConditions = {};
+ 
+     if (brandId) filterConditions.brandId = brandId;
+     if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+     if (technicianId) filterConditions.technicianId = technicianId;
+     if (userId) filterConditions.userId = userId; // Assuming userId represents the customer
+     if (dealerId) filterConditions.userId = dealerId; // Assuming userId represents the dealer
+ 
+     // Get the total count of documents that match the filters
+     const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+ 
+     // Fetch the data with pagination and filters
+     const data = await ComplaintModal.find(filterConditions)
+       .sort({ _id: -1 }) // Sorting by newest complaints
+       .skip(skip)
+       .limit(limit);
+ 
+     // Send response with filtered data and total count
+     res.send({ data, totalComplaints });
+   } catch (err) {
+     console.error("Error fetching complaints:", err);
+     res.status(500).send({ message: "Internal server error" });
+   }
+ };
+ 
+ 
+ 
 
 const getComplaintById = async (req, res) => {
    try {
@@ -1199,5 +1238,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress,getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint,getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
 };
