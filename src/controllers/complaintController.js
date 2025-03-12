@@ -91,9 +91,9 @@ const addComplaint = async (req, res) => {
       const email = emailAddress;
       const uniqueId = body?.uniqueId;
       // close create service
-      // if(brandId==="67ab1ec2bfe41718e6ddfb6e"){
-      //    return res.status(404).json({ status: false, msg: 'Complaint not added' });
-      // }
+      if(brandId==="67ab1ec2bfe41718e6ddfb6e"){
+         return res.status(404).json({ status: false, msg: 'Complaint not added' });
+      }
       let user = await UserModel.findOne({ email });
 
       // If user is not registered, register them
