@@ -82,6 +82,7 @@
 const express = require("express");
 require("./src/db/connection");
 require("dotenv").config();
+require("./src/cronJob");
 const cors = require("cors");
 const app = express();
 const registration = require("./src/routers/registration");
