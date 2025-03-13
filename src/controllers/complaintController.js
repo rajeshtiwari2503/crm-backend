@@ -83,6 +83,37 @@ const ProductWarrantyModal = require("../models/productWarranty")
 //       res.status(400).send(err);
 //    }
 // };
+ 
+const twilio = require("twilio");
+
+const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
+const sendWhatsAppMessage = async (fullName, phoneNumber, _id) => {
+   const formattedPhoneNumber = phoneNumber.startsWith("+")
+   ? phoneNumber
+   : `+91${phoneNumber}`;
+
+ console.log("Formatted phoneNumber:", formattedPhoneNumber);
+   
+   const messageBody = `Hello ${fullName}, your complaint has been successfully registered. Our service center will contact you shortly.
+      
+      Complaint ID: ${_id}
+      
+      Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
+      console.log("messageBody",messageBody);
+      
+   try {
+      const message = await client.messages.create({
+         from: process.env.TWILIO_WHATSAPP_NUMBER,
+         to: `whatsapp:${formattedPhoneNumber}`,  // Ensure phone number includes country code
+         body: messageBody
+      });
+      console.log("WhatsApp Message Sent:", message.sid);
+   } catch (error) {
+      console.error("WhatsApp Message Error:", error);
+   }
+};
+
 
 const addComplaint = async (req, res) => {
    try {
@@ -209,6 +240,10 @@ const addComplaint = async (req, res) => {
          message: `Registered Your Complaint, ${fullName}!`,
       });
       await notification.save();
+       
+
+      const _id =data._id
+            await sendWhatsAppMessage(fullName, phoneNumber, _id);
       res.json({ status: true, msg: "Complaint Added", user: user });
    } catch (err) {
       console.error(err);
