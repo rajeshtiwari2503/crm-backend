@@ -7,8 +7,8 @@ const mongoose = require("mongoose");
 
 console.log("✅ Cron job scheduler initialized...");
 
-// Run every 2 minutes
-cron.schedule("*/2 * * * *", async () => {  
+// Run every 60 minutes
+cron.schedule("0 * * * *", async () => {  
    console.log("🔄 Running scheduled task to assign service centers...");
 
    try {
