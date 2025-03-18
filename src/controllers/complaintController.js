@@ -6,6 +6,8 @@ const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
 const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
+const OneSignal = require('onesignal-node');
+const fetch = require("node-fetch");
 
 // const addComplaint = async (req, res) => {
 //    try {
@@ -83,25 +85,25 @@ const ProductWarrantyModal = require("../models/productWarranty")
 //       res.status(400).send(err);
 //    }
 // };
- 
+
 const twilio = require("twilio");
 
 const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const sendWhatsAppMessage = async (fullName, phoneNumber, _id) => {
    const formattedPhoneNumber = phoneNumber.startsWith("+")
-   ? phoneNumber
-   : `+91${phoneNumber}`;
+      ? phoneNumber
+      : `+91${phoneNumber}`;
 
- console.log("Formatted phoneNumber:", formattedPhoneNumber);
-   
+   console.log("Formatted phoneNumber:", formattedPhoneNumber);
+
    const messageBody = `Hello ${fullName}, your complaint has been successfully registered. Our service center will contact you shortly.
       
       Complaint ID: ${_id}
       
       Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
-      console.log("messageBody",messageBody);
-      
+   console.log("messageBody", messageBody);
+
    try {
       const message = await client.messages.create({
          from: process.env.TWILIO_WHATSAPP_NUMBER,
@@ -111,6 +113,64 @@ const sendWhatsAppMessage = async (fullName, phoneNumber, _id) => {
       console.log("WhatsApp Message Sent:", message.sid);
    } catch (error) {
       console.error("WhatsApp Message Error:", error);
+   }
+};
+
+
+
+const clientSms = new OneSignal.Client(process.env.ONESIGNAL_APP_ID, process.env.ONESIGNAL_REST_API_KEY);
+
+// const sendSMS = async (phoneNumber, message) => {
+//    try {
+//       const notification = {
+//          app_id: process.env.ONESIGNAL_APP_ID,
+//          contents: { en: message },
+//          include_phone_numbers: [phoneNumber], // Sending SMS
+//       };
+// console.log("notification",notification);
+// console.log("ONESIGNAL_APP_ID",process.env.ONESIGNAL_APP_ID,process.env.ONESIGNAL_REST_API_KEY);
+
+//       const response = await clientSms.createNotification(notification);
+//       console.log("OneSignal SMS Sent:", response);
+//    } catch (error) {
+//       console.error("OneSignal SMS Error:", error);
+//    }
+// };
+
+const formatPhoneNumber = (phoneNumber) => {
+   if (!phoneNumber.startsWith("+")) {
+      return `+91${phoneNumber}`; // Assuming India (+91), change as needed
+   }
+   return phoneNumber;
+};
+
+const sendSMS = async (phoneNumber, message) => {
+   try {
+      const response = await fetch("https://onesignal.com/api/v1/notifications", {
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Basic ${process.env.ONESIGNAL_API_KEY}` // Ensure API key is correct
+         },
+         body: JSON.stringify({
+            app_id: process.env.ONESIGNAL_APP_ID,
+            name: "Complaint Update",  // 🔹 Add this field
+            include_phone_numbers: [phoneNumber],
+            contents: { en: message }
+         })
+      });
+
+      const data = await response.json();
+      console.log("✅ OneSignal SMS Response:", data);
+
+      if (data.errors) {
+         console.error("❌ OneSignal SMS Error:", data.errors);
+      }
+
+      return data;
+   } catch (error) {
+      console.error("❌ OneSignal SMS Error:", error);
+      throw error;
    }
 };
 
@@ -240,10 +300,13 @@ const addComplaint = async (req, res) => {
          message: `Registered Your Complaint, ${fullName}!`,
       });
       await notification.save();
-       
 
-      const _id =data._id
-            await sendWhatsAppMessage(fullName, phoneNumber, _id);
+
+      const _id = data._id
+      // await sendWhatsAppMessage(fullName, phoneNumber, _id);
+
+      // const smsMessage = `Hello ${fullName}, your complaint (ID: ${data._id}) has been registered successfully.Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
+      // await sendSMS(phoneNumber, smsMessage);
       res.json({ status: true, msg: "Complaint Added", user: user });
    } catch (err) {
       console.error(err);
@@ -508,28 +571,30 @@ const editIssueImage = async (req, res) => {
 
 
 
-//  const getAllComplaint = async (req, res) => {
-//     try {
-//       let data = await ComplaintModal.find({}).sort({ _id: -1 });     res.send(data)    } catch (err) {     res.status(400).send(err);
-//  }
-// }
+ const getAllBrandComplaint = async (req, res) => {
+    try {
+      let data = await ComplaintModal.find({}).sort({ _id: -1 });  
+         res.send(data)    } 
+      catch (err) {     res.status(400).send(err);
+ }
+}
 
 // const getAllComplaint = async (req, res) => {
 //    try {
 //      const page = parseInt(req.query.page) || 1;
 //      const limit = 400; // Fixed limit of 200 complaints
 //      const skip = (page - 1) * limit;
- 
+
 //      // Get the total count of complaints
 //      const totalComplaints = await ComplaintModal.countDocuments();
- 
+
 //      // Fetch 200 complaints with pagination
 //      const complaints = await ComplaintModal.find({})
 //        .sort({ _id: -1 })
 //        .skip(skip)
 //        .limit(limit)
 //        .lean(); // Improve performance by returning plain JS objects
- 
+
 //      // Send response with complaints and total count
 //      res.status(200).json({
 //        success: true,
@@ -547,67 +612,67 @@ const editIssueImage = async (req, res) => {
 //      });
 //    }
 //  };
- 
+
 const getAllComplaint = async (req, res) => {
    try {
-     const page = parseInt(req.query.page) || 1;
-     const limit = parseInt(req.query.limit) || 50;
-     const skip = (page - 1) * limit;
- 
-     // Get the total count of documents
-     const totalComplaints = await ComplaintModal.countDocuments();
- 
-     // Fetch the data with pagination
-     let data = await ComplaintModal.find({})
-       .sort({ _id: -1 })
-       .skip(skip)
-       .limit(limit);
- 
-     // Send response with data and total count
-     res.send({ data, totalComplaints });
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const skip = (page - 1) * limit;
+
+      // Get the total count of documents
+      const totalComplaints = await ComplaintModal.countDocuments();
+
+      // Fetch the data with pagination
+      let data = await ComplaintModal.find({})
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit);
+
+      // Send response with data and total count
+      res.send({ data, totalComplaints });
    } catch (err) {
-     res.status(400).send(err);
+      res.status(400).send(err);
    }
- };
+};
 
 
- const getAllComplaintByRole = async (req, res) => {
+const getAllComplaintByRole = async (req, res) => {
    try {
-     const page = parseInt(req.query.page) || 1;
-     const limit = parseInt(req.query.limit) || 10;
-     const skip = (page - 1) * limit;
- 
-     // Extract filters from query params
-     const { brandId, serviceCenterId, technicianId, userId ,dealerId} = req.query;
- 
-     // Build the filter object
-     let filterConditions = {};
- 
-     if (brandId) filterConditions.brandId = brandId;
-     if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
-     if (technicianId) filterConditions.technicianId = technicianId;
-     if (userId) filterConditions.userId = userId; // Assuming userId represents the customer
-     if (dealerId) filterConditions.userId = dealerId; // Assuming userId represents the dealer
- 
-     // Get the total count of documents that match the filters
-     const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
- 
-     // Fetch the data with pagination and filters
-     const data = await ComplaintModal.find(filterConditions)
-       .sort({ _id: -1 }) // Sorting by newest complaints
-       .skip(skip)
-       .limit(limit);
- 
-     // Send response with filtered data and total count
-     res.send({ data, totalComplaints });
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      // Extract filters from query params
+      const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+
+      // Build the filter object
+      let filterConditions = {};
+
+      if (brandId) filterConditions.brandId = brandId;
+      if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+      if (technicianId) filterConditions.technicianId = technicianId;
+      if (userId) filterConditions.userId = userId; // Assuming userId represents the customer
+      if (dealerId) filterConditions.userId = dealerId; // Assuming userId represents the dealer
+
+      // Get the total count of documents that match the filters
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+      // Fetch the data with pagination and filters
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 }) // Sorting by newest complaints
+         .skip(skip)
+         .limit(limit);
+
+      // Send response with filtered data and total count
+      res.send({ data, totalComplaints });
    } catch (err) {
-     console.error("Error fetching complaints:", err);
-     res.status(500).send({ message: "Internal server error" });
+      console.error("Error fetching complaints:", err);
+      res.status(500).send({ message: "Internal server error" });
    }
- };
- 
- 
- 
+};
+
+
+
 
 const getComplaintById = async (req, res) => {
    try {
@@ -702,7 +767,7 @@ const getComplaintsByUpcomming = async (req, res) => {
       endOfToday.setHours(23, 59, 59, 999); // End of today
 
       // Find complaints where preferredServiceDate is strictly in the future
-      let data = await ComplaintModal.find({ 
+      let data = await ComplaintModal.find({
          preferredServiceDate: { $gt: endOfToday }, // Future complaints only (not today)
          status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }// Exclude unwanted statuses
       }).sort({ preferredServiceDate: 1 });
@@ -837,11 +902,11 @@ const getPendingComplaints = async (req, res) => {
       today.setHours(0, 0, 0, 0); // Start of today
 
       const tomorrow = new Date(today);
-      tomorrow.setDate(today.getDate() +2);
+      tomorrow.setDate(today.getDate() + 2);
 
       const complaintsForToday = await ComplaintModal.find({
          $or: [
-            
+
             {
                preferredServiceDate: { $lt: today },
                status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }
@@ -980,9 +1045,9 @@ const editComplaint = async (req, res) => {
       // Object.assign(data, body);
       // await data.save();
       if (body.status === "PART PENDING") {
-         data.cspStatus = "YES";   
-     }
-     
+         data.cspStatus = "YES";
+      }
+
       if (body.status === "FINAL VERIFICATION") {
          data.complaintCloseTime = new Date();
 
@@ -1154,7 +1219,8 @@ const updateFinalVerification = async (req, res) => {
       // Handle completed complaint logic
       if (body.status === "COMPLETED") {
          let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
-
+         // **Update paymentServiceCenter**
+         data.paymentServiceCenter = parseInt(subCatData.payout) || 0;
          if (subCatData) {
             let payout = parseInt(subCatData.payout || 0);
             if (isNaN(payout) || payout <= 0) {
@@ -1203,7 +1269,7 @@ const updateFinalVerification = async (req, res) => {
             description: "Complaint Close Payout",
          });
       }
-
+      await data.save(); // Save complaint after updating `paymentServiceCenter`
       res.json({ status: true, msg: "Complaint Updated" });
    } catch (err) {
       console.error("Error updating complaint:", err);
@@ -1272,6 +1338,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress,getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint,getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
+   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint,getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
 };

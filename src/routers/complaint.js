@@ -1,7 +1,7 @@
 const express = require("express")
 const ComplaintModal = require("../models/complaint")
 
-const {addComplaint,addDealerComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
+const {addComplaint,addDealerComplaint,getAllBrandComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
@@ -16,6 +16,7 @@ router.post("/createDealerComplaint",upload().single("warrantyImage")  , addDeal
  
 // router.post("/createComplaint",  addComplaint);
 router.get("/getAllComplaint",getAllComplaint)
+router.get("/getAllBrandComplaint",getAllBrandComplaint)
 router.get("/getAllComplaintByRole",getAllComplaintByRole)
 
 router.get("/getComplaintsByAssign",getComplaintsByAssign)
