@@ -56,10 +56,13 @@ router.get("/searchComplaint", async (req, res) => {
     if (/^[a-fA-F0-9]{24}$/.test(trimmedSearchTerm)) {
       searchConditions.push({ _id: new mongoose.Types.ObjectId(trimmedSearchTerm) });
     }
-console.log("trimmedSearchTerm",trimmedSearchTerm);
+// console.log("trimmedSearchTerm",trimmedSearchTerm);
 
   //  ✅ Search by phone number (Regex for case-insensitive match)
     searchConditions.push({ phoneNumber:trimmedSearchTerm });
+    searchConditions.push({ district: { $regex: trimmedSearchTerm, $options: "i" } });
+    searchConditions.push({ state: { $regex: trimmedSearchTerm, $options: "i" } });
+    searchConditions.push({ complaintId:trimmedSearchTerm });
     
     searchConditions.push({ status: trimmedSearchTerm?.toUpperCase() });
 
