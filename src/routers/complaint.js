@@ -60,8 +60,8 @@ console.log("trimmedSearchTerm",trimmedSearchTerm);
 
   //  ✅ Search by phone number (Regex for case-insensitive match)
     searchConditions.push({ phoneNumber:trimmedSearchTerm });
-    searchConditions.push({ district:trimmedSearchTerm });
-    searchConditions.push({ state:trimmedSearchTerm });
+    // searchConditions.push({ district:trimmedSearchTerm });
+    // searchConditions.push({ state:trimmedSearchTerm });
     searchConditions.push({ complaintId:trimmedSearchTerm });
     
     searchConditions.push({ status: trimmedSearchTerm?.toUpperCase() });
