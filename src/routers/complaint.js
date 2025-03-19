@@ -6,7 +6,7 @@ const {addComplaint,addDealerComplaint,getAllBrandComplaint,getAllComplaintByRol
     getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
  
- 
+const moment = require("moment");
 const router=express.Router()
 
 router.post("/createComplaint",upload().single("issueImages")  , addComplaint);
@@ -82,7 +82,33 @@ router.get("/searchComplaint", async (req, res) => {
   }
 });
 
+router.get("/check-part-pending", async (req, res) => {
+  try {
+    const todayStart = moment().startOf("day").toDate();
+    const todayEnd = moment().endOf("day").toDate();
 
+    // Find all complaints with status "Part Pending"
+    const updatedToday = await ComplaintModal.find({
+      status: "PART PENDING",
+      updatedAt: { $gte: todayStart, $lte: todayEnd }, // Updated today
+    }).lean(); // Convert to plain objects
+
+    const notUpdatedToday = await ComplaintModal.find({
+      status: "PART PENDING",
+      updatedAt: { $lt: todayStart }, // Not updated today
+    }).lean(); // Convert to plain objects
+
+    res.status(200).json({
+      status: true,
+      msg: "Part Pending complaints retrieved successfully",
+      updatedToday,
+      notUpdatedToday,
+    });
+  } catch (error) {
+    console.error("Error fetching Part Pending complaints:", error);
+    res.status(500).json({ status: false, msg: "Server error." });
+  }
+});
 
 
 // router.post('/createComplaint', upload().array('images'), async (req, res) => {
