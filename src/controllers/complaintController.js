@@ -1185,7 +1185,7 @@ const updateFinalVerification = async (req, res) => {
 
       // Update document safely
       Object.assign(data, updateFields);
-      await data.save();
+      // await data.save();
 
       // Handle notifications
       if (body.assignServiceCenterId) {
@@ -1220,7 +1220,16 @@ const updateFinalVerification = async (req, res) => {
       if (body.status === "COMPLETED") {
          let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
          // **Update paymentServiceCenter**
-         data.paymentServiceCenter = parseInt(subCatData.payout) || 0;
+
+          // Brand transaction
+          await BrandRechargeModel.create({
+            brandId: data.brandId,
+            brandName: data.productBrand,
+            amount: -(body?.paymentBrand) || 0,
+            complaintId: data._id,
+            description: "Complaint Close Payout",
+         });
+       
          if (subCatData) {
             let payout = parseInt(subCatData.payout || 0);
             if (isNaN(payout) || payout <= 0) {
@@ -1229,7 +1238,7 @@ const updateFinalVerification = async (req, res) => {
             }
 
 
-
+            data.paymentServiceCenter = parseInt(subCatData.payout) || 0;
 
             // Service Center Wallet Update
             let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
@@ -1260,14 +1269,7 @@ const updateFinalVerification = async (req, res) => {
          } else {
             console.warn("No wallet found for service center:", data.assignServiceCenterId);
          }
-         // Brand transaction
-         await BrandRechargeModel.create({
-            brandId: data.brandId,
-            brandName: data.productBrand,
-            amount: -(body?.paymentBrand) || 0,
-            complaintId: data._id,
-            description: "Complaint Close Payout",
-         });
+        
       }
       await data.save(); // Save complaint after updating `paymentServiceCenter`
       res.json({ status: true, msg: "Complaint Updated" });
