@@ -571,12 +571,14 @@ const editIssueImage = async (req, res) => {
 
 
 
- const getAllBrandComplaint = async (req, res) => {
-    try {
-      let data = await ComplaintModal.find({}).sort({ _id: -1 });  
-         res.send(data)    } 
-      catch (err) {     res.status(400).send(err);
- }
+const getAllBrandComplaint = async (req, res) => {
+   try {
+      let data = await ComplaintModal.find({}).sort({ _id: -1 });
+      res.send(data)
+   }
+   catch (err) {
+      res.status(400).send(err);
+   }
 }
 
 // const getAllComplaint = async (req, res) => {
@@ -1221,25 +1223,25 @@ const updateFinalVerification = async (req, res) => {
          let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
          // **Update paymentServiceCenter**
 
-          // Brand transaction
-          await BrandRechargeModel.create({
+         // Brand transaction
+         await BrandRechargeModel.create({
             brandId: data.brandId,
             brandName: data.productBrand,
             amount: -(body?.paymentBrand) || 0,
             complaintId: data._id,
             description: "Complaint Close Payout",
          });
-       
+
+         let payout = 0; // Ensure payout is always defined
+
          if (subCatData) {
-            let payout = parseInt(subCatData.payout || 0);
-              data.paymentServiceCenter = payout || 0;
+            payout = parseInt(subCatData.payout || 0);
+            data.paymentServiceCenter = payout || 0;
+
             if (isNaN(payout) || payout <= 0) {
                console.error("Invalid payout amount:", subCatData.payout);
                return res.json({ status: true, msg: "Complaint Updated with invalid payout" });
             }
-
-
-          
 
             // Service Center Wallet Update
             let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
@@ -1262,6 +1264,8 @@ const updateFinalVerification = async (req, res) => {
                console.warn("No wallet found for dealer:", data.dealerId);
             }
          }
+
+         // Ensure this part always has access to `payout`
          let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
          if (serviceCenterWallet) {
             serviceCenterWallet.totalCommission += payout;
@@ -1270,7 +1274,10 @@ const updateFinalVerification = async (req, res) => {
          } else {
             console.warn("No wallet found for service center:", data.assignServiceCenterId);
          }
-        
+
+         await data.save();
+
+
       }
       await data.save(); // Save complaint after updating `paymentServiceCenter`
       res.json({ status: true, msg: "Complaint Updated" });
@@ -1342,5 +1349,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint,getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
 };
