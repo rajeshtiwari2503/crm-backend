@@ -1185,7 +1185,7 @@ const updateFinalVerification = async (req, res) => {
 
       // Update document safely
       Object.assign(data, updateFields);
-      await data.save();
+      // await data.save();
 
       // Handle notifications
       if (body.assignServiceCenterId) {
