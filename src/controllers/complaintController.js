@@ -1185,7 +1185,7 @@ const updateFinalVerification = async (req, res) => {
 
       // Update document safely
       Object.assign(data, updateFields);
-      // await data.save();
+      await data.save();
 
       // Handle notifications
       if (body.assignServiceCenterId) {
@@ -1232,13 +1232,14 @@ const updateFinalVerification = async (req, res) => {
        
          if (subCatData) {
             let payout = parseInt(subCatData.payout || 0);
+              data.paymentServiceCenter = payout || 0;
             if (isNaN(payout) || payout <= 0) {
                console.error("Invalid payout amount:", subCatData.payout);
                return res.json({ status: true, msg: "Complaint Updated with invalid payout" });
             }
 
 
-            data.paymentServiceCenter = parseInt(subCatData.payout) || 0;
+          
 
             // Service Center Wallet Update
             let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
