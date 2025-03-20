@@ -1265,16 +1265,16 @@ const updateFinalVerification = async (req, res) => {
             }
          }
 
-         // Ensure this part always has access to `payout`
-         let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
-         if (serviceCenterWallet) {
-            serviceCenterWallet.totalCommission += payout;
-            serviceCenterWallet.dueAmount += payout;
-            await serviceCenterWallet.save();
-         } else {
-            console.warn("No wallet found for service center:", data.assignServiceCenterId);
+         else {
+            let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+            if (serviceCenterWallet) {
+               serviceCenterWallet.totalCommission += body?.paymentServiceCenter;
+               serviceCenterWallet.dueAmount += body?.paymentServiceCenter;
+               await serviceCenterWallet.save();
+            } else {
+               console.warn("No wallet found for service center:", data.assignServiceCenterId);
+            }
          }
-
          await data.save();
 
 

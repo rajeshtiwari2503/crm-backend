@@ -143,6 +143,62 @@ const getServicePaymentById = async (req, res) => {
 //     res.status(500).json({ status: false, msg: "Internal Server Error", error: err.message });
 //   }
 // };
+// const editServicePayment200325 = async (req, res) => {
+//   try {
+//     let _id = req.params.id;
+
+//     // Find the transaction
+//     let transaction = await ServicePaymentModel.findById(_id);
+//     if (!transaction) {
+//       return res.json({ status: false, msg: "Transaction not found" });
+//     }
+
+//     // Check if file is uploaded
+//     const payScreenshot = req.file?.location;
+//     if (!payScreenshot) {
+//       return res.status(400).json({ status: false, msg: "File upload failed" });
+//     }
+
+//     // Find the associated service center by service model
+//     let serviceCenter = await ServiceModel.findById(transaction?.serviceCenterId);
+//     if (!serviceCenter) {
+//       return res.json({ status: false, msg: "Service center not found" });
+//     }
+
+//     // Update total amount
+//     const updatedAmount = (serviceCenter.totalAmount || 0) + transaction.payment;
+//     let updatedServiceCenter = await ServiceModel.findByIdAndUpdate(
+//       serviceCenter._id,
+//       { totalAmount: updatedAmount },
+//       { new: true }
+//     );
+
+//     if (!updatedServiceCenter) {
+//       return res.json({ status: false, msg: "Failed to update total amount in Service Center" });
+//     }
+
+//     // If service center amount update is successful, update transaction status
+//     let updatedTransaction = await ServicePaymentModel.findByIdAndUpdate(
+//       _id,
+//       { payScreenshot: payScreenshot, status: "PAID" },
+//       { new: true }
+//     );
+
+//     if (!updatedTransaction) {
+//       return res.json({ status: false, msg: "Payment status not updated" });
+//     }
+
+//     return res.json({
+//       status: true,
+//       msg: "Payment status updated successfully, and totalAmount updated in Service Center.",
+//       data: updatedTransaction,
+//     });
+
+//   } catch (err) {
+//     console.error("Error in editServicePayment:", err);
+//     res.status(500).json({ status: false, msg: "Internal Server Error", error: err.message });
+//   }
+// };
 const editServicePayment = async (req, res) => {
   try {
     let _id = req.params.id;
@@ -150,23 +206,37 @@ const editServicePayment = async (req, res) => {
     // Find the transaction
     let transaction = await ServicePaymentModel.findById(_id);
     if (!transaction) {
-      return res.json({ status: false, msg: "Transaction not found" });
+      return res.status(404).json({ status: false, msg: "Transaction not found" });
+    }
+
+    // Ensure the transaction has a valid service center ID
+    if (!transaction.serviceCenterId) {
+      return res.status(400).json({ status: false, msg: "Transaction has no associated service center" });
     }
 
     // Check if file is uploaded
     const payScreenshot = req.file?.location;
     if (!payScreenshot) {
-      return res.status(400).json({ status: false, msg: "File upload failed" });
+      return res.status(400).json({ status: false, msg: "File upload failed or missing" });
     }
 
-    // Find the associated service center by service model
-    let serviceCenter = await ServiceModel.findById(transaction?.serviceCenterId);
+    // Find the associated service center
+    let serviceCenter = await ServiceModel.findById(transaction.serviceCenterId);
     if (!serviceCenter) {
-      return res.json({ status: false, msg: "Service center not found" });
+      return res.status(404).json({ status: false, msg: "Service center not found" });
     }
 
-    // Update total amount
-    const updatedAmount = (serviceCenter.totalAmount || 0) + transaction.payment;
+    // Ensure `totalAmount` and `transaction.payment` are numbers
+    const totalAmount = Number(serviceCenter.totalAmount || 0);
+    const transactionPayment = Number(transaction.payment || 0);
+
+    if (isNaN(transactionPayment)) {
+      return res.status(400).json({ status: false, msg: "Invalid transaction payment amount" });
+    }
+
+    const updatedAmount = totalAmount + transactionPayment;
+
+    // Update service center total amount
     let updatedServiceCenter = await ServiceModel.findByIdAndUpdate(
       serviceCenter._id,
       { totalAmount: updatedAmount },
@@ -174,10 +244,10 @@ const editServicePayment = async (req, res) => {
     );
 
     if (!updatedServiceCenter) {
-      return res.json({ status: false, msg: "Failed to update total amount in Service Center" });
+      return res.status(500).json({ status: false, msg: "Failed to update total amount in Service Center" });
     }
 
-    // If service center amount update is successful, update transaction status
+    // Update transaction status and add payment screenshot
     let updatedTransaction = await ServicePaymentModel.findByIdAndUpdate(
       _id,
       { payScreenshot: payScreenshot, status: "PAID" },
@@ -185,10 +255,10 @@ const editServicePayment = async (req, res) => {
     );
 
     if (!updatedTransaction) {
-      return res.json({ status: false, msg: "Payment status not updated" });
+      return res.status(500).json({ status: false, msg: "Payment status not updated" });
     }
 
-    return res.json({
+    return res.status(200).json({
       status: true,
       msg: "Payment status updated successfully, and totalAmount updated in Service Center.",
       data: updatedTransaction,
