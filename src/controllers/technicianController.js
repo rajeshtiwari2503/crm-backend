@@ -52,8 +52,8 @@ const getTechnicianById = async (req, res) => {
 }
 const getComplaintByCenterId = async (req, res) => {
     try {
-      const serviceId = req.params.userId;
-      const data = await TechnicianModal.find({ serviceId }).populate('serviceId');
+      const serviceCenterId = req.params.userId;
+      const data = await TechnicianModal.find({ serviceCenterId }).populate('serviceCenterId');
       res.send(data);
     } catch (err) {
       res.status(400).send(err);
