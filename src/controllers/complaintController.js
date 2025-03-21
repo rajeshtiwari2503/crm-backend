@@ -1148,6 +1148,131 @@ const editComplaint = async (req, res) => {
       res.status(500).send(err);
    }
 };
+ 
+const updatePartPendingImage = async (req, res) => {
+   try {
+      let _id = req.params.id;
+      let body = req.body;
+      let image = req.file ? req.file.location || req.file.path : null;
+      
+      console.log("Image:", image);
+      console.log("Body:", body);
+
+      // Find the complaint
+      let data = await ComplaintModal.findById(_id);
+      if (!data) {
+         return res.status(404).json({ status: false, msg: "Complaint not found" });
+      }
+
+      // Initialize updateHistory if not present
+      data.updateHistory = data.updateHistory || [];
+
+      // Update fields conditionally
+      if (!data.empResponseTime && body.empResponseTime) {
+         data.empResponseTime = new Date();
+      }
+
+      if (image) {
+         data.partPendingImage = image;
+      }
+
+      data.updateHistory.push({
+         updatedAt: new Date(),
+         changes: { ...body },
+      });
+
+      // Handle status updates
+      if (body.status === "PART PENDING") {
+         data.cspStatus = "YES";
+      }
+
+      if (["FINAL VERIFICATION", "COMPLETED"].includes(body.status)) {
+         data.complaintCloseTime = new Date();
+      }
+
+      if (!data.complaintCloseTime && body.complaintCloseTime) {
+         data.complaintCloseTime = new Date();
+      }
+
+      // Apply updates
+      Object.assign(data, body);
+      await data.save();
+
+      // Send notifications
+      if (body.assignServiceCenterId) {
+         await new NotificationModel({
+            complaintId: data._id,
+            userId: data.userId,
+            technicianId: body.technicianId,
+            serviceCenterId: body.assignServiceCenterId,
+            brandId: data.brandId,
+            dealerId: data.dealerId,
+            userName: data.productBrand,
+            title: `Brand Assign Service Center`,
+            message: `Assign Service Center on Your Complaint!`,
+         }).save();
+      }
+
+      if (body.technicianId) {
+         await new NotificationModel({
+            complaintId: data._id,
+            userId: data.userId,
+            technicianId: body.technicianId,
+            serviceCenterId: body.assignServiceCenterId,
+            brandId: data.brandId,
+            dealerId: data.dealerId,
+            userName: data.assignServiceCenter,
+            title: `Service Center Assign Technician`,
+            message: `Assign Technician on Your Complaint!`,
+         }).save();
+      }
+
+      // Wallet & Payout handling
+      if (body.status === "COMPLETED") {
+         let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
+
+         if (subCatData) {
+            await new BrandRechargeModel({
+               brandId: data.brandId,
+               brandName: data.productBrand,
+               amount: -body?.paymentBrand,
+               complaintId: data._id,
+               description: "Complaint Close Payout"
+            }).save();
+
+            const serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+            if (serviceCenterWallet) {
+               serviceCenterWallet.totalCommission = (parseInt(serviceCenterWallet.totalCommission || 0) + parseInt(subCatData.payout));
+               serviceCenterWallet.dueAmount = (parseInt(serviceCenterWallet.dueAmount || 0) + parseInt(subCatData.payout));
+               await serviceCenterWallet.save();
+            } else {
+               console.error('Wallet not found for service center:', data.assignServiceCenterId);
+               return res.json({ status: true, msg: "Complaint Updated" });
+            }
+
+            const dealerWallet = await WalletModel.findOne({ serviceCenterId: data.dealerId });
+            if (dealerWallet) {
+               const payout = parseInt(subCatData.payout);
+               const commissionToAdd = data.dealerId ? payout * 0.2 : payout;
+
+               dealerWallet.totalCommission = (parseInt(dealerWallet.totalCommission || 0) + commissionToAdd);
+               dealerWallet.dueAmount = (parseInt(dealerWallet.dueAmount || 0) + commissionToAdd);
+               await dealerWallet.save();
+            } else {
+               console.error('Wallet not found for dealer:', data.dealerId);
+               return res.json({ status: true, msg: "Complaint Updated" });
+            }
+         }
+      }
+
+      res.json({ status: true, msg: "Complaint Updated" });
+   } catch (err) {
+      console.error("Error updating complaint:", err);
+      res.status(500).json({ status: false, msg: "Server Error", error: err.message });
+   }
+};
+
+
 const updateFinalVerification = async (req, res) => {
    try {
       let _id = req.params.id;
@@ -1349,5 +1474,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification,updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
