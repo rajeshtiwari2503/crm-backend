@@ -49,6 +49,7 @@ const complaintSchema = new mongoose.Schema({
   // srerviceCenterResponseTime: { type: Date },
   assignTechnicianTime: { type: Date },
   technicianResposeTime: { type: Date },
+  visitTechnician: { type: Number, default: 1 },
   assignTechnician: { type: String },
   technicianId: { type: String },
   technicianContact: { type: String },
@@ -74,6 +75,7 @@ const complaintSchema = new mongoose.Schema({
   serviceAddress: { type: String },
   status: { type: String, default: "PENDING" },
   payment: { type: Number, default: 0 },
+
   paymentBrand: { type: Number, default: 0 },
   paymentServiceCenter: { type: Number, default: 0 },
   finalComments: { type: String },
