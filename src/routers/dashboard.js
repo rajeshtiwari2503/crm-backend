@@ -1345,9 +1345,9 @@ router.get("/getAllTatByBrand", async (req, res) => {
       let rt = getTimeDifference(complaintDate, responseTime);
       let ct = getTimeDifference(complaintDate, complaintCloseDate);
 
-      if (tat.days === 0 && tat.hours <= 24) totalTATCount++;
+      if (tat.days === 0 && tat.hours <= 32) totalTATCount++;
       if (rt.days === 0 && rt.hours <= 2) totalRTCount++;
-      if (ct.days === 0 && ct.hours <= 24) totalCTCount++;
+      if (ct.days === 0 && ct.hours <= 32) totalCTCount++;
 
       // Monthly Report
       if (!monthlyReport[monthYear]) {
@@ -1363,11 +1363,11 @@ router.get("/getAllTatByBrand", async (req, res) => {
       }
       monthlyReport[monthYear].complaints.push({ complaintId: c._id, ct, rt, tat });
       monthlyReport[monthYear].totalComplaints++;
-      monthlyReport[monthYear].totalCT += ct.days * 24 + ct.hours;
-      monthlyReport[monthYear].totalRT += rt.days * 24 + rt.hours;
-      if (tat.days === 0 && tat.hours <= 24) monthlyReport[monthYear].tatCount++;
+      monthlyReport[monthYear].totalCT += ct.days * 32 + ct.hours;
+      monthlyReport[monthYear].totalRT += rt.days * 32 + rt.hours;
+      if (tat.days === 0 && tat.hours <= 32) monthlyReport[monthYear].tatCount++;
       if (rt.days === 0 && rt.hours <= 2) monthlyReport[monthYear].rtCount++;
-      if (ct.days === 0 && ct.hours <= 24) monthlyReport[monthYear].ctCount++;
+      if (ct.days === 0 && ct.hours <= 32) monthlyReport[monthYear].ctCount++;
 
       // Yearly Report
       if (!yearlyReport[year]) {
@@ -1383,11 +1383,11 @@ router.get("/getAllTatByBrand", async (req, res) => {
       }
       yearlyReport[year].complaints.push({ complaintId: c._id, ct, rt, tat });
       yearlyReport[year].totalComplaints++;
-      yearlyReport[year].totalCT += ct.days * 24 + ct.hours;
-      yearlyReport[year].totalRT += rt.days * 24 + rt.hours;
-      if (tat.days === 0 && tat.hours <= 24) yearlyReport[year].tatCount++;
+      yearlyReport[year].totalCT += ct.days * 32 + ct.hours;
+      yearlyReport[year].totalRT += rt.days * 32 + rt.hours;
+      if (tat.days === 0 && tat.hours <= 32) yearlyReport[year].tatCount++;
       if (rt.days === 0 && rt.hours <= 2) yearlyReport[year].rtCount++;
-      if (ct.days === 0 && ct.hours <= 24) yearlyReport[year].ctCount++;
+      if (ct.days === 0 && ct.hours <= 32) yearlyReport[year].ctCount++;
 
       return { complaintId: c._id, ct, rt, tat };
     });
