@@ -740,7 +740,7 @@ const getProductWarrantyByUniqueId = async (req, res) => {
     // Optimized Query: Using Projection & .lean()
     const data = await ProductWarrantyModal.findOne(
       { "records.uniqueId": uniqueId },
-      { "records.$": 1 } // Returns only the matched record
+      { "records.$": 1 ,brandName: 1, brandId: 1, productName: 1, productId: 1,categoryId:1} // Returns only the matched record
     ).lean(); // Makes query lightweight by returning plain JS object
 
     if (!data) {
