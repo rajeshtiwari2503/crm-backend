@@ -706,24 +706,51 @@ const getProductWarrantyById = async (req, res) => {
     res.status(400).send(err);
   }
 }
+
+//old before 22/03/2025
+// const getProductWarrantyByUniqueId = async (req, res) => {
+//   try {
+//     const uniqueId = req.params.id;
+//     // console.log("Searching for uniqueId:", uniqueId);
+
+//     // Search for a document where the `uniqueId` exists in the `records` array
+//     const data = await ProductWarrantyModal.findOne({
+//       'records.uniqueId': uniqueId
+//     });
+
+//     if (!data) {
+//       return res.status(404).send({ message: "Product warranty not found" });
+//     }
+
+//     res.send(data);
+//   } catch (err) {
+//     console.error("Error:", err);
+//     res.status(400).send({ error: err.message });
+//   }
+// };
+
 const getProductWarrantyByUniqueId = async (req, res) => {
   try {
-    const uniqueId = req.params.id;
-    // console.log("Searching for uniqueId:", uniqueId);
+    const uniqueId = req.params.id?.trim();
 
-    // Search for a document where the `uniqueId` exists in the `records` array
-    const data = await ProductWarrantyModal.findOne({
-      'records.uniqueId': uniqueId
-    });
-
-    if (!data) {
-      return res.status(404).send({ message: "Product warranty not found" });
+    if (!uniqueId) {
+      return res.status(400).json({ message: "Unique ID is required" });
     }
 
-    res.send(data);
+    // Optimized Query: Using Projection & .lean()
+    const data = await ProductWarrantyModal.findOne(
+      { "records.uniqueId": uniqueId },
+      { "records.$": 1 ,brandName: 1, brandId: 1, productName: 1, productId: 1,categoryId:1} // Returns only the matched record
+    ).lean(); // Makes query lightweight by returning plain JS object
+
+    if (!data) {
+      return res.status(404).json({ message: "Product warranty not found" });
+    }
+
+    res.status(200).json(data);
   } catch (err) {
-    console.error("Error:", err);
-    res.status(400).send({ error: err.message });
+    console.error("Error fetching product warranty:", err);
+    res.status(500).json({ error: "Internal server error", details: err.message });
   }
 };
 
