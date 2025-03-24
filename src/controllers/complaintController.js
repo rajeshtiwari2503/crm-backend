@@ -1392,9 +1392,11 @@ const updateFinalVerification = async (req, res) => {
 
          else {
             let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+            let paymentServiceCenter = parseFloat(body?.paymentServiceCenter) || 0;
             if (serviceCenterWallet) {
-               serviceCenterWallet.totalCommission += body?.paymentServiceCenter;
-               serviceCenterWallet.dueAmount += body?.paymentServiceCenter;
+               serviceCenterWallet.totalCommission += paymentServiceCenter;
+               serviceCenterWallet.dueAmount += paymentServiceCenter;
+               
                await serviceCenterWallet.save();
             } else {
                console.warn("No wallet found for service center:", data.assignServiceCenterId);
