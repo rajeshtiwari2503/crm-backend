@@ -1,5 +1,9 @@
 const ServicePaymentModel = require("../models/servicePaymentModel")
 const { ServiceModel } = require('../models/registration');
+const ComplaintModal = require("../models/complaint")
+
+
+
 // const addServicePayment = async (req, res) => {
 
 //     try {
@@ -247,6 +251,14 @@ const editServicePayment = async (req, res) => {
       return res.status(500).json({ status: false, msg: "Failed to update total amount in Service Center" });
     }
 
+    const updatedComplaint = await ComplaintModal.findByIdAndUpdate(
+      transaction.complaintId,
+      { $set: { paymentServiceCenter: Number(transaction?.payment || 0) } },
+      { new: true }
+    );
+    if (!updatedComplaint) {
+      return res.status(500).json({ status: false, msg: "Complaint not found" });
+    }
     // Update transaction status and add payment screenshot
     let updatedTransaction = await ServicePaymentModel.findByIdAndUpdate(
       _id,
