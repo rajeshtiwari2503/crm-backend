@@ -468,6 +468,30 @@ const getAllProductWarrantyByIdWithPage = async (req, res) => {
   }
 };
 
+const getAllProductWarrantyByBrandStickers = async (req, res) => {
+  try {
+    const stickersByBrand = await ProductWarrantyModal.aggregate([
+      {
+        $group: {
+          _id: { brandId: "$brandId", brandName: "$brandName" }, // Group by brandId & brandName
+          totalStickers: { $sum: 1 } // Count total stickers per brand
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandId: "$_id.brandId",
+          brandName: "$_id.brandName",
+          totalStickers: 1
+        }
+      }
+    ]);
+
+    res.status(200).json({ success: true, data: stickersByBrand });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 const getAllProductWarrantyById = async (req, res) => {
   try {
@@ -823,4 +847,4 @@ const deleteProductWarranty = async (req, res) => {
   }
 }
 
-module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
+module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty,getAllProductWarrantyByBrandStickers ,getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
