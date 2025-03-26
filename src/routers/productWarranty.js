@@ -3,11 +3,12 @@
 const express=require("express");
 const router=express.Router();
  
-const {addProductWarranty,activateWarranty,getAllProductWarranty,editActivationWarranty,getActivationWarrantyByUserId,getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage,getAllProductWarrantyByBrandIdTotal,getAllProductWarrantyById,getActivationWarrantyById,getAllActivationWarranty,getProductWarrantyByUniqueId,getProductWarrantyById,editProductWarranty,deleteProductWarranty }=require("../controllers/productWarrantyController")
+const {addProductWarranty,activateWarranty,getAllProductWarranty,getAllProductWarrantyByBrandStickers,editActivationWarranty,getActivationWarrantyByUserId,getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage,getAllProductWarrantyByBrandIdTotal,getAllProductWarrantyById,getActivationWarrantyById,getAllActivationWarranty,getProductWarrantyByUniqueId,getProductWarrantyById,editProductWarranty,deleteProductWarranty }=require("../controllers/productWarrantyController")
 
 router.post("/addProductWarranty",addProductWarranty );
 router.post("/activateWarranty",activateWarranty );
 router.get("/getAllProductWarranty",getAllProductWarranty );
+router.get("/getAllProductWarrantyByBrandStickers", getAllProductWarrantyByBrandStickers);
 router.get("/getAllProductWarrantyWithPage",getAllProductWarrantyWithPage );
 router.get("/getAllProductWarrantyByIdWithPage/:id",getAllProductWarrantyByIdWithPage );
 router.get("/getAllProductWarrantyById/:id",getAllProductWarrantyById );
