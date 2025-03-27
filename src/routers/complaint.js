@@ -3,7 +3,7 @@ const ComplaintModal = require("../models/complaint")
 
 const {addComplaint,addDealerComplaint,getAllBrandComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
-    getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
+    getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
  
 const moment = require("moment");
@@ -32,6 +32,8 @@ router.get("/getComplaintById/:id",getComplaintById)
 router.get("/getPendingComplaints/:days",getPendingComplaints)
 router.get("/getPartPendingComplaints/:days",getPartPendingComplaints)
 router.get("/getComplaintByUserId/:id",getComplaintByUserId)
+router.get("/getComplaintByCenterId/:id",getComplaintByCenterId)
+router.get("/getComplaintBydealerId/:id",getComplaintBydealerId)
 router.get("/getComplaintByTechId/:id",getComplaintByTechId)
 router.patch("/editImage/:id", upload().single("issueImages"),editIssueImage );
 router.patch("/updateFinalVerification/:id", upload().single("partImage"),updateFinalVerification );
