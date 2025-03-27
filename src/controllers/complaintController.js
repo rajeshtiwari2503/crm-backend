@@ -703,6 +703,24 @@ const getComplaintByTechId = async (req, res) => {
       res.status(400).send(err);
    }
 };
+const getComplaintBydealerId = async (req, res) => {
+   try {
+      const dealerId = req.params.userId;
+      const complaints = await ComplaintModal.find({ dealerId }).populate('dealerId');
+      res.send(complaints);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
+const getComplaintByCenterId = async (req, res) => {
+   try {
+      const assignServiceCenterId = req.params.userId;
+      const complaints = await ComplaintModal.find({ assignServiceCenterId }).populate('assignServiceCenterId');
+      res.send(complaints);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
 const getComplaintsByPending = async (req, res) => {
    try {
       let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
@@ -1476,5 +1494,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification,updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification,updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
