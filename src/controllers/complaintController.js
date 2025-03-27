@@ -686,41 +686,73 @@ const getComplaintById = async (req, res) => {
    }
 }
 const getComplaintByUserId = async (req, res) => {
-   try {
-      const userId = req.params.userId;
-      const complaints = await ComplaintModal.find({ userId }).populate('userId');
-      res.send(complaints);
-   } catch (err) {
-      res.status(400).send(err);
-   }
+  
+      try {
+         const userId = req.params.id;  // Ensure you are using req.params.id
+    
+         const complaints = await ComplaintModal.find({ userId })
+            .populate('userId');
+         if (!complaints.length) {
+            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
+         }
+         
+         res.send(complaints);
+      } catch (err) {
+         console.error("Error fetching complaints:", err);
+         res.status(500).json({ error: "Server error", details: err.message });
+      }
 };
 const getComplaintByTechId = async (req, res) => {
-   try {
-      const technicianId = req.params.userId;
-      const complaints = await ComplaintModal.find({ technicianId }).populate('technicianId');
-      res.send(complaints);
-   } catch (err) {
-      res.status(400).send(err);
-   }
+ 
+      try {
+         const technicianId = req.params.id;  // Ensure you are using req.params.id
+    
+         const complaints = await ComplaintModal.find({ technicianId })
+            .populate('technicianId');
+         if (!complaints.length) {
+            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
+         }
+         
+         res.send(complaints);
+      } catch (err) {
+         console.error("Error fetching complaints:", err);
+         res.status(500).json({ error: "Server error", details: err.message });
+      }
 };
 const getComplaintBydealerId = async (req, res) => {
-   try {
-      const dealerId = req.params.userId;
-      const complaints = await ComplaintModal.find({ dealerId }).populate('dealerId');
-      res.send(complaints);
-   } catch (err) {
-      res.status(400).send(err);
-   }
+ 
+      try {
+         const dealerId = req.params.id;  // Ensure you are using req.params.id
+    
+         const complaints = await ComplaintModal.find({ dealerId })
+            .populate('dealerId');
+         if (!complaints.length) {
+            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
+         }
+         
+         res.send(complaints);
+      } catch (err) {
+         console.error("Error fetching complaints:", err);
+         res.status(500).json({ error: "Server error", details: err.message });
+      }
 };
 const getComplaintByCenterId = async (req, res) => {
    try {
-      const assignServiceCenterId = req.params.userId;
-      const complaints = await ComplaintModal.find({ assignServiceCenterId }).populate('assignServiceCenterId');
+      const assignServiceCenterId = req.params.id;  // Ensure you are using req.params.id
+ 
+      const complaints = await ComplaintModal.find({ assignServiceCenterId })
+         .populate('assignServiceCenterId');
+      if (!complaints.length) {
+         return res.status(404).json({ message: "No complaints found for this Service Center ID" });
+      }
+
       res.send(complaints);
    } catch (err) {
-      res.status(400).send(err);
+      console.error("Error fetching complaints:", err);
+      res.status(500).json({ error: "Server error", details: err.message });
    }
 };
+
 const getComplaintsByPending = async (req, res) => {
    try {
       let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
