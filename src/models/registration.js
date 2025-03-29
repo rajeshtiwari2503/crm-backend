@@ -357,6 +357,7 @@ const userRegistrationSchema = new mongoose.Schema({
     contact: { type: String, required: true },
     password: { type: String  },
     address: { type: String  },
+    pincode: { type: String  },
     lat: { type: String  },
     long: { type: String  },
     role: { type: String, default: "USER" },
