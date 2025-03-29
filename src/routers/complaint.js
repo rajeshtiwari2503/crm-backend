@@ -45,6 +45,27 @@ router.patch("/updateComplaint/:id",updateComplaint )
 
 const mongoose = require("mongoose");
 
+
+
+// router.patch('/complaints/update', upload().single('partPendingImage'), async (req, res) => {
+//   try {
+//     // console.log("File Data:", req.file); // Should log uploaded file
+//     // console.log("Text Data:", req.body); // Should log status & comments
+
+   
+//     const updatedComplaint = await ComplaintModal.findByIdAndUpdate(req.body.id, {
+//       status: req.body.status,
+//       comments: req.body.comments,
+//       partPendingImage: req.file.location, // Save file path in MongoDB
+//     }, { new: true });
+
+//     res.json({ message: "Updated successfully", updatedComplaint });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).json({ error: "Something went wrong" });
+//   }
+// });
+
 router.get("/searchComplaint", async (req, res) => {
   try {
     const { searchTerm } = req.query;
