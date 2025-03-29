@@ -474,7 +474,8 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
       {
         $group: {
           _id: { brandId: "$brandId", brandName: "$brandName" }, // Group by brandId & brandName
-          totalStickers: { $sum: 1 } // Count total stickers per brand
+          totalStickers: { $sum: 1 }, // Count total stickers per brand
+          totalnumberOfGenerate: { $sum: "$numberOfGenerate" } // Sum the actual field
         }
       },
       {
@@ -482,7 +483,8 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
           _id: 0,
           brandId: "$_id.brandId",
           brandName: "$_id.brandName",
-          totalStickers: 1
+          totalStickers: 1,
+          totalnumberOfGenerate: 1
         }
       }
     ]);
@@ -492,6 +494,7 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 const getAllProductWarrantyById = async (req, res) => {
   try {
