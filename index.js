@@ -109,13 +109,13 @@ const wallet = require("./src/routers/wallet");
 const payment = require("./src/routers/payments");
 const shipyariOrder = require("./src/routers/shipyariOrder");
 const brandRecharge = require("./src/routers/brandRecharge");
- 
+
 const serviceCenterDeposit = require("./src/routers/serviceCenterDeposit");
 const serviceCenterPayment = require("./src/routers/servicePayment");
 const serviceRequest = require("./src/routers/serviceRequest");
 
 app.use(express.json());
- 
+
 // app.use(cors({
 //     origin: '*',
 //     methods: ['GET', 'POST','PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -163,12 +163,14 @@ app.use(express.json());
 //     next();
 // });
 
-
+const { admin } = require('./src/firebase/index')
  
+
+
 app.use(cors());
 
-app.use(function (req, res, next){
-    res.header("Access-Control-Allow-Origin","*");
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
     res.header(
         "Access-Control-Allow-Methods",
         "GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD"
@@ -181,8 +183,26 @@ app.use(function (req, res, next){
 });
 
 
- 
- 
+// const sendNotification = async () => {
+//     try{
+//     await admin.messaging().send({
+//         token: "dD9QRKjRQ2212107gesuQt:APA91bGEvrczhzzn-vNnQCGIm7Jhty-PmDE9ElRtj78sm55W0xx053QRN_Ykmh7y8Qw50IlKN5UeMX4ayREHt41ArqtaHEOd1uFPt-B4Z0YQ2O3y9xKTIUg",
+//         notification: {
+//             title: "This is a title1",
+//             body: "This is a body"
+//         }
+//     })
+//     console.log("notification send successfully" );
+//     }
+//     catch(error){
+//         console.log("notification failed",error);
+        
+//     }
+// }
+
+// setTimeout(() => {
+//     sendNotification()
+// }, 200)
 
 const PORT = process.env.PORT || 5000;
 
@@ -190,7 +210,7 @@ app.get("/", (req, res) => {
     res.json("Server is running");
 });
 
- 
+
 app.use(registration);
 app.use(technician);
 app.use(product);
@@ -218,6 +238,8 @@ app.use(brandRecharge);
 app.use(serviceCenterDeposit);
 app.use(serviceCenterPayment);
 app.use(serviceRequest);
+
+
 
 app.listen(PORT, () => {
     console.log("Server is running on PORT", PORT);

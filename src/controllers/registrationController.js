@@ -1,14 +1,66 @@
 
 const otpGenerator = require("otp-generator")
 const { smsSend, sendMail } = require("../services/service")
-const { AdminModel, BrandRegistrationModel, ServiceModel,TechnicianModal, EmployeeModel,BrandEmployeeModel, DealerModel, UserModel } = require('../models/registration');
+const { AdminModel, BrandRegistrationModel, ServiceModel, TechnicianModal, EmployeeModel, BrandEmployeeModel, DealerModel, UserModel } = require('../models/registration');
 const NotificationModel = require("../models/notification")
 
+
+// const adminLoginController = async (req, res) => {
+//     try {
+//         const { email, password  } = req.body;
+// let fcmToken=req?.body?.fcmToken
+//         // Check if email and password are provided
+//         if (!email || !password) {
+//             return res.status(400).json({ status: false, msg: "Email and password are required" });
+//         }
+
+//         let user;
+//         let role;
+
+//         // Function to check a model and log the result
+//         const checkModel = async (model, roleName) => {
+//             const foundUser = await model.findOne({ email, password });
+//             if (foundUser) {
+//                 // console.log(`User found in ${roleName} model`);
+//                 user = foundUser;
+//                 role = roleName;
+//                 if(!!fcmToken){
+//                     foundUser.fcmToken=fcmToken
+//                     foundUser.save()
+//                 }
+//                 return true;
+//             }
+//             return false;
+//         };
+
+//         // Sequentially check each model
+//         if (await checkModel(AdminModel, 'ADMIN')) return res.status(200).json({ status: true, msg: "ADMIN login successful", user });
+//         if (await checkModel(BrandRegistrationModel, 'BRAND')) return res.status(200).json({ status: true, msg: "BRAND login successful", user });
+//         if (await checkModel(EmployeeModel, 'EMPLOYEE')) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user });
+//         if (await checkModel(BrandEmployeeModel, 'Brand EMPLOYEE')) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user });
+//         if (await checkModel(ServiceModel, 'SERVICE')) return res.status(200).json({ status: true, msg: "SERVICE login successful", user });
+//         if (await checkModel(TechnicianModal, 'TECHNICIAN')) return res.status(200).json({ status: true, msg: "TECHNICIAN login successful", user });
+//         if (await checkModel(UserModel, 'USER')) return res.status(200).json({ status: true, msg: "USER login successful", user });
+//         if (await checkModel(DealerModel, 'DEALER')) return res.status(200).json({ status: true, msg: "DEALER login successful", user });
+
+//         // If no user is found
+//         return res.status(401).json({ status: false, msg: "Incorrect username or password" });
+//     } catch (err) {
+//         console.error(err);
+//         return res.status(500).send(err);
+//     }
+// };
+
+
+ 
 
 const adminLoginController = async (req, res) => {
     try {
         const { email, password } = req.body;
-
+        let fcmToken = req.body?.fcmToken
+        // console.log("fcmToken",fcmToken);
+        // console.log("password",password);
+        
         // Check if email and password are provided
         if (!email || !password) {
             return res.status(400).json({ status: false, msg: "Email and password are required" });
@@ -20,30 +72,39 @@ const adminLoginController = async (req, res) => {
         // Function to check a model and log the result
         const checkModel = async (model, roleName) => {
             const foundUser = await model.findOne({ email, password });
+
             if (foundUser) {
-                // console.log(`User found in ${roleName} model`);
+               
+
                 user = foundUser;
                 role = roleName;
+
+                // Update FCM token if provided
+                if (fcmToken) {
+                    foundUser.fcmToken = fcmToken;
+                    await foundUser.save(); // Ensure the update is persisted
+                }
+
                 return true;
             }
             return false;
         };
 
-        // Sequentially check each model
-        if (await checkModel(AdminModel, 'ADMIN')) return res.status(200).json({ status: true, msg: "ADMIN login successful", user });
-        if (await checkModel(BrandRegistrationModel, 'BRAND')) return res.status(200).json({ status: true, msg: "BRAND login successful", user });
-        if (await checkModel(EmployeeModel, 'EMPLOYEE')) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user });
-        if (await checkModel(BrandEmployeeModel, 'Brand EMPLOYEE')) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user });
-        if (await checkModel(ServiceModel, 'SERVICE')) return res.status(200).json({ status: true, msg: "SERVICE login successful", user });
-        if (await checkModel(TechnicianModal, 'TECHNICIAN')) return res.status(200).json({ status: true, msg: "TECHNICIAN login successful", user });
-        if (await checkModel(UserModel, 'USER')) return res.status(200).json({ status: true, msg: "USER login successful", user });
-        if (await checkModel(DealerModel, 'DEALER')) return res.status(200).json({ status: true, msg: "DEALER login successful", user });
+        // Check each model sequentially
+        if (await checkModel(AdminModel, "ADMIN")) return res.status(200).json({ status: true, msg: "ADMIN login successful", user, role });
+        if (await checkModel(BrandRegistrationModel, "BRAND")) return res.status(200).json({ status: true, msg: "BRAND login successful", user, role });
+        if (await checkModel(EmployeeModel, "EMPLOYEE")) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user, role });
+        if (await checkModel(BrandEmployeeModel, "BRAND EMPLOYEE")) return res.status(200).json({ status: true, msg: "BRAND EMPLOYEE login successful", user, role });
+        if (await checkModel(ServiceModel, "SERVICE")) return res.status(200).json({ status: true, msg: "SERVICE login successful", user, role });
+        if (await checkModel(TechnicianModal, "TECHNICIAN")) return res.status(200).json({ status: true, msg: "TECHNICIAN login successful", user, role });
+        if (await checkModel(UserModel, "USER")) return res.status(200).json({ status: true, msg: "USER login successful", user, role });
+        if (await checkModel(DealerModel, "DEALER")) return res.status(200).json({ status: true, msg: "DEALER login successful", user, role });
 
         // If no user is found
         return res.status(401).json({ status: false, msg: "Incorrect username or password" });
     } catch (err) {
         console.error(err);
-        return res.status(500).send(err);
+        return res.status(500).json({ status: false, msg: "Internal Server Error", error: err.message });
     }
 };
 
@@ -54,8 +115,8 @@ module.exports = adminLoginController;
 const dashboardLoginController = async (req, res) => {
     try {
         const { userId } = req.body;
- 
-// console.log(userId);
+
+        // console.log(userId);
 
         // Validate input
         if (!userId) {
@@ -63,7 +124,7 @@ const dashboardLoginController = async (req, res) => {
         }
 
         // Check if the user exists in the UserModel
-        const user = await UserModel.findOne({ _id:userId });
+        const user = await UserModel.findOne({ _id: userId });
         // console.log(user);
         if (user) {
             return res.status(200).json({ status: true, msg: "USER login successful", user });
@@ -77,7 +138,7 @@ const dashboardLoginController = async (req, res) => {
     }
 };
 
- 
+
 
 
 const adminRegistration = async (req, res) => {
@@ -143,8 +204,8 @@ const serviceRegistration = async (req, res) => {
             userName: newData.serviceCenterName,
             title: `  Service Center  Added `,
             message: ` New Service Center  Added     ${newData.serviceCenterName} !`,
-         });
-         await notification.save();
+        });
+        await notification.save();
         return res.json({ status: true, msg: "Registration successful" });
     } catch (err) {
         console.error(err);
@@ -188,8 +249,8 @@ const dealerRegistration = async (req, res) => {
             userName: newData.name,
             title: `  Dealer  Added `,
             message: ` New Dealer  Added     ${newData.name} !`,
-         });
-         await notification.save();
+        });
+        await notification.save();
         return res.json({ status: true, msg: "Registration successful" });
     } catch (err) {
         console.error(err);
@@ -222,8 +283,8 @@ const userRegistration = async (req, res) => {
             userName: newData.name,
             title: `  User  Added `,
             message: ` New User  Added     ${newData.name} !`,
-         });
-         await notification.save();
+        });
+        await notification.save();
         return res.json({ status: true, msg: "Registration successful" });
     } catch (err) {
         console.error(err);
@@ -245,14 +306,14 @@ const editBrand = async (req, res) => {
         let _id = req.params.id;
         let body = req.body;
         let data = await BrandRegistrationModel.findByIdAndUpdate(_id, body);
-        if(body.status){
+        if (body.status) {
             const notification = new NotificationModel({
                 brandId: newData.brandID,
                 userName: newData.brandName,
                 title: `   Verification    `,
                 message: `   Brand  Verified     ${newData.brandName} !`,
-             });
-             await notification.save();
+            });
+            await notification.save();
         }
         res.json({ status: true, msg: "Brand Updated" });
     } catch (err) {
@@ -262,30 +323,30 @@ const editBrand = async (req, res) => {
 const updateBrandTerms = async (req, res) => {
     const { warrantyCondition } = req.body;
     try {
-    // Validate the input
-    if (!warrantyCondition) {
-      return res.status(400).json({ message: "Warranty Condition is required" });
+        // Validate the input
+        if (!warrantyCondition) {
+            return res.status(400).json({ message: "Warranty Condition is required" });
+        }
+
+        // Update the brand in the database
+        const updatedBrand = await BrandRegistrationModel.findByIdAndUpdate(
+            req.params.id, // The brand ID
+            { warrantyCondition }, // Fields to update
+            { new: true, runValidators: true } // Return the updated document
+        );
+
+        if (!updatedBrand) {
+            return res.status(404).json({ status: false, msg: "Brand not found" });
+        }
+
+        res.status(200).json({
+            status: true, msg: "Brand Terms & conditions updated successfully",
+
+        });
+    } catch (error) {
+        console.error("Error updating brand:", error);
+        res.status(500).json({ status: false, msg: "Internal server error" });
     }
-
-    // Update the brand in the database
-    const updatedBrand = await BrandRegistrationModel.findByIdAndUpdate(
-      req.params.id, // The brand ID
-      { warrantyCondition }, // Fields to update
-      { new: true, runValidators: true } // Return the updated document
-    );
-
-    if (!updatedBrand) {
-      return res.status(404).json({ status: false, msg: "Brand not found" });
-    }
-
-    res.status(200).json({
-        status: true, msg: "Brand Terms & conditions updated successfully",
-       
-    });
-  } catch (error) {
-    console.error("Error updating brand:", error);
-    res.status(500).json({ status: false, msg: "Internal server error" });
-  }
 }
 const deleteBrand = async (req, res) => {
     try {
@@ -319,14 +380,14 @@ const editServiceCenter = async (req, res) => {
         let _id = req.params.id;
         let body = req.body;
         let data = await ServiceModel.findByIdAndUpdate(_id, body);
-        if(body.status){
+        if (body.status) {
             const notification = new NotificationModel({
                 serviceCenterId: newData._id,
                 userName: newData.serviceCenterName,
                 title: `  Service Center  Verification `,
                 message: `   Service Center  Verified     ${newData.serviceCenterName} !`,
-             });
-             await notification.save();
+            });
+            await notification.save();
         }
         res.json({ status: true, msg: "ServiceCenter Updated" });
     } catch (err) {
@@ -459,13 +520,13 @@ const editUser = async (req, res) => {
         let _id = req.params.id;
         let body = req.body;
         let data = await UserModel.findByIdAndUpdate(_id, body);
-        if(body.status){
+        if (body.status) {
             const notification = new NotificationModel({
                 userId: newData._id,
                 userName: newData.name,
                 title: `  User  Verification `,
                 message: `   User  Verified     ${newData.name} !`,
-             });
+            });
         }
         res.json({ status: true, msg: "User Updated" });
     } catch (err) {
@@ -504,14 +565,14 @@ const editDealer = async (req, res) => {
         let _id = req.params.id;
         let body = req.body;
         let data = await DealerModel.findByIdAndUpdate(_id, body);
-        if(body.status){
+        if (body.status) {
             const notification = new NotificationModel({
                 userId: newData._id,
                 userName: newData.name,
                 title: `  Dealer  Verification `,
                 message: `   Dealer  Verified     ${newData.name} !`,
-             });
-             await notification.save();
+            });
+            await notification.save();
         }
         res.json({ status: true, msg: "Dealer Updated" });
     } catch (err) {
@@ -530,35 +591,35 @@ const deleteDealer = async (req, res) => {
 
 const getProfileById = async (req, res) => {
     try {
-      let _id = req.params.id;
-  
-      // Fetch data from all models concurrently
-      const [serviceData, brandData,dealerData,technicianData, userData,empData] = await Promise.all([
-        ServiceModel.findById(_id),
-        BrandRegistrationModel.findById(_id),
-        UserModel.findById(_id),
-        TechnicianModal.findById(_id),
-        DealerModel.findById(_id),
-        EmployeeModel.findById(_id),
-      ]);
-  
-      // Combine the data into a single response
-      const combinedData = {
-        service: serviceData,
-        brand: brandData,
-        user: userData,
-        dealer: dealerData,
-        technician: technicianData,
-        emp:empData,
-      };
-  
-      res.send(combinedData);
+        let _id = req.params.id;
+
+        // Fetch data from all models concurrently
+        const [serviceData, brandData, dealerData, technicianData, userData, empData] = await Promise.all([
+            ServiceModel.findById(_id),
+            BrandRegistrationModel.findById(_id),
+            UserModel.findById(_id),
+            TechnicianModal.findById(_id),
+            DealerModel.findById(_id),
+            EmployeeModel.findById(_id),
+        ]);
+
+        // Combine the data into a single response
+        const combinedData = {
+            service: serviceData,
+            brand: brandData,
+            user: userData,
+            dealer: dealerData,
+            technician: technicianData,
+            emp: empData,
+        };
+
+        res.send(combinedData);
     } catch (err) {
-      res.status(400).send(err);
+        res.status(400).send(err);
     }
-  };
-  
-  const getUserServerById = async (req, res) => {
+};
+
+const getUserServerById = async (req, res) => {
     try {
         let _id = req.params.id;
 
@@ -598,8 +659,8 @@ const getProfileById = async (req, res) => {
         console.error(err);
         return res.status(500).send(err);
     }
-  }; 
-  
+};
+
 
 const otpSending = async (req, res) => {
     try {
@@ -638,7 +699,7 @@ const otpVerificationSending = async (req, res) => {
                 smsSend(otp, user.contact);
             } else if (body.email) {
 
-                sendMail( body.email, otp,);
+                sendMail(body.email, otp,);
             }
             // console.log(user);
             // smsSend(otp, user.contact);
@@ -811,9 +872,9 @@ const forgetPassword = async (req, res) => {
 
 
 module.exports = {
-    getProfileById,getUserServerById,adminLoginController,dashboardLoginController, brandRegistration, serviceRegistration, empolyeeRegistration, dealerRegistration, adminRegistration, userRegistration,
-    getAllBrand, getBrandById,updateBrandTerms, editBrand, deleteBrand, getAllServiceCenter, getServiceCenterById, editServiceCenter, deleteServiceCenter,
+    getProfileById, getUserServerById, adminLoginController, dashboardLoginController, brandRegistration, serviceRegistration, empolyeeRegistration, dealerRegistration, adminRegistration, userRegistration,
+    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand, getAllServiceCenter, getServiceCenterById, editServiceCenter, deleteServiceCenter,
     getAllEmployee, getEmployeeById, editEmployee, deleteEmployee, getAllUser, getUserById, editUser, deleteUser,
-    brandEmpolyeeRegistration,getAllBrandEmployee,getBrandEmployeeById,editBrandEmployee,deleteBrandEmployee,
-     getAllDealer, getDealerById, editDealer, deleteDealer, otpVerification, otpVerificationSending, mobileEmailVerification, forgetPassword, otpSending
+    brandEmpolyeeRegistration, getAllBrandEmployee, getBrandEmployeeById, editBrandEmployee, deleteBrandEmployee,
+    getAllDealer, getDealerById, editDealer, deleteDealer, otpVerification, otpVerificationSending, mobileEmailVerification, forgetPassword, otpSending
 };

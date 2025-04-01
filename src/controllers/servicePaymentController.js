@@ -39,6 +39,24 @@ const getAllServicePayment = async (req, res) => {
     res.status(400).send(err);
   }
 }
+const getAllServicePaymentByCenterId = async (req, res) => {
+  try {
+    const serviceCenterId= req.params.id; // Assuming serviceCenterId is passed in the URL params
+    // console.log("req.params",req.params);
+    
+    if (!serviceCenterId) {
+      return res.status(400).send({ message: "Service Center ID is required" });
+    }
+
+    let data = await ServicePaymentModel.find({ serviceCenterId })
+      .sort({ _id: -1 });
+
+    res.send(data);
+  } catch (err) {
+    res.status(500).send({ message: "Internal Server Error", error: err });
+  }
+};
+
 const getServicePaymentById = async (req, res) => {
   try {
     let _id = req.params.id;
@@ -292,4 +310,4 @@ const deleteServicePayment = async (req, res) => {
   }
 }
 
-module.exports = { addServicePayment, getAllServicePayment, getServicePaymentById, editServicePayment, deleteServicePayment };
+module.exports = { addServicePayment, getAllServicePayment,getAllServicePaymentByCenterId, getServicePaymentById, editServicePayment, deleteServicePayment };
