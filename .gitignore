@@ -29,3 +29,5 @@ yarn-error.log*
 .env*.local
 .env
 .vercel
+# Firebase service account keys (example)
+src/firebase/service-acount-key.json
