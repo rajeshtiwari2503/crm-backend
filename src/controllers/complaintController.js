@@ -9,6 +9,10 @@ const ProductWarrantyModal = require("../models/productWarranty")
 const OneSignal = require('onesignal-node');
 const fetch = require("node-fetch");
 
+
+const { admin } = require('../firebase/index')
+
+
 // const addComplaint = async (req, res) => {
 //    try {
 //       let body = req.body;
@@ -1117,6 +1121,14 @@ const editComplaint = async (req, res) => {
       // Save the updated complaint
       await data.save();
       if (body.assignServiceCenterId) {
+         if (body.status === "ASSIGN") {
+         
+            await sendNotification(
+               body.assignServiceCenterId,
+               ` Assign  Complaint `,
+               `You have been assigned a new complaint (ID: ${data?.complaintId}). Please review the details and take the necessary action.`
+            );
+         }
          const notification = new NotificationModel({
             complaintId: data._id,
             userId: data.userId,
@@ -1199,6 +1211,32 @@ const editComplaint = async (req, res) => {
    }
 };
  
+
+const sendNotification = async (serviceCenterId, title, body) => {
+   try {
+      // Fetch the service center's token from the database
+      const serviceCenter = await ServiceModel.findById(serviceCenterId);
+      if (!serviceCenter || !serviceCenter.fcmToken) {
+         console.error("Service center or token not found");
+         return;
+      }
+
+      // Send the notification using the retrieved token
+      await admin.messaging().send({
+         token: serviceCenter.fcmToken,
+         notification: {
+            title: title,
+            body: body,
+         },
+      });
+
+      console.log("Notification sent successfully to", serviceCenterId);
+   } catch (error) {
+      console.error("Notification failed", error);
+   }
+};
+
+
 const updatePartPendingImage = async (req, res) => {
    try {
       let _id = req.params.id;

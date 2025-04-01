@@ -131,6 +131,7 @@ const bradRegistrationSchema = new mongoose.Schema({
         email:{type:String,required:true},
         password:{type:String },
         image:{type:String },
+        fcmToken:{type:String },
         serviceId:{type:String },
         address:{type:String },
         certificate:{type:String },
@@ -181,6 +182,7 @@ const serviceCenterRegistrationSchema = new mongoose.Schema({
         type: String,
         // required: true
     },
+    fcmToken:{type:String },
     email: {
         type: String,
         required: true,
@@ -308,6 +310,7 @@ const dealerRegistrationSchema = new mongoose.Schema({
       type: String,
       // required: true,
     },
+    fcmToken:{type:String },
     contactPerson: {
       type: String,
       // required: true,
@@ -359,6 +362,7 @@ const userRegistrationSchema = new mongoose.Schema({
     address: { type: String  },
     pincode: { type: String  },
     lat: { type: String  },
+    fcmToken:{type:String },
     long: { type: String  },
     role: { type: String, default: "USER" },
     verification: { type: String, default: "VERIFIED" }
