@@ -1,4 +1,4 @@
- 
+
 
 const cron = require("node-cron");
 const ComplaintModal = require("./models/complaint");
@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 console.log("✅ Cron job scheduler initialized...");
 const { admin } = require('../src/firebase/index')
 // Run every 60 minutes
-cron.schedule("0 * * * *", async () => {  
+cron.schedule("0 * * * *", async () => {
    console.log("🔄 Running scheduled task to assign service centers...");
 
    try {
@@ -27,20 +27,20 @@ cron.schedule("0 * * * *", async () => {
          // console.log(`Brand ID: ${complaint.brandId}`);
          // console.log(`Created At: ${complaint.createdAt}`);
 
-        
 
-        //  let serviceCenter = await ServiceModel.findOne({
-        //     $and: [
-        //        {
-        //           $or: [
-        //              { postalCode: complaint.pincode },
-        //              { pincodeSupported: { $in: [complaint.pincode] } }
-        //           ]
-        //        },
-        //        { "brandsSupported.value": complaint.brandId.toString() } // Ensure it's a string match
-        //     ]
-        //  });
-        let serviceCenter = await ServiceModel.findOne({
+
+         //  let serviceCenter = await ServiceModel.findOne({
+         //     $and: [
+         //        {
+         //           $or: [
+         //              { postalCode: complaint.pincode },
+         //              { pincodeSupported: { $in: [complaint.pincode] } }
+         //           ]
+         //        },
+         //        { "brandsSupported.value": complaint.brandId.toString() } // Ensure it's a string match
+         //     ]
+         //  });
+         let serviceCenter = await ServiceModel.findOne({
             $and: [
                {
                   $or: [
@@ -53,25 +53,38 @@ cron.schedule("0 * * * *", async () => {
          });
 
          if (serviceCenter) {
-            // console.log("🏢 Service Center Found:");
+            console.log("🏢 Service Center Found:");
             // console.log(`Service Center ID: ${serviceCenter._id}`);
             // console.log(`Name: ${serviceCenter.serviceCenterName}`);
             // console.log(`Contact: ${serviceCenter.contact}`);
+            let changes = {
+               assignServiceCenterId: serviceCenter._id,
+               assignServiceCenter: serviceCenter.serviceCenterName,
+               serviceCenterContact: serviceCenter.contact,
+               status: "ASSIGN",
+               autoAssign: "Yes" // Additional field tracking auto-assignment
+           };
 
             await ComplaintModal.findByIdAndUpdate(complaint._id, {
                assignServiceCenterId: serviceCenter._id,
                assignServiceCenter: serviceCenter.serviceCenterName,
                serviceCenterContact: serviceCenter.contact,
-               status: "ASSIGN"
+               status: "ASSIGN",
+               $push: {
+                  updateHistory: {
+                      updatedAt: Date.now(), // Using Date.now() for consistency
+                      changes,
+                  }
+               }
             });
-            
-               
+
+
             await sendNotification(
                serviceCenter._id,  // Use serviceCenter._id instead of complaint.assignServiceCenterId
                `Assign Complaint`,
                `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please review the details and take the necessary action.`
-           );
-              
+            );
+
             console.log(`✅ Assigned Service Center to Complaint ${complaint._id}`);
          } else {
             console.log(`⚠️ No service center found for complaint ${complaint._id}`);
