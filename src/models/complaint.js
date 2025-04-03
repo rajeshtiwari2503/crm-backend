@@ -6,6 +6,7 @@ const complaintSchema = new mongoose.Schema({
   productName: { type: String },
   categoryName: { type: String },
   subCategoryName: { type: String },
+  subCategoryId: { type: String },
   productBrand: { type: String },
   productId: { type: String },
   categoryId: { type: String },
