@@ -1504,8 +1504,35 @@ const updateFinalVerification = async (req, res) => {
          }
 
          else {
-            let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+
             let paymentServiceCenter = parseFloat(body?.paymentServiceCenter) || 0;
+            const serviceCenter = await ServiceModel.findOne({ _id: data.assignServiceCenterId });
+
+            let existingPayment = await ServicePaymentModel.findOne({
+               serviceCenterId: data.assignServiceCenterId,
+               complaintId: data._id,
+            });
+
+            if (!existingPayment) {
+
+               if (serviceCenter) {
+                  await ServicePaymentModel.create({
+                     serviceCenterId: data.assignServiceCenterId,
+                     serviceCenterName: data.assignServiceCenter,
+                     payment: paymentServiceCenter.toString(),
+                     description: "Service Center Payment for Completed Complaint",
+                     contactNo: serviceCenter.contact,
+                     complaintId: data._id,
+                     city: serviceCenter.city,
+                     address: serviceCenter.streetAddress,
+                     status: "UNPAID",
+                  });
+               }
+            } else {
+               console.log("Service payment already exists for complaint:", data._id);
+            }
+            let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+          
             if (serviceCenterWallet) {
                serviceCenterWallet.totalCommission += paymentServiceCenter;
                serviceCenterWallet.dueAmount += paymentServiceCenter;
@@ -1515,6 +1542,8 @@ const updateFinalVerification = async (req, res) => {
                console.warn("No wallet found for service center:", data.assignServiceCenterId);
             }
          }
+
+
          await data.save();
 
 
