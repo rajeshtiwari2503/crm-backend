@@ -7,6 +7,7 @@ const BrandRechargeModel = require("../models/brandRecharge")
 const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
 const OneSignal = require('onesignal-node');
+const ServicePaymentModel = require("../models/servicePaymentModel")
 const fetch = require("node-fetch");
 
 
@@ -690,60 +691,60 @@ const getComplaintById = async (req, res) => {
    }
 }
 const getComplaintByUserId = async (req, res) => {
-  
-      try {
-         const userId = req.params.id;  // Ensure you are using req.params.id
-    
-         const complaints = await ComplaintModal.find({ userId })
-            .populate('userId');
-         if (!complaints.length) {
-            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
-         }
-         
-         res.send(complaints);
-      } catch (err) {
-         console.error("Error fetching complaints:", err);
-         res.status(500).json({ error: "Server error", details: err.message });
+
+   try {
+      const userId = req.params.id;  // Ensure you are using req.params.id
+
+      const complaints = await ComplaintModal.find({ userId })
+         .populate('userId');
+      if (!complaints.length) {
+         return res.status(404).json({ message: "No complaints found for this Service Center ID" });
       }
+
+      res.send(complaints);
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).json({ error: "Server error", details: err.message });
+   }
 };
 const getComplaintByTechId = async (req, res) => {
- 
-      try {
-         const technicianId = req.params.id;  // Ensure you are using req.params.id
-    
-         const complaints = await ComplaintModal.find({ technicianId })
-            .populate('technicianId');
-         if (!complaints.length) {
-            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
-         }
-         
-         res.send(complaints);
-      } catch (err) {
-         console.error("Error fetching complaints:", err);
-         res.status(500).json({ error: "Server error", details: err.message });
+
+   try {
+      const technicianId = req.params.id;  // Ensure you are using req.params.id
+
+      const complaints = await ComplaintModal.find({ technicianId })
+         .populate('technicianId');
+      if (!complaints.length) {
+         return res.status(404).json({ message: "No complaints found for this Service Center ID" });
       }
+
+      res.send(complaints);
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).json({ error: "Server error", details: err.message });
+   }
 };
 const getComplaintBydealerId = async (req, res) => {
- 
-      try {
-         const dealerId = req.params.id;  // Ensure you are using req.params.id
-    
-         const complaints = await ComplaintModal.find({ dealerId })
-            .populate('dealerId');
-         if (!complaints.length) {
-            return res.status(404).json({ message: "No complaints found for this Service Center ID" });
-         }
-         
-         res.send(complaints);
-      } catch (err) {
-         console.error("Error fetching complaints:", err);
-         res.status(500).json({ error: "Server error", details: err.message });
+
+   try {
+      const dealerId = req.params.id;  // Ensure you are using req.params.id
+
+      const complaints = await ComplaintModal.find({ dealerId })
+         .populate('dealerId');
+      if (!complaints.length) {
+         return res.status(404).json({ message: "No complaints found for this Service Center ID" });
       }
+
+      res.send(complaints);
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).json({ error: "Server error", details: err.message });
+   }
 };
 const getComplaintByCenterId = async (req, res) => {
    try {
       const assignServiceCenterId = req.params.id;  // Ensure you are using req.params.id
- 
+
       const complaints = await ComplaintModal.find({ assignServiceCenterId })
          .populate('assignServiceCenterId');
       if (!complaints.length) {
@@ -1122,7 +1123,7 @@ const editComplaint = async (req, res) => {
       await data.save();
       if (body.assignServiceCenterId) {
          if (body.status === "ASSIGN") {
-         
+
             await sendNotification(
                body.assignServiceCenterId,
                ` Assign  Complaint `,
@@ -1210,7 +1211,7 @@ const editComplaint = async (req, res) => {
       res.status(500).send(err);
    }
 };
- 
+
 
 const sendNotification = async (serviceCenterId, title, body) => {
    try {
@@ -1242,7 +1243,7 @@ const updatePartPendingImage = async (req, res) => {
       let _id = req.params.id;
       let body = req.body;
       let image = req.file ? req.file.location || req.file.path : null;
-      
+
       console.log("Image:", image);
       console.log("Body:", body);
 
@@ -1455,7 +1456,31 @@ const updateFinalVerification = async (req, res) => {
                console.error("Invalid payout amount:", subCatData.payout);
                return res.json({ status: true, msg: "Complaint Updated with invalid payout" });
             }
+            const serviceCenter = await ServiceModel.findOne({ _id: data.assignServiceCenterId });
 
+            let existingPayment = await ServicePaymentModel.findOne({
+               serviceCenterId: data.assignServiceCenterId,
+               complaintId: data._id,
+            });
+
+            if (!existingPayment) {
+
+               if (serviceCenter) {
+                  await ServicePaymentModel.create({
+                     serviceCenterId: data.assignServiceCenterId,
+                     serviceCenterName: data.assignServiceCenter,
+                     payment: payout.toString(),
+                     description: "Service Center Payment for Completed Complaint",
+                     contactNo: serviceCenter.contact,
+                     complaintId: data._id,
+                     city: serviceCenter.city,
+                     address: serviceCenter.streetAddress,
+                     status: "UNPAID",
+                  });
+               }
+            } else {
+               console.log("Service payment already exists for complaint:", data._id);
+            }
             // Service Center Wallet Update
             let serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
             if (serviceCenterWallet) {
@@ -1484,7 +1509,7 @@ const updateFinalVerification = async (req, res) => {
             if (serviceCenterWallet) {
                serviceCenterWallet.totalCommission += paymentServiceCenter;
                serviceCenterWallet.dueAmount += paymentServiceCenter;
-               
+
                await serviceCenterWallet.save();
             } else {
                console.warn("No wallet found for service center:", data.assignServiceCenterId);
@@ -1564,5 +1589,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification,updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
