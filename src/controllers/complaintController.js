@@ -1433,7 +1433,7 @@ const updateFinalVerification = async (req, res) => {
 
       // Handle completed complaint logic
       if (body.status === "COMPLETED") {
-         let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
+         let subCatData = await SubCategoryModal.findOne({ _id: data.subCategoryId });
          // **Update paymentServiceCenter**
 
          // Brand transaction
