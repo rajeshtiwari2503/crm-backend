@@ -16,20 +16,60 @@ const ComplaintModal = require("../models/complaint")
 //     }
 
 // };
+
+
+
+// const addServicePayment = async (req, res) => {
+//   try {
+//     let body = req.body;
+//     if (req.file) {
+//       body.qrCode = req.file?.location; // Store the file path for qrCode
+//     }
+
+//     let data = new ServicePaymentModel(body);
+//     await data.save();
+//     res.json({ status: true, msg: "Service Payment Added Successfully" });
+//   } catch (err) {
+//     res.status(400).send({ status: false, msg: "Error while adding service payment", error: err });
+//   }
+// };
+
 const addServicePayment = async (req, res) => {
   try {
     let body = req.body;
+
     if (req.file) {
       body.qrCode = req.file?.location; // Store the file path for qrCode
     }
 
+    // **Check if a service payment already exists for the same serviceCenterId & complaintId**
+    let existingPayment = await ServicePaymentModel.findOne({
+      serviceCenterId: body.serviceCenterId,
+      complaintId: body.complaintId,
+    });
+
+    if (existingPayment) {
+      return res.status(400).json({
+        status: false,
+        msg: "Service Payment already exists for this complaint.",
+      });
+    }
+
+    // **Create new service payment if no duplicate exists**
     let data = new ServicePaymentModel(body);
     await data.save();
+
     res.json({ status: true, msg: "Service Payment Added Successfully" });
   } catch (err) {
-    res.status(400).send({ status: false, msg: "Error while adding service payment", error: err });
+    console.error("Error adding service payment:", err);
+    res.status(500).json({
+      status: false,
+      msg: "Error while adding service payment",
+      error: err.message,
+    });
   }
 };
+
 
 const getAllServicePayment = async (req, res) => {
   try {
