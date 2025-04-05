@@ -60,6 +60,7 @@ const complaintSchema = new mongoose.Schema({
   issueImages: { type: String },
   partImage: { type: String },
   partPendingImage: { type: String },
+  partPendingVideo: { type: String },
   warrantyImage: { type: String },
   errorMessages: { type: String },
   preferredServiceDate: { type: Date },
@@ -82,7 +83,9 @@ const complaintSchema = new mongoose.Schema({
   finalComments: { type: String },
   kilometer: { type: String },
 
-  statusComment: { type: String }
+  statusComment: { type: String },
+  otp: { type: String, default: null }
+  
 }, { timestamps: true });
 
 // Pre-save middleware to generate a unique complaintId
