@@ -1,6 +1,8 @@
 const mongoose=require("mongoose")
 
 const notificationSchema=mongoose.Schema({
+    complaintId: { type: String  },
+    compId: { type: String  },
     userId: { type: String  },
     dealerId: { type: String  },
     brandId: { type: String,  },

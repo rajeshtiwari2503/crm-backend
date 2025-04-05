@@ -1132,6 +1132,7 @@ const editComplaint = async (req, res) => {
          }
          const notification = new NotificationModel({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
@@ -1146,6 +1147,7 @@ const editComplaint = async (req, res) => {
       if (body.technicianId) {
          const notification = new NotificationModel({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
@@ -1291,6 +1293,7 @@ const updatePartPendingImage = async (req, res) => {
       if (body.assignServiceCenterId) {
          await new NotificationModel({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
@@ -1305,6 +1308,7 @@ const updatePartPendingImage = async (req, res) => {
       if (body.technicianId) {
          await new NotificationModel({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
@@ -1407,6 +1411,7 @@ const updateFinalVerification = async (req, res) => {
       if (body.assignServiceCenterId) {
          await NotificationModel.create({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
@@ -1421,6 +1426,7 @@ const updateFinalVerification = async (req, res) => {
       if (body.technicianId) {
          await NotificationModel.create({
             complaintId: data._id,
+            compId: data.complaintId,
             userId: data.userId,
             technicianId: body.technicianId,
             serviceCenterId: body.assignServiceCenterId,
