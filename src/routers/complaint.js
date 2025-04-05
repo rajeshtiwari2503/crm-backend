@@ -6,11 +6,17 @@ const {addComplaint,addDealerComplaint,getAllBrandComplaint,getAllComplaintByRol
     getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
  
+const uploadVideo = require("../googleConfig/uploadMiddleware");
+const { updateComplaintWithVideo } = require("../googleConfig/complaintVideoController");
+
+const { admin } = require('../firebase/index')
+
 const moment = require("moment");
 const router=express.Router()
 
 router.post("/createComplaint",upload().single("issueImages")  , addComplaint);
 // router.post("/createAppComplaint",upload().single("issueImages")  , addAPPComplaint);
+
 router.post("/createAppComplaint" , addAPPComplaint);
 router.post("/createDealerComplaint",upload().single("warrantyImage")  , addDealerComplaint);
  
@@ -38,6 +44,9 @@ router.get("/getComplaintByTechId/:id",getComplaintByTechId)
 router.patch("/editImage/:id", upload().single("issueImages"),editIssueImage );
 router.patch("/updateFinalVerification/:id", upload().single("partImage"),updateFinalVerification );
 router.patch("/updateComplaintWithImage/:id", upload().single("partPendingImage"),updatePartPendingImage );
+
+router.patch("/updateComplaintWithVideo/:id", uploadVideo.single("partPendingVideo"), updateComplaintWithVideo);
+
 router.patch("/editComplaint/:id",editComplaint)
 router.patch("/updateComplaintComments/:id",updateComplaintComments)
 router.delete("/deleteComplaint/:id",deleteComplaint)
@@ -47,24 +56,9 @@ const mongoose = require("mongoose");
 
 
 
-// router.patch('/complaints/update', upload().single('partPendingImage'), async (req, res) => {
-//   try {
-//     // console.log("File Data:", req.file); // Should log uploaded file
-//     // console.log("Text Data:", req.body); // Should log status & comments
 
-   
-//     const updatedComplaint = await ComplaintModal.findByIdAndUpdate(req.body.id, {
-//       status: req.body.status,
-//       comments: req.body.comments,
-//       partPendingImage: req.file.location, // Save file path in MongoDB
-//     }, { new: true });
 
-//     res.json({ message: "Updated successfully", updatedComplaint });
-//   } catch (error) {
-//     console.error("Error:", error);
-//     res.status(500).json({ error: "Something went wrong" });
-//   }
-// });
+ 
 
 router.get("/searchComplaint", async (req, res) => {
   try {
@@ -135,16 +129,114 @@ router.get("/check-part-pending", async (req, res) => {
 });
 
 
-// router.post('/createComplaint', upload().array('images'), async (req, res) => {
-//     try {
-//       let body = req.body;
-//       let files = req.files;
-//       let images = files.map(file => file.location);
-//       let obj = new SparePartModal({ ...body, images });
-//       let data = await obj.save();
-//       res.json({ status: true, msg: "Spare part added successfully", data });
-//     } catch (err) {
-//       res.status(400).send(err);
+
+// const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+
+// router.post("/send-otp", async (req, res) => {
+//   const { complaintId } = req.body;
+
+//   console.log("Received complaintId:", complaintId);
+
+//   if (!complaintId || !mongoose.Types.ObjectId.isValid(complaintId)) {
+//     return res.status(400).json({ success: false, message: "Invalid complaint ID!" });
+//   }
+
+//   try {
+//     // 🔹 Find Complaint by ID
+//     const complaint = await ComplaintModal.findOne({ _id: complaintId });
+
+//     if (!complaint) {
+//       return res.status(404).json({ success: false, message: "Complaint not found!" });
 //     }
-//   });
+
+//     // 🔹 Generate OTP & Expiry Time (5 minutes)
+//     const otp = generateOTP();
+//     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+//     // 🔹 Save OTP to MongoDB
+//     complaint.otp = otp;
+//     complaint.otpExpiresAt = otpExpiresAt;
+//     await complaint.save();
+
+//     const phoneNumber = `+${complaint.phoneNumber}`;
+
+//     try {
+//       // 🔹 Check if User Exists in Firebase
+//       const response = await admin.auth().getUserByPhoneNumber(phoneNumber);
+//       console.log("Firebase OTP Response response:", response);
+//     } catch (err) {
+//       // 🔹 If Not Exist, Create User in Firebase
+//       const response1 = await admin.auth().createUser({ phoneNumber });
+//       console.log("Firebase OTP Response response1:", response1);
+//     }
+
+//     console.log(`📩 OTP sent to ${complaint.phoneNumber}: ${otp}`);
+//     res.status(200).json({ success: true, message: "OTP sent successfully!" });
+
+//   } catch (error) {
+//     console.error("❌ Error sending OTP:", error);
+//     res.status(500).json({ success: false, message: "Error sending OTP", error: error.message || error });
+//   }
+// });
+ 
+router.post("/send-otp", async (req, res) => {
+  const { complaintId } = req.body;
+
+  console.log("Received complaintId:", complaintId);
+
+  if (!complaintId || !mongoose.Types.ObjectId.isValid(complaintId)) {
+    return res.status(400).json({ success: false, message: "Invalid complaint ID!" });
+  }
+
+  try {
+    // 🔹 Find Complaint by ID
+    const complaint = await ComplaintModal.findOne({ _id: complaintId });
+
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: "Complaint not found!" });
+    }
+
+    // 🔹 Format phone number with country code
+    let phoneNumber = complaint.phoneNumber.trim();
+    if (!phoneNumber.startsWith("+")) {
+      phoneNumber = `+91${phoneNumber}`;
+    }
+
+    // 🔹 Generate OTP & Expiry Time (5 minutes)
+    const otp = generateOTP();
+    const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    // 🔹 Save OTP to MongoDB
+    complaint.otp = otp;
+    // complaint.otpExpiresAt = otpExpiresAt;
+    // complaint.phoneNumber = phoneNumber; // Ensure the formatted number is saved
+    await complaint.save();
+
+    // try {
+    //   // 🔹 Check if User Exists in Firebase
+    //   const response = await admin.auth().getUserByPhoneNumber(phoneNumber);
+    //   console.log("Firebase OTP Response:", response);
+    // } catch (err) {
+    //   // 🔹 If Not Exist, Create User in Firebase
+    //   const response1 = await admin.auth().createUser({ phoneNumber });
+    //   console.log("Firebase OTP Response (New User):", response1);
+    // }
+
+    // console.log(`📩 OTP sent to ${phoneNumber}: ${otp}`);
+    res.status(200).json({ success: true, message: `OTP sent to ${phoneNumber}!` });
+
+  } catch (error) {
+    console.error("❌ Error sending OTP:", error);
+    res.status(500).json({ success: false, message: "Error sending OTP", error: error.message || error });
+  }
+});
+
+// Utility function to generate a 6-digit OTP
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+
+
 module.exports=router
