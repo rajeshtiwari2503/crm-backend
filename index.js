@@ -182,6 +182,8 @@ app.use(function (req, res, next) {
     next();
 });
 
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ limit: "500mb", extended: true }));
 
 // const sendNotification = async () => {
 //     try{
