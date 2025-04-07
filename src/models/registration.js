@@ -288,6 +288,7 @@ const employeeRegistrationSchema = new mongoose.Schema({
     brandId: { type: String },
     brandName: { type: String  },
     stateZone:{type:Array},
+    brand:{type:Array},
     role: { type: String, default: "EMPLOYEE" }
 },
     { timestamps: true });
