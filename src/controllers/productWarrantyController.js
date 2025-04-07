@@ -386,7 +386,7 @@ const getAllProductWarrantyWithPage = async (req, res) => {
       .sort({ _id: -1 })  // Sort by latest
       .skip(skip)  // Skip records for pagination
       .limit(limit)  // Limit results
-      .select("brandName productName numberOfGenerate warrantyInDays createdAt records.uniqueId records.batchNo");
+      .select("brandName productName isDeleted numberOfGenerate warrantyInDays createdAt records.uniqueId records.batchNo");
 
     // Send response
     res.json({
@@ -448,7 +448,7 @@ const getAllProductWarrantyByIdWithPage = async (req, res) => {
       .sort({ _id: -1 }) // Newest first
       .skip(skip)
       .limit(limit)
-      .select("brandName productName numberOfGenerate warrantyInDays createdAt records.uniqueId records.batchNo"); // Fetch only necessary fields
+      .select("brandName productName isDeleted numberOfGenerate warrantyInDays createdAt records.uniqueId records.batchNo"); // Fetch only necessary fields
 
     res.status(200).json({
       status: true,
@@ -843,8 +843,12 @@ const editActivationWarranty = async (req, res) => {
 const deleteProductWarranty = async (req, res) => {
   try {
     let _id = req.params.id;
-    let data = await ProductWarrantyModal.findByIdAndDelete(_id);
-    res.json({ status: true, msg: "Product warranty Deteled" });
+    const result = await ProductWarrantyModal.findByIdAndUpdate(
+      _id,
+      { isDeleted: true },
+      { new: true }
+    );
+    res.json({ status: true, msg: "Product warranty Deteled",data: result });
   } catch (err) {
     res.status(500).send(err);
   }

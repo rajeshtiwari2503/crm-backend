@@ -21,6 +21,10 @@ const productWarrantySchema=new mongoose.Schema({
     numberOfGenerate: Number,
     warrantyInDays: Number,
     year: {type:Date},
+    isDeleted: {
+        type: Boolean,
+        default: false
+      },
     id: mongoose.Schema.Types.ObjectId, // Reference to the first record's ID or a unique identifier
     records: [{
         brandName: { type: String },
@@ -47,6 +51,7 @@ const productWarrantySchema=new mongoose.Schema({
       district: String,  
       state: String,  
       complaintId: String,  
+     
       termsCondtions: { type: Boolean, default: false },  
       isActivated: { type: Boolean, default: false },  
       activationDate: Date,
