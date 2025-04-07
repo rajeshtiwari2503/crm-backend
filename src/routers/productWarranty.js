@@ -20,5 +20,5 @@ router.get("/getProductWarranty/:id",getProductWarrantyById );
 router.get("/getProductWarrantyByUniqueId/:id",getProductWarrantyByUniqueId );
 router.patch("/editProductWarranty/:id",editProductWarranty );
 router.patch("/editActivationWarranty/",editActivationWarranty );
-router.delete("/deleteProductWarranty/:id",deleteProductWarranty );
+router.patch("/deleteProductWarranty/:id",deleteProductWarranty );
 module.exports=router;
