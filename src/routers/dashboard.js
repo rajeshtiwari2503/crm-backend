@@ -273,23 +273,133 @@ router.get('/getUserAndProduct', async (req, res) => {
 //   }
 // });
 
-router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => { 
+
+
+// 07/04/2025
+// router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => { 
+//   try {
+//     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
+//     const { stateZone } = req.body;
+//     const datetoday = new Date();
+//     datetoday.setHours(23, 59, 59, 999);
+//     if (!Array.isArray(stateZone) || stateZone.length === 0) {
+//       return res.status(400).json({ message: "Invalid or empty stateZone array" });
+//     }
+
+//     const stateZoneFilter = {
+//       $or: [
+//         { state: { $in: stateZone.map(zone => zone.trim()) } },
+//         { state: { $elemMatch: { $in: stateZone.map(zone => zone.trim()) } } },
+//       ],
+//     };
+
+//     const queries = {
+//       allComplaints: {},
+//       inProgress: { status: "IN PROGRESS" },
+//       assign: { status: "ASSIGN" },
+//       pending: { status: "PENDING" },
+//       complete: { status: "COMPLETED" },
+//       cancel: { status: "CANCELED" },
+//       partPending: { status: "PART PENDING" },
+//       finalVerification: { status: "FINAL VERIFICATION" },
+//       schedule: {
+//         $and: [
+//           stateZoneFilter, // Ensure the stateZone filter is applied
+//           {
+//             $or: [
+          
+//               { preferredServiceDate: { $gte: datetoday }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
+//             ]
+//           }
+//         ]
+//       },
+//       zeroToOneDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $gte: new Date(oneDayAgo) },
+//       },
+//       twoToFiveDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $gte: new Date(fiveDaysAgo), $lt: new Date(oneDayAgo) },
+//       },
+//       moreThanFiveDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $lt: new Date(fiveDaysAgo) },
+//       },
+//       completedToday: { status: "COMPLETED", updatedAt: { $gte: todayStart } },
+//       zeroToOneDaysPartPending: { status: "PART PENDING", createdAt: { $gte: oneDayAgo } },
+//       twoToFiveDaysPartPending: {
+//         status: "PART PENDING",
+//         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
+//       },
+//       moreThanFiveDaysPartPending: { status: "PART PENDING", createdAt: { $lt: fiveDaysAgo } },
+
+//       // ✅ Fixed `scheduleUpcomming`
+//       scheduleUpcomming: {
+//         $and: [
+//           stateZoneFilter, // Ensure the stateZone filter is applied
+//           {
+//             $or: [
+          
+//               { preferredServiceDate: { $lt: todayStart }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
+//             ]
+//           }
+//         ]
+//       },
+      
+//     };
+
+//     // 🔍 Debug log: check scheduleUpcomming count
+//     const scheduleUpcommingCount = await Complaints.countDocuments({
+//       ...queries.scheduleUpcomming,
+//       ...stateZoneFilter,
+//     });
+//     // console.log("🔍 Debug: scheduleUpcomming Count:", scheduleUpcommingCount);
+
+//     // Execute all queries in parallel
+//     const complaintCounts = await Promise.all(
+//       Object.entries(queries).map(([key, query]) =>
+//         Complaints.countDocuments({ ...query, ...stateZoneFilter })
+//       )
+//     );
+
+//     const response = Object.fromEntries(
+//       Object.keys(queries).map((key, index) => [key, complaintCounts[index]])
+//     );
+
+//     res.json({ complaints: response });
+//   } catch (err) {
+//     console.error("Error fetching dashboard details:", err);
+//     res.status(500).json({ message: "Internal Server Error", error: err.message });
+//   }
+// });
+
+
+router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
   try {
     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
-    const { stateZone } = req.body;
+    const { stateZone = [], brand = [] } = req.body;
     const datetoday = new Date();
     datetoday.setHours(23, 59, 59, 999);
-    if (!Array.isArray(stateZone) || stateZone.length === 0) {
-      return res.status(400).json({ message: "Invalid or empty stateZone array" });
+
+    // 🔍 Optional filters
+    const filters = [];
+
+    if (Array.isArray(stateZone) && stateZone.length > 0) {
+      filters.push({
+        $or: [
+          { state: { $in: stateZone.map(zone => zone.trim()) } },
+          { state: { $elemMatch: { $in: stateZone.map(zone => zone.trim()) } } },
+        ]
+      });
     }
 
-    const stateZoneFilter = {
-      $or: [
-        { state: { $in: stateZone.map(zone => zone.trim()) } },
-        { state: { $elemMatch: { $in: stateZone.map(zone => zone.trim()) } } },
-      ],
-    };
+    if (Array.isArray(brand) && brand.length > 0) {
+      filters.push({
+        brandId: { $in: brand.map(b => b.value) }
+      });
+    }
 
+    // 🔧 Define queries
     const queries = {
       allComplaints: {},
       inProgress: { status: "IN PROGRESS" },
@@ -301,12 +411,9 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
       finalVerification: { status: "FINAL VERIFICATION" },
       schedule: {
         $and: [
-          stateZoneFilter, // Ensure the stateZone filter is applied
           {
-            $or: [
-          
-              { preferredServiceDate: { $gte: datetoday }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
-            ]
+            preferredServiceDate: { $gte: datetoday },
+            status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
           }
         ]
       },
@@ -329,34 +436,32 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
       },
       moreThanFiveDaysPartPending: { status: "PART PENDING", createdAt: { $lt: fiveDaysAgo } },
-
-      // ✅ Fixed `scheduleUpcomming`
       scheduleUpcomming: {
         $and: [
-          stateZoneFilter, // Ensure the stateZone filter is applied
           {
-            $or: [
-          
-              { preferredServiceDate: { $lt: todayStart }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
-            ]
+            preferredServiceDate: { $lt: todayStart },
+            status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
           }
         ]
       },
-      
     };
 
-    // 🔍 Debug log: check scheduleUpcomming count
-    const scheduleUpcommingCount = await Complaints.countDocuments({
-      ...queries.scheduleUpcomming,
-      ...stateZoneFilter,
-    });
-    // console.log("🔍 Debug: scheduleUpcomming Count:", scheduleUpcommingCount);
-
-    // Execute all queries in parallel
+    // 🔁 Count each query with filters
     const complaintCounts = await Promise.all(
-      Object.entries(queries).map(([key, query]) =>
-        Complaints.countDocuments({ ...query, ...stateZoneFilter })
-      )
+      Object.entries(queries).map(async ([key, query]) => {
+        let combinedQuery = { ...query };
+
+        if (filters.length > 0) {
+          if (combinedQuery.$and) {
+            combinedQuery.$and = [...combinedQuery.$and, ...filters];
+          } else {
+            combinedQuery = { $and: [combinedQuery, ...filters] };
+          }
+        }
+
+        const count = await Complaints.countDocuments(combinedQuery);
+        return count;
+      })
     );
 
     const response = Object.fromEntries(
@@ -370,7 +475,104 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
   }
 });
 
- 
+
+// router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
+//   try {
+//     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
+//     const { stateZone, brand } = req.body;
+
+//     console.log("req.body", req.body);
+
+//     if (!Array.isArray(stateZone) || stateZone.length === 0) {
+//       return res.status(400).json({ message: "Invalid or empty stateZone array" });
+//     }
+
+//     const datetoday = new Date();
+//     datetoday.setHours(23, 59, 59, 999);
+
+//     // Filters
+//     const stateZoneFilter = {
+//       $or: [
+//         { state: { $in: stateZone.map(zone => zone.trim()) } },
+//         { state: { $elemMatch: { $in: stateZone.map(zone => zone.trim()) } } },
+//       ]
+//     };
+
+//     const brandFilter = brand.length > 0
+//       ? { brandId: { $in: brand.map(b => b.value) } }
+//       : null;
+
+//     // Query definitions
+//     const queries = {
+//       allComplaints: {},
+//       inProgress: { status: "IN PROGRESS" },
+//       assign: { status: "ASSIGN" },
+//       pending: { status: "PENDING" },
+//       complete: { status: "COMPLETED" },
+//       cancel: { status: "CANCELED" },
+//       partPending: { status: "PART PENDING" },
+//       finalVerification: { status: "FINAL VERIFICATION" },
+//       schedule: {
+//         preferredServiceDate: { $gte: datetoday },
+//         status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }
+//       },
+//       zeroToOneDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $gte: new Date(oneDayAgo) },
+//       },
+//       twoToFiveDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $gte: new Date(fiveDaysAgo), $lt: new Date(oneDayAgo) },
+//       },
+//       moreThanFiveDays: {
+//         status: { $in: ["PENDING", "IN PROGRESS"] },
+//         createdAt: { $lt: new Date(fiveDaysAgo) },
+//       },
+//       completedToday: {
+//         status: "COMPLETED",
+//         updatedAt: { $gte: todayStart },
+//       },
+//       zeroToOneDaysPartPending: {
+//         status: "PART PENDING",
+//         createdAt: { $gte: oneDayAgo }
+//       },
+//       twoToFiveDaysPartPending: {
+//         status: "PART PENDING",
+//         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo }
+//       },
+//       moreThanFiveDaysPartPending: {
+//         status: "PART PENDING",
+//         createdAt: { $lt: fiveDaysAgo }
+//       },
+//       scheduleUpcomming: {
+//         preferredServiceDate: { $lt: todayStart },
+//         status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }
+//       }
+//     };
+
+//     // Count all queries in parallel
+//     const complaintCounts = await Promise.all(
+//       Object.entries(queries).map(async ([key, query]) => {
+//         const filter = {
+//           $and: [query, stateZoneFilter]
+//         };
+//         if (brandFilter) filter.$and.push(brandFilter);
+//         const count = await Complaints.countDocuments(filter);
+//         return count;
+//       })
+//     );
+
+//     // Combine results
+//     const response = Object.fromEntries(
+//       Object.keys(queries).map((key, index) => [key, complaintCounts[index]])
+//     );
+
+//     res.json({ complaints: response });
+//   } catch (err) {
+//     console.error("Error fetching dashboard details:", err);
+//     res.status(500).json({ message: "Internal Server Error", error: err.message });
+//   }
+// });
 
 
 
