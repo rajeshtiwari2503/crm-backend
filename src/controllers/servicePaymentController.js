@@ -340,6 +340,22 @@ const editServicePayment = async (req, res) => {
   }
 };
 
+const updateBulkPayments=async (req, res) => {
+  const { ids } = req.body;
+  try {
+    await ServicePaymentModel.updateMany(
+      { _id: { $in: ids }, status: "UNPAID" },
+      { $set: { status: "PAID" } }
+    );
+    res.status(200).json({
+      status: true,
+      msg: "Payment status updated successfully, and totalAmount updated in Service Center."})
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: 'Something went wrong' });
+  }
+}
+
 const deleteServicePayment = async (req, res) => {
   try {
     let _id = req.params.id;
@@ -350,4 +366,4 @@ const deleteServicePayment = async (req, res) => {
   }
 }
 
-module.exports = { addServicePayment, getAllServicePayment,getAllServicePaymentByCenterId, getServicePaymentById, editServicePayment, deleteServicePayment };
+module.exports = { addServicePayment, getAllServicePayment,getAllServicePaymentByCenterId, getServicePaymentById, editServicePayment,updateBulkPayments, deleteServicePayment };
