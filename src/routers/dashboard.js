@@ -1421,8 +1421,21 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
         }
       },
       {
-        $sort: { PENDING: -1 } // Sort by PENDING complaints in descending order
-      }  
+        $addFields: {
+          ACTIVE_COUNT: {
+            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+          }
+        }
+      },
+      {
+        $sort: {
+          ACTIVE_COUNT: -1, // First sort by combined count of key statuses
+          PENDING: -1,
+          INPROGRESS: -1,
+          PART_PENDING: -1,
+          ASSIGN: -1
+        } 
+      } 
     ]);
 
     res.status(200).json({ success: true, data: complaintCounts });
@@ -1444,6 +1457,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           _id: "$assignServiceCenterId",
           assignServiceCenter: { $first: "$assignServiceCenter" },
           city: { $first: "$district" },
+          state: { $first: "$state" },
           TOTAL: { $sum: 1 },
           PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
           INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
@@ -1453,9 +1467,23 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
           FINAL_VERIFICATION: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] }, 1, 0] } }
         }
+        
       },
       {
-        $sort: { PENDING: -1 } // Sort by PENDING complaints in descending order
+        $addFields: {
+          ACTIVE_COUNT: {
+            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+          }
+        }
+      },
+      {
+        $sort: {
+          ACTIVE_COUNT: -1, // First sort by combined count of key statuses
+          PENDING: -1,
+          INPROGRESS: -1,
+          PART_PENDING: -1,
+          ASSIGN: -1
+        } // Sort by PENDING complaints in descending order
       }
     ]);
 
