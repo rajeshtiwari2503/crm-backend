@@ -2,7 +2,7 @@ const express = require("express")
 const ComplaintModal = require("../models/complaint")
 
 const {addComplaint,addDealerComplaint,getAllBrandComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
-    ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
+    ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
  
@@ -31,6 +31,7 @@ router.get("/getComplaintsByComplete",getComplaintsByComplete)
 router.get("/getComplaintsByInProgress",getComplaintsByInProgress)
 router.get("/getComplaintsByUpcomming",getComplaintsByUpcomming)
 router.get("/getComplaintsByPartPending",getComplaintsByPartPending)
+router.get("/getComplaintsByCustomerSidePending",getComplaintsByCustomerSidePending)
 router.get("/getComplaintsByPending",getComplaintsByPending)
 router.get("/getComplaintsByFinalVerification",getComplaintsByFinalVerification)
  
