@@ -36,6 +36,7 @@ router.get("/dashboardDetails", async (req, res) => {
       complaintCompleteCount,
       complaintCancelCount,
       complaintPartPendingCount,
+      complaintCustomerSidePendingCount,
       complaintFinalVerificationCount,
       complaints0To1Days,
       complaints2To5Days,
@@ -64,6 +65,7 @@ router.get("/dashboardDetails", async (req, res) => {
       Complaints.countDocuments({ status: 'COMPLETED' }),
       Complaints.countDocuments({ status: 'CANCELED' }),
       Complaints.countDocuments({ status: 'PART PENDING' }),
+      Complaints.countDocuments({ status: 'CUSTOMER SIDE PENDING' }),
       Complaints.countDocuments({ status: 'FINAL VERIFICATION' }),
      
 
@@ -128,6 +130,7 @@ router.get("/dashboardDetails", async (req, res) => {
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
         partPending: complaintPartPendingCount,
+        customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
         zeroToOneDays: complaints0To1Days,
         twoToFiveDays: complaints2To5Days,
@@ -659,7 +662,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       complaintCompleteCount,
       complaintCancelCount,
       complaintPartPendingCount,
-     
+      complaintCustomerSidePendingCount,
       complaints0To1Days,
       complaints2To5Days,
       complaintsMoreThan5Days,
@@ -702,7 +705,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'COMPLETED' }),
       Complaints.countDocuments({ ...query, status: 'CANCELED' }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING' }),
-    
+      Complaints.countDocuments({ ...query, status: "CUSTOMER SIDE PENDING" }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $lt: fiveDaysAgo } }),
@@ -769,6 +772,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
         partPending: complaintPartPendingCount,
+        customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
         schedule:schedule,
         scheduleUpcomming: scheduleUpcomming,
@@ -1138,6 +1142,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       complaintCompleteCount,
       complaintCancelCount,
       complaintPartPendingCount,
+      complaintCustomerSidePendingCount,
       complaintFinalVerificationCount,
       complaints0To1Days,
       complaints2To5Days,
@@ -1155,6 +1160,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: "COMPLETED" }),
       Complaints.countDocuments({ ...query, status: "CANCELED" }),
       Complaints.countDocuments({ ...query, status: "PART PENDING" }),
+      Complaints.countDocuments({ ...query, status: "CUSTOMER SIDE PENDING" }),
       Complaints.countDocuments({ ...query, status: "FINAL VERIFICATION" }),
 
       // Complaints in 0-1 days
@@ -1224,6 +1230,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
         partPending: complaintPartPendingCount,
+        customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
         zeroToOneDays: complaints0To1Days,
         twoToFiveDays: complaints2To5Days,
