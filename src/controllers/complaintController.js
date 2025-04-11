@@ -867,6 +867,20 @@ const getComplaintsByPartPending = async (req, res) => {
       res.status(400).send(err);
    }
 };
+
+
+const getComplaintsByCustomerSidePending = async (req, res) => {
+   try {
+      let data = await ComplaintModal.find({ status: "CUSTOMER SIDE PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No pending complaints found." });
+      }
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
+
 // const getPendingComplaints = async (req, res) => {
 //    try {
 //      const { days } = req.params; // Get days filter from params
@@ -1627,6 +1641,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   , getComplaintsByInProgress, getComplaintsByUpcomming,getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
