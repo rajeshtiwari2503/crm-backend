@@ -411,6 +411,7 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
       complete: { status: "COMPLETED" },
       cancel: { status: "CANCELED" },
       partPending: { status: "PART PENDING" },
+      customerSidePending: { status: "CUSTOMER SIDE PENDING" },
       finalVerification: { status: "FINAL VERIFICATION" },
       schedule: {
         $and: [
