@@ -433,7 +433,7 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
         status: { $in: ["PENDING", "IN PROGRESS"] },
         createdAt: { $lt: new Date(fiveDaysAgo) },
       },
-      completedToday: { status: "COMPLETED", updatedAt: { $gte: todayStart } },
+      completedToday: {  $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } },
       zeroToOneDaysPartPending: { status: "PART PENDING", createdAt: { $gte: oneDayAgo } },
       twoToFiveDaysPartPending: {
         status: "PART PENDING",
@@ -1148,6 +1148,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       complaints0To1Days,
       complaints2To5Days,
       complaintsMoreThan5Days,
+      completedTodayCount,
       complaints0To1PartPendingDays,
       complaints2To5PartPendingDays,
       complaintsMoreThan5PartPendingDays,
@@ -1184,7 +1185,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
         status: { $in: ["PENDING", "IN PROGRESS"] },
         createdAt: { $lt: fiveDaysAgoEnd }
       }),
-
+      Complaints.countDocuments({   ...query,  $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } }),
       // Part Pending Complaints (0-1 days)
       Complaints.countDocuments({
         ...query,
@@ -1235,6 +1236,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
         finalVerification: complaintFinalVerificationCount,
         zeroToOneDays: complaints0To1Days,
         twoToFiveDays: complaints2To5Days,
+        completedToday:completedTodayCount,
         moreThanFiveDays: complaintsMoreThan5Days,
         zeroToOneDaysPartPending: complaints0To1PartPendingDays,
         twoToFiveDaysPartPending: complaints2To5PartPendingDays,
