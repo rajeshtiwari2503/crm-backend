@@ -88,7 +88,7 @@ router.get("/dashboardDetails", async (req, res) => {
         $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
         createdAt: { $lt: fiveDaysAgo }
       }),
-      Complaints.countDocuments({ status: 'COMPLETED', updatedAt: { $gte: todayStart } }),
+      Complaints.countDocuments({    $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } }),
 
       Complaints.countDocuments({ status: 'PART PENDING', createdAt: { $gte: oneDayAgo } }),
       Complaints.countDocuments({ status: 'PART PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
