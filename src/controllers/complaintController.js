@@ -881,6 +881,32 @@ const getComplaintsByCustomerSidePending = async (req, res) => {
    }
 };
 
+const getTodayCompletedComplaints = async (req, res) => {
+   try {
+      // Define today's date range
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Query for complaints with status "COMPLETED" or "FINAL VERIFICATION" updated today
+      const data = await ComplaintModal.find({
+         status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
+         updatedAt: { $gte: startOfDay, $lte: endOfDay }
+      }).sort({ _id: -1 });
+
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No completed or final verification complaints found for today." });
+      }
+
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
+
+
 // const getPendingComplaints = async (req, res) => {
 //    try {
 //      const { days } = req.params; // Get days filter from params
@@ -1642,5 +1668,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming,getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints,getTodayCompletedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
