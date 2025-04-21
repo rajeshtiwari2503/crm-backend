@@ -1511,19 +1511,19 @@ const updateFinalVerification = async (req, res) => {
 
             if (!existingPayment) {
 
-               if (serviceCenter) {
-                  await ServicePaymentModel.create({
-                     serviceCenterId: data.assignServiceCenterId,
-                     serviceCenterName: data.assignServiceCenter,
-                     payment: payout.toString(),
-                     description: "Service Center Payment for Completed Complaint",
-                     contactNo: serviceCenter.contact,
-                     complaintId: data._id,
-                     city: serviceCenter.city,
-                     address: serviceCenter.streetAddress,
-                     status: "UNPAID",
-                  });
-               }
+               // if (serviceCenter) {
+               //    await ServicePaymentModel.create({
+               //       serviceCenterId: data.assignServiceCenterId,
+               //       serviceCenterName: data.assignServiceCenter,
+               //       payment: payout.toString(),
+               //       description: "Service Center Payment for Completed Complaint",
+               //       contactNo: serviceCenter.contact,
+               //       complaintId: data._id,
+               //       city: serviceCenter.city,
+               //       address: serviceCenter.streetAddress,
+               //       status: "UNPAID",
+               //    });
+               // }
             } else {
                console.log("Service payment already exists for complaint:", data._id);
             }
