@@ -14,7 +14,8 @@ const attendanceSchema = new mongoose.Schema({
   clockIn: Date,
   clockOut: Date,
   breaks: [breakSchema],
-  totalHours: Number,
+  // totalHours: Number,
+  totalHours: { type: String },
   leaveRequested: { type: Boolean, default: false }
 });
 
