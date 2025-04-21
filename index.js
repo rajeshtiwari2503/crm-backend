@@ -113,6 +113,7 @@ const brandRecharge = require("./src/routers/brandRecharge");
 const serviceCenterDeposit = require("./src/routers/serviceCenterDeposit");
 const serviceCenterPayment = require("./src/routers/servicePayment");
 const serviceRequest = require("./src/routers/serviceRequest");
+const empAttendance = require("./src/routers/attendanceRouter");
 
 app.use(express.json());
 
@@ -240,6 +241,7 @@ app.use(brandRecharge);
 app.use(serviceCenterDeposit);
 app.use(serviceCenterPayment);
 app.use(serviceRequest);
+app.use(empAttendance);
 
 
 
