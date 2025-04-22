@@ -1,5 +1,7 @@
 const {Attendance,Task} = require('../models/attendanceModel');
  
+const mongoose = require('mongoose');
+
 
 // === Attendance Controller ===
 
@@ -206,6 +208,86 @@ const getMonthlyAttendance = async (req, res) => {
 
 
 
+  const getMonthlyAttendanceByUserId = async (req, res) => {
+  try {
+    const { month, userId } = req.query;
+
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: "Invalid or missing 'month' parameter" });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ message: "Missing 'userId' parameter" });
+    }
+
+    const start = new Date(`${month}-01T00:00:00.000Z`);
+    const end = new Date(new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999));
+
+    const attendanceData = await Attendance.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId), // ✅ FIXED: cast to ObjectId
+          date: { $gte: start, $lte: end }
+        }
+      },
+      {
+        $addFields: {
+          day: { $dayOfMonth: "$date" },
+          month: { $month: "$date" },
+          year: { $year: "$date" }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: "$year",
+            month: "$month",
+            day: "$day"
+          },
+          records: { $push: "$$ROOT" },
+          totalEntries: { $sum: 1 }
+        }
+      },
+      {
+        $sort: {
+          "_id.year": -1,
+          "_id.month": -1,
+          "_id.day": -1
+        }
+      }
+    ]);
+
+    const monthLabel = new Date(start).toLocaleString('default', {
+      month: 'long',
+      year: 'numeric'
+    });
+
+    const groupedByMonth = {
+      monthYear: monthLabel,
+      totalEntries: 0,
+      days: []
+    };
+
+    for (const item of attendanceData) {
+      const { year, month, day } = item._id;
+      groupedByMonth.days.push({
+        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        totalEntries: item.totalEntries,
+        records: item.records
+      });
+      groupedByMonth.totalEntries += item.totalEntries;
+    }
+
+    groupedByMonth.days.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.status(200).json([groupedByMonth]);
+  } catch (err) {
+    console.error("Error fetching monthly attendance:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+
 
 
 
@@ -229,10 +311,41 @@ const getDailyAttendance = async (req, res) => {
 };
 
 
+const getDailyAttendanceByUserId = async (req, res) => {
+  const { date, userId } = req.query;
+
+  if (!date) {
+    return res.status(400).json({ message: "Missing 'date' parameter" });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing 'userId' parameter" });
+  }
+
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+
+  try {
+    const records = await Attendance.find({
+      userId: userId,
+      date: { $gte: start, $lte: end },
+    }).populate('userId', 'user');
+
+    res.json(records);
+  } catch (err) {
+    console.error("Error fetching daily attendance:", err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
 
   const getTodayStatus = async (req, res) => {
     const userId = req.params.id;
-    console.log("Checking status for user:", userId);
+    // console.log("Checking status for user:", userId);
   
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
@@ -331,4 +444,4 @@ const completeTask = async (req, res) => {
   }
 };
 
-module.exports = { clockIn, clockOut ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,assignTask, startTask, pauseTask, completeTask  };
+module.exports = { clockIn, clockOut ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,getMonthlyAttendanceByUserId,getDailyAttendanceByUserId,assignTask, startTask, pauseTask, completeTask  };
