@@ -1,5 +1,5 @@
 const {Attendance,Task} = require('../models/attendanceModel');
- 
+ const {  EmployeeModel } = require('../models/registration');
 const mongoose = require('mongoose');
 
 
@@ -21,7 +21,7 @@ const mongoose = require('mongoose');
     });
 
     await attendance.save();
-    res.status(201).json(attendance);
+    res.status(201).json({status:true,msg:"Checkout Successfully",attendance});
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -46,90 +46,43 @@ const clockOut = async (req, res) => {
     attendance.totalHoursDecimal = parseFloat((totalMinutes / 60).toFixed(2)); // Optional: keep this for reports
 
     await attendance.save();
-    res.json(attendance);
+    res.json({status:true,msg:"Checkout Successfully",attendance});
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+// PUT: /api/attendance/comment/:userId
+ const addDailyComment= async (req, res) => {
+ 
+  const { date,userId ,taskComment } = req.body;
+// console.log("req.body",req.body);
+
+  if (!taskComment || taskComment.trim() === '') {
+    return res.status(400).json({ message: 'Comment is required' });
+  }
+
+  const today = date ? new Date(date) : new Date();
+  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+  const attendance = await Attendance.findOne({
+    userId,
+    date: { $gte: startOfDay, $lte: endOfDay }
+  });
+
+  if (!attendance) {
+    return res.status(404).json({ message: 'Attendance record not found for today' });
+  }
+
+  attendance.taskComment = taskComment.trim();
+  await attendance.save();
+
+  res.json({ status:true,msg: 'Task comment added successfully', taskComment: attendance.taskComment });
+};
 
  
-// const getMonthlyAttendance = async (req, res) => {
-//   try {
-//     const now = new Date();
-//     const start = new Date(now.getFullYear() - 2, 0, 1); // from Jan two years ago
-
-//     const attendanceData = await Attendance.aggregate([
-//       {
-//         $match: {
-//           date: { $gte: start, $lte: now }
-//         }
-//       },
-//       {
-//         $addFields: {
-//           day: { $dayOfMonth: "$date" },
-//           month: { $month: "$date" },
-//           year: { $year: "$date" }
-//         }
-//       },
-//       {
-//         $group: {
-//           _id: {
-//             year: "$year",
-//             month: "$month",
-//             day: "$day"
-//           },
-//           records: { $push: "$$ROOT" },
-//           totalEntries: { $sum: 1 }
-//         }
-//       },
-//       {
-//         $sort: {
-//           "_id.year": 1,
-//           "_id.month": 1,
-//           "_id.day": 1
-//         }
-//       }
-//     ]);
-
-//     const monthNames = [
-//       "January", "February", "March", "April", "May", "June",
-//       "July", "August", "September", "October", "November", "December"
-//     ];
-
-//     // Group days under months
-//     const groupedByMonth = {};
-
-//     for (const item of attendanceData) {
-//       const { year, month, day } = item._id;
-//       const monthYearLabel = `${monthNames[month - 1]} ${year}`;
-
-//       if (!groupedByMonth[monthYearLabel]) {
-//         groupedByMonth[monthYearLabel] = {
-//           monthYear: monthYearLabel,
-//           totalEntries: 0,
-//           days: []
-//         };
-//       }
-
-//       groupedByMonth[monthYearLabel].days.push({
-//         date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
-//         totalEntries: item.totalEntries,
-//         records: item.records
-//       });
-
-//       groupedByMonth[monthYearLabel].totalEntries += item.totalEntries;
-//     }
-
-//     const formattedData = Object.values(groupedByMonth);
-
-//     res.status(200).json(formattedData);
-//   } catch (err) {
-//     console.error("Error fetching monthly attendance:", err);
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
+ 
 const getMonthlyAttendance = async (req, res) => {
   try {
     const { month } = req.query; // e.g., "2024-06"
@@ -369,14 +322,244 @@ const getDailyAttendanceByUserId = async (req, res) => {
       res.json({
         clockIn: record.clockIn,
         clockOut: record.clockOut,
+        record
       });
     } catch (error) {
       console.error("Error fetching today's status:", error.message);
       res.status(500).json({ message: "Server error", error: error.message });
     }
   };
+
+ 
+  const generateDaysInMonth = (month) => {
+    const start = new Date(`${month}-01`);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of month
+  
+    const slip = [];
+  
+    // Corrected loop to ensure the last day is included
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split("T")[0]; // Format to yyyy-mm-dd
+      const dayName = d.toLocaleDateString("en-US", { weekday: "short" }); // e.g., Mon, Tue
+  
+      slip.push({
+        date: dateStr,
+        day: dayName,
+      });
+    }
+  
+    return slip;
+  };
+  
+  
+  const getSalaryUserSlip = async (req, res) => {
+    const { userId, month } = req.query;
+  
+    if (!userId || !month) {
+      return res.status(400).json({ message: "userId and month are required" });
+    }
+  
+    const start = new Date(`${month}-01`);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
+  
+    try {
+      const user = await EmployeeModel.findById(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+  
+      const dailySalary = 1000;
+  
+      const records = await Attendance.find({
+        userId,
+        date: { $gte: start, $lte: end },
+      });
+  
+      const attendanceMap = new Map();
+      records.forEach((rec) => {
+        const key = new Date(rec.date).toISOString().split("T")[0]; // Format date to yyyy-mm-dd
+        attendanceMap.set(key, rec);
+      });
+  
+      const slip = [];
+      let presentDays = 0;
+      let totalWorkingDays = 0;
+  
+      const daysInMonth = generateDaysInMonth(month); // Generate all days in the month
+  
+      // Loop through each day in the month and check attendance
+      for (const day of daysInMonth) {
+        const isSunday = day.day === "Sun";
+  
+        if (isSunday) {
+          slip.push({
+            ...day,
+            status: "-",
+            payment: 0,
+          });
+          continue;
+        }
+  
+        totalWorkingDays++;
+        const attendance = attendanceMap.get(day.date);
+        const isPresent = attendance?.clockIn;
+  
+        if (isPresent) presentDays++;
+  
+        slip.push({
+          ...day,
+          status: isPresent ? "Present" : "Absent",
+          payment: isPresent ? dailySalary : 0,
+        });
+      }
+  
+      return res.json({
+        user: {
+          name: user.name,
+          email: user.email,
+        },
+        month,
+        dailySalary,
+        presentDays,
+        totalWorkingDays,
+        totalSalary: presentDays * dailySalary,
+        slip,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error generating salary slip" });
+    }
+  };
+  
+  const getSalaryAdminSlip = async (req, res) => {
+    const { month } = req.query;
+  // console.log("month",month);
+  
+    if (!month) {
+      return res.status(400).json({ message: "Month is required" });
+    }
+  
+    const start = new Date(`${month}-01`);
+    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+  
+    try {
+      const users = await EmployeeModel.find(); // Fetch all users
+  
+      const dailySalary = 1000;
+      const daysInMonth = generateDaysInMonth(month);
+  
+      const allSlips = [];
+  
+      for (const user of users) {
+        const records = await Attendance.find({
+          userId: user._id,
+          date: { $gte: start, $lte: end },
+        });
+  
+        const attendanceMap = new Map();
+        records.forEach((rec) => {
+          const key = new Date(rec.date).toISOString().split("T")[0];
+          attendanceMap.set(key, rec);
+        });
+  
+        const slip = [];
+        let presentDays = 0;
+        let totalWorkingDays = 0;
+  
+        for (const day of daysInMonth) {
+          const isSunday = day.day === "Sun";
+  
+          if (isSunday) {
+            slip.push({ ...day, status: "-", payment: 0 });
+            continue;
+          }
+  
+          totalWorkingDays++;
+          const attendance = attendanceMap.get(day.date);
+          const isPresent = attendance?.clockIn;
+  
+          if (isPresent) presentDays++;
+  
+          slip.push({
+            ...day,
+            status: isPresent ? "Present" : "Absent",
+            payment: isPresent ? dailySalary : 0,
+          });
+        }
+  
+        allSlips.push({
+          user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+          },
+          month,
+          dailySalary,
+          presentDays,
+          totalWorkingDays,
+          totalSalary: presentDays * dailySalary,
+          slip,
+        });
+      }
+  
+      return res.json(allSlips);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error generating salary slips" });
+    }
+  };
+  
+  
+  
+  
+  
+// const getSalarySlip = async (req, res) => {
+//   const { userId, month } = req.query;
+// // console.log("req.query",req.query);
+
+//   if (!userId || !month) {
+//     return res.status(400).json({ message: 'userId and month are required' });
+//   }
+
+//   const start = new Date(`${month}-01`);
+//   const end = new Date(start);
+//   end.setMonth(end.getMonth() + 1);
+
+//   try {
+//     const records = await Attendance.find({
+//       userId,
+//       date: {
+//         $gte: start,
+//         $lt: end,
+//       },
+//     });
+
+//     const presentDays = records.filter(r => {
+//       const day = new Date(r.date).getDay();
+//       return r.clockIn && r.clockOut && day !== 0; // 0 = Sunday
+//     }).length;
+
+//     const user = await EmployeeModel.findById(userId);
+//     const salaryPerDay = user?.dailySalary || 1000; // default fallback
+
+//     const totalSalary = salaryPerDay * presentDays;
+
+//     res.json({
+//       user: {
+//         name: user?.name,
+//         email: user?.email,
+//       },
+//       month,
+//       presentDays,
+//       salaryPerDay,
+//       totalSalary,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: 'Failed to generate salary slip' });
+//   }
+// };
   
 // === Task Controller ===
+
 
 const assignTask = async (req, res) => {
   try {
@@ -444,4 +627,4 @@ const completeTask = async (req, res) => {
   }
 };
 
-module.exports = { clockIn, clockOut ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,getMonthlyAttendanceByUserId,getDailyAttendanceByUserId,assignTask, startTask, pauseTask, completeTask  };
+module.exports = { clockIn, clockOut,addDailyComment ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,getMonthlyAttendanceByUserId,getDailyAttendanceByUserId,getSalaryUserSlip,getSalaryAdminSlip,assignTask, startTask, pauseTask, completeTask  };
