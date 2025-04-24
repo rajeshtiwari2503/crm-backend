@@ -331,234 +331,420 @@ const getDailyAttendanceByUserId = async (req, res) => {
   };
 
  
-  const generateDaysInMonth = (month) => {
-    const start = new Date(`${month}-01`);
-    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of month
+  // const generateDaysInMonth = (month) => {
+  //   const start = new Date(`${month}-01`);
+  //   const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of month
   
+  //   const slip = [];
+  
+  //   // Corrected loop to ensure the last day is included
+  //   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+  //     const dateStr = d.toISOString().split("T")[0]; // Format to yyyy-mm-dd
+  //     const dayName = d.toLocaleDateString("en-US", { weekday: "short" }); // e.g., Mon, Tue
+  
+  //     slip.push({
+  //       date: dateStr,
+  //       day: dayName,
+  //     });
+  //   }
+  
+  //   return slip;
+  // };
+  
+  function generateDaysInMonth(month) {
+    const [year, monthIndex] = month.split("-").map(Number); // e.g., "2025-04" -> [2025, 4]
+
+    // Get the total number of days in the month
+    const totalDays = new Date(year, monthIndex, 0).getDate(); // Last day of the given month
+  
+    const days = [];
+  
+    // Loop through all days of the month
+    for (let i = 1; i <= totalDays; i++) {
+      const date = new Date(year, monthIndex - 1, i); // Adjust for 0-based month (0 = January)
+      
+      // Format as DD-MM-YY (01-04-25 format)
+    const formattedDate = `${year}-${monthIndex < 10 ? '0' + monthIndex : monthIndex}-${i < 10 ? '0' + i : i}`;
+      
+      // Get the day of the week (Mon, Tue, Wed, etc.)
+      const dayOfWeek = date.toLocaleString('en-us', { weekday: 'short' });
+  
+      days.push({ date: formattedDate, day: dayOfWeek });
+    }
+  
+    return days;
+  };
+ 
+// console.log(generateDaysInMonth("2025-04"));
+
+
+
+  
+  
+  
+  
+
+  // const getSalaryUserSlip = async (req, res) => {
+  //   const { userId, month } = req.query;
+  
+  //   if (!userId || !month) {
+  //     return res.status(400).json({ message: "userId and month are required" });
+  //   }
+  
+  //   const start = new Date(`${month}-01`);
+  //   const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
+  
+  //   try {
+  //     const user = await EmployeeModel.findById(userId);
+  //     if (!user) return res.status(404).json({ message: "User not found" });
+  
+  //     const dailySalary = 1000;
+  
+  //     const records = await Attendance.find({
+  //       userId,
+  //       date: { $gte: start, $lte: end },
+  //     });
+  
+  //     const attendanceMap = new Map();
+  //     records.forEach((rec) => {
+  //       const key = new Date(rec.date).toISOString().split("T")[0]; // Format date to yyyy-mm-dd
+  //       attendanceMap.set(key, rec);
+  //     });
+  
+  //     const slip = [];
+  //     let presentDays = 0;
+  //     let totalWorkingDays = 0;
+  
+  //     const daysInMonth = generateDaysInMonth(month); // Generate all days in the month
+  
+  //     // Loop through each day in the month and check attendance
+  //     for (const day of daysInMonth) {
+  //       const isSunday = day.day === "Sun";
+  
+  //       if (isSunday) {
+  //         slip.push({
+  //           ...day,
+  //           status: "-",
+  //           payment: 0,
+  //         });
+  //         continue;
+  //       }
+  
+  //       totalWorkingDays++;
+  //       const attendance = attendanceMap.get(day.date);
+  //       const isPresent = attendance?.clockIn;
+  
+  //       if (isPresent) presentDays++;
+  
+  //       slip.push({
+  //         ...day,
+  //         status: isPresent ? "Present" : "Absent",
+  //         payment: isPresent ? dailySalary : 0,
+  //       });
+  //     }
+  
+  //     return res.json({
+  //       user: {
+  //         name: user.name,
+  //         email: user.email,
+  //       },
+  //       month,
+  //       dailySalary,
+  //       presentDays,
+  //       totalWorkingDays,
+  //       totalSalary: presentDays * dailySalary,
+  //       slip,
+  //     });
+  //   } catch (err) {
+  //     console.error(err);
+  //     res.status(500).json({ message: "Error generating salary slip" });
+  //   }
+  // };
+  
+   const getSalaryUserSlip = async (req, res) => {
+  const { userId, month } = req.query;
+
+  if (!userId || !month) {
+    return res.status(400).json({ message: "userId and month are required" });
+  }
+
+  const start = new Date(`${month}-01`);
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
+
+  try {
+    const user = await EmployeeModel.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Total days in the month (using daysInMonth function)
+    const daysInMonth = generateDaysInMonth(month);
+    const totalDaysInMonth = daysInMonth.length;
+
+    // Calculate daily salary based on user's salary and the number of days in the month
+    const dailySalary = user.salary / totalDaysInMonth;
+
+    const records = await Attendance.find({
+      userId,
+      date: { $gte: start, $lte: end },
+    });
+
+    const attendanceMap = new Map();
+    records.forEach((rec) => {
+      const key = new Date(rec.date).toISOString().split("T")[0]; // Format date to yyyy-mm-dd
+      attendanceMap.set(key, rec);
+    });
+
     const slip = [];
-  
-    // Corrected loop to ensure the last day is included
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split("T")[0]; // Format to yyyy-mm-dd
-      const dayName = d.toLocaleDateString("en-US", { weekday: "short" }); // e.g., Mon, Tue
-  
+    let presentDays = 0;
+    let sundayDays = 0; // To keep track of Sundays worked/paid
+    let totalWorkingDays = 0;
+
+    // Loop through each day in the month and check attendance
+    for (const day of daysInMonth) {
+      const isSunday = day.day === "Sun";
+
+      if (isSunday) {
+        sundayDays++; // Increment Sundays count
+        slip.push({
+          ...day,
+          status: "-", // Sunday should show "-"
+          payment: dailySalary, // Pay the daily salary for Sundays
+        });
+        continue;
+      }
+
+      totalWorkingDays++;
+      const attendance = attendanceMap.get(day.date);
+      const isPresent = attendance?.clockIn;
+
+      if (isPresent) presentDays++;
+
       slip.push({
-        date: dateStr,
-        day: dayName,
+        ...day,
+        status: isPresent ? "Present" : "Absent",
+        payment: isPresent ? dailySalary : 0,
       });
     }
+
+    // Calculate the total salary considering present days and Sundays
+    const totalSalary = presentDays * dailySalary + sundayDays * dailySalary;
+
+    return res.json({
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+      month,
+      dailySalary: parseFloat(dailySalary.toFixed(2)), // Rounded daily salary
+      presentDays,
+      sundayDays, // Include Sundays worked/paid in the response
+      totalWorkingDays,
+      totalSalary: parseFloat(totalSalary.toFixed(2)), // Total salary
+      slip,
+      sundayCount: sundayDays, // Add the Sunday count for reference
+      dayCharges: parseFloat(dailySalary.toFixed(2)), // Add the daily salary charges
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error generating salary slip" });
+  }
+};
+
   
-    return slip;
-  };
   
-  
-  const getSalaryUserSlip = async (req, res) => {
-    const { userId, month } = req.query;
-  
-    if (!userId || !month) {
-      return res.status(400).json({ message: "userId and month are required" });
-    }
-  
-    const start = new Date(`${month}-01`);
-    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
-  
-    try {
-      const user = await EmployeeModel.findById(userId);
-      if (!user) return res.status(404).json({ message: "User not found" });
-  
-      const dailySalary = 1000;
-  
+   
+
+
+
+// const getSalaryAdminSlip = async (req, res) => {
+//   const { month } = req.query;
+
+//   if (!month) {
+//     return res.status(400).json({ message: "Month is required" });
+//   }
+
+//   const start = new Date(`${month}-01`);
+//   const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
+
+//   try {
+//     const users = await EmployeeModel.find(); // Fetch all users
+//     const daysInMonth = generateDaysInMonth(month); // Generate all days in the month
+
+//     const allSlips = [];
+
+//     for (const user of users) {
+//       const records = await Attendance.find({
+//         userId: user._id,
+//         date: { $gte: start, $lte: end },
+//       });
+
+//       const attendanceMap = new Map();
+//       records.forEach((rec) => {
+//         const key = new Date(rec.date).toISOString().split("T")[0]; // Format date to yyyy-mm-dd
+//         attendanceMap.set(key, rec); // Store attendance record in the map
+//       });
+
+//       const slip = [];
+//       const totalDaysInMonth = daysInMonth.length; // Total days in the month (30 for April)
+//       const dailySalary = user.salary / totalDaysInMonth; // Daily salary based on all 30 days
+
+//       let presentDays = 0;
+//       let sundayDays = 0; // To keep track of Sundays worked
+
+//       // Loop through each day in the month to determine attendance
+//       for (const day of daysInMonth) {
+//         const isSunday = day.day === "Sun";
+
+//         // Check if attendance exists for the current day
+//         const attendance = attendanceMap.get(day.date); // Fetch attendance record for the day
+//         const isPresent = attendance?.clockIn; // Check if the user was present on this day
+
+//         // If present, increment presentDays
+//         if (isPresent) presentDays++;
+
+//         // If it's Sunday, the user should be paid, even if absent
+//         if (isSunday) {
+//           sundayDays++; // Count Sundays
+//           slip.push({
+//             ...day,
+//             status: "Absent", // Mark Sunday as absent (if no attendance)
+//             payment: dailySalary, // Pay the daily salary for Sundays
+//           });
+//         } else {
+//           // If it's not Sunday, calculate salary based on attendance
+//           slip.push({
+//             ...day,
+//             status: isPresent ? "Present" : "Absent", // Status based on presence
+//             payment: isPresent ? dailySalary : 0, // Pay the daily salary only if present
+//           });
+//         }
+//       }
+
+//       // Calculate the total salary based on the user's daily salary and the number of days in the month
+//       const totalSalary = presentDays * dailySalary + sundayDays * dailySalary;
+
+//       allSlips.push({
+//         user: {
+//           _id: user._id,
+//           name: user.name,
+//           email: user.email,
+//         },
+//         month,
+//         totalMonthlySalary: user.salary,
+//         dailySalary: parseFloat(dailySalary.toFixed(2)), // Rounded daily salary
+//         presentDays,
+//         sundayDays,
+//         totalSalary: parseFloat(totalSalary.toFixed(2)), // Total salary for present days + Sundays
+//         slip,
+//       });
+//     }
+
+//     return res.json(allSlips); // Return all salary slips
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Error generating salary slips" });
+//   }
+// };
+
+
+const getSalaryAdminSlip = async (req, res) => {
+  const { month } = req.query;
+
+  if (!month) {
+    return res.status(400).json({ message: "Month is required" });
+  }
+
+  const start = new Date(`${month}-01`);
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0); // Last day of the month
+
+  try {
+    const users = await EmployeeModel.find(); // Fetch all users
+    const daysInMonth = generateDaysInMonth(month); // Generate all days in the month
+
+    const allSlips = [];
+
+    for (const user of users) {
       const records = await Attendance.find({
-        userId,
+        userId: user._id,
         date: { $gte: start, $lte: end },
       });
-  
+
       const attendanceMap = new Map();
       records.forEach((rec) => {
         const key = new Date(rec.date).toISOString().split("T")[0]; // Format date to yyyy-mm-dd
-        attendanceMap.set(key, rec);
+        attendanceMap.set(key, rec); // Store attendance record in the map
       });
-  
+
       const slip = [];
+      const totalDaysInMonth = daysInMonth.length; // Total days in the month (30 for April)
+      const dailySalary = user.salary / totalDaysInMonth; // Daily salary based on all 30 days
+
       let presentDays = 0;
-      let totalWorkingDays = 0;
-  
-      const daysInMonth = generateDaysInMonth(month); // Generate all days in the month
-  
-      // Loop through each day in the month and check attendance
+      let sundayDays = 0; // To keep track of Sundays worked
+
+      // Loop through each day in the month to determine attendance
       for (const day of daysInMonth) {
         const isSunday = day.day === "Sun";
-  
+
+        // Check if attendance exists for the current day
+        const attendance = attendanceMap.get(day.date); // Fetch attendance record for the day
+        const isPresent = attendance?.clockIn; // Check if the user was present on this day
+
+        // If present, increment presentDays
+        if (isPresent) presentDays++;
+
+        // If it's Sunday, the user should be paid, even if absent
         if (isSunday) {
+          sundayDays++; // Count Sundays
           slip.push({
             ...day,
-            status: "-",
-            payment: 0,
+            status: isPresent ? "Present" : "Absent", // Mark Sunday as Present or Absent
+            payment: dailySalary, // Pay the daily salary for Sundays, whether present or absent
           });
-          continue;
+        } else {
+          // If it's not Sunday, calculate salary based on attendance
+          slip.push({
+            ...day,
+            status: isPresent ? "Present" : "Absent", // Status based on presence
+            payment: isPresent ? dailySalary : 0, // Pay the daily salary only if present
+          });
         }
-  
-        totalWorkingDays++;
-        const attendance = attendanceMap.get(day.date);
-        const isPresent = attendance?.clockIn;
-  
-        if (isPresent) presentDays++;
-  
-        slip.push({
-          ...day,
-          status: isPresent ? "Present" : "Absent",
-          payment: isPresent ? dailySalary : 0,
-        });
       }
-  
-      return res.json({
+
+      // Calculate the total salary based on the user's daily salary and the number of days in the month
+      const totalSalary = (presentDays + sundayDays) * dailySalary;
+
+      allSlips.push({
         user: {
+          _id: user._id,
           name: user.name,
           email: user.email,
         },
         month,
-        dailySalary,
+        totalMonthlySalary: user.salary,
+        dailySalary: parseFloat(dailySalary.toFixed(2)), // Rounded daily salary
         presentDays,
-        totalWorkingDays,
-        totalSalary: presentDays * dailySalary,
+        sundayDays,
+        totalSalary: parseFloat(totalSalary.toFixed(2)), // Total salary for present days + Sundays
         slip,
       });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Error generating salary slip" });
     }
-  };
-  
-  const getSalaryAdminSlip = async (req, res) => {
-    const { month } = req.query;
-  // console.log("month",month);
-  
-    if (!month) {
-      return res.status(400).json({ message: "Month is required" });
-    }
-  
-    const start = new Date(`${month}-01`);
-    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-  
-    try {
-      const users = await EmployeeModel.find(); // Fetch all users
-  
-      const dailySalary = 1000;
-      const daysInMonth = generateDaysInMonth(month);
-  
-      const allSlips = [];
-  
-      for (const user of users) {
-        const records = await Attendance.find({
-          userId: user._id,
-          date: { $gte: start, $lte: end },
-        });
-  
-        const attendanceMap = new Map();
-        records.forEach((rec) => {
-          const key = new Date(rec.date).toISOString().split("T")[0];
-          attendanceMap.set(key, rec);
-        });
-  
-        const slip = [];
-        let presentDays = 0;
-        let totalWorkingDays = 0;
-  
-        for (const day of daysInMonth) {
-          const isSunday = day.day === "Sun";
-  
-          if (isSunday) {
-            slip.push({ ...day, status: "-", payment: 0 });
-            continue;
-          }
-  
-          totalWorkingDays++;
-          const attendance = attendanceMap.get(day.date);
-          const isPresent = attendance?.clockIn;
-  
-          if (isPresent) presentDays++;
-  
-          slip.push({
-            ...day,
-            status: isPresent ? "Present" : "Absent",
-            payment: isPresent ? dailySalary : 0,
-          });
-        }
-  
-        allSlips.push({
-          user: {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-          },
-          month,
-          dailySalary,
-          presentDays,
-          totalWorkingDays,
-          totalSalary: presentDays * dailySalary,
-          slip,
-        });
-      }
-  
-      return res.json(allSlips);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Error generating salary slips" });
-    }
-  };
-  
-  
-  
-  
-  
-// const getSalarySlip = async (req, res) => {
-//   const { userId, month } = req.query;
-// // console.log("req.query",req.query);
 
-//   if (!userId || !month) {
-//     return res.status(400).json({ message: 'userId and month are required' });
-//   }
+    return res.json(allSlips); // Return all salary slips
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error generating salary slips" });
+  }
+};
 
-//   const start = new Date(`${month}-01`);
-//   const end = new Date(start);
-//   end.setMonth(end.getMonth() + 1);
 
-//   try {
-//     const records = await Attendance.find({
-//       userId,
-//       date: {
-//         $gte: start,
-//         $lt: end,
-//       },
-//     });
 
-//     const presentDays = records.filter(r => {
-//       const day = new Date(r.date).getDay();
-//       return r.clockIn && r.clockOut && day !== 0; // 0 = Sunday
-//     }).length;
+ 
 
-//     const user = await EmployeeModel.findById(userId);
-//     const salaryPerDay = user?.dailySalary || 1000; // default fallback
 
-//     const totalSalary = salaryPerDay * presentDays;
 
-//     res.json({
-//       user: {
-//         name: user?.name,
-//         email: user?.email,
-//       },
-//       month,
-//       presentDays,
-//       salaryPerDay,
-//       totalSalary,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ message: 'Failed to generate salary slip' });
-//   }
-// };
-  
-// === Task Controller ===
+
+
+
 
 
 const assignTask = async (req, res) => {
