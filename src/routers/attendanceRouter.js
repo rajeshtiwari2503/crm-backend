@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { clockIn, clockOut,addDailyComment ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,getMonthlyAttendanceByUserId,getDailyAttendanceByUserId,getSalaryUserSlip,getSalaryAdminSlip,assignTask, startTask, pauseTask, completeTask } = require('../controllers/attendanceController');
+const { clockIn, clockOut,addDailyComment,updateAttendance ,getTodayStatus,getMonthlyAttendance,getDailyAttendance,getMonthlyAttendanceByUserId,getDailyAttendanceByUserId,getSalaryUserSlip,getSalaryAdminSlip,assignTask, startTask, pauseTask, completeTask } = require('../controllers/attendanceController');
 
 
 // Route for clocking in
@@ -18,6 +18,7 @@ router.get('/attendance/getMonthlyAttendanceByUserId', getMonthlyAttendanceByUse
 router.get('/attendance/getMonthlyAttendance', getMonthlyAttendance);
 router.get('/attendance/getSalaryUserSlip', getSalaryUserSlip);
 router.get('/attendance/getSalaryAdminSlip', getSalaryAdminSlip);
+router.put('/attendance/updateAttendance/:id', updateAttendance);
 
 // Route for assigning tasks
 router.post('/assign', assignTask);
