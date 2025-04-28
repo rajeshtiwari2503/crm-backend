@@ -18,6 +18,7 @@ const attendanceSchema = new mongoose.Schema({
   totalHours: { type: String },
   leaveRequested: { type: Boolean, default: false },
   taskComment: String,
+  location: String,
 });
 
 // Task Schema
