@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 
  const clockIn = async (req, res) => {
   try {
-    const { userId,user } = req.body;
+    const { userId,user,location } = req.body;
     const today = new Date().toISOString().split('T')[0];
 
     const existing = await Attendance.findOne({ userId, date: today });
@@ -17,6 +17,7 @@ const mongoose = require('mongoose');
       userId,
       user,
       date: today,
+      location:location,
       clockIn: new Date()
     });
 

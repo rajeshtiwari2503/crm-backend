@@ -854,4 +854,16 @@ const deleteProductWarranty = async (req, res) => {
   }
 }
 
+// const deleteProductWarranty = async (req, res) => {
+//   try {
+//     let _id = req.params.id;
+//     let data = await ProductWarrantyModal.findByIdAndDelete(_id);
+//     res.json({ status: true, msg: "Product warranty Deteled" });
+//   } catch (err) {
+//     res.status(500).send(err);
+//   }
+// }
+
+
+
 module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty,getAllProductWarrantyByBrandStickers ,getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
