@@ -707,6 +707,26 @@ const getComplaintByUserId = async (req, res) => {
       res.status(500).json({ error: "Server error", details: err.message });
    }
 };
+
+const getComplaintByUniqueId= async (req, res) => {
+
+   try {
+      const uniqueId = req.params.id;  // Ensure you are using req.params.id
+ 
+
+      const complaints = await ComplaintModal.find({ uniqueId })
+         .populate('uniqueId');
+      if (!complaints.length) {
+         return res.status(404).json({ message: "No complaints found for this unique ID" });
+      }
+
+      res.send(complaints);
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).json({ error: "Server error", details: err.message });
+   }
+};
+
 const getComplaintByTechId = async (req, res) => {
 
    try {
@@ -1666,7 +1686,7 @@ const updateComplaint = async (req, res) => {
 }
 
 module.exports = {
-   addComplaint, addDealerComplaint, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
+   addComplaint, addDealerComplaint,getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming,getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints,getTodayCompletedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
