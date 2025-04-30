@@ -357,14 +357,39 @@ const deleteBrand = async (req, res) => {
         res.status(500).send(err);
     }
 }
+// const getAllServiceCenter = async (req, res) => {
+//     try {
+//         const data = await ServiceModel.find({}).sort({ _id: -1 });
+//         res.send(data);
+//     } catch (err) {
+//         res.status(400).send(err);
+//     }
+// }
 const getAllServiceCenter = async (req, res) => {
     try {
-        const data = await ServiceModel.find({}).sort({ _id: -1 });
+        const data = await ServiceModel.find({}).sort({ _id: -1 }).lean();
         res.send(data);
     } catch (err) {
         res.status(400).send(err);
     }
 }
+
+const getAllServiceCenterAction = async (req, res) => {
+    try {
+      const data = await ServiceModel.find({})
+        .sort({ _id: -1 })
+        .select('serviceCenterName contact pincodeSupported   postalCode')
+        .lean();
+  
+      res.status(200).send(data);
+    } catch (err) {
+      console.error("Error fetching service centers:", err);
+      res.status(400).send({ error: "Failed to fetch service centers", details: err });
+    }
+  };
+  
+  
+
 const getServiceCenterById = async (req, res) => {
     try {
         let _id = req.params.id;
@@ -873,7 +898,7 @@ const forgetPassword = async (req, res) => {
 
 module.exports = {
     getProfileById, getUserServerById, adminLoginController, dashboardLoginController, brandRegistration, serviceRegistration, empolyeeRegistration, dealerRegistration, adminRegistration, userRegistration,
-    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand, getAllServiceCenter, getServiceCenterById, editServiceCenter, deleteServiceCenter,
+    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand,getAllServiceCenterAction, getAllServiceCenter, getServiceCenterById, editServiceCenter, deleteServiceCenter,
     getAllEmployee, getEmployeeById, editEmployee, deleteEmployee, getAllUser, getUserById, editUser, deleteUser,
     brandEmpolyeeRegistration, getAllBrandEmployee, getBrandEmployeeById, editBrandEmployee, deleteBrandEmployee,
     getAllDealer, getDealerById, editDealer, deleteDealer, otpVerification, otpVerificationSending, mobileEmailVerification, forgetPassword, otpSending
