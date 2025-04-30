@@ -4,7 +4,7 @@ const { upload} = require("../services/service");
 
 const {getProfileById,adminLoginController,dashboardLoginController,brandRegistration,serviceRegistration,empolyeeRegistration,dealerRegistration, adminRegistration,userRegistration,
   brandEmpolyeeRegistration,getAllBrandEmployee,getBrandEmployeeById,editBrandEmployee,deleteBrandEmployee,
-  getAllBrand,getBrandById,getUserServerById,editBrand,updateBrandTerms,deleteBrand,getAllServiceCenter,getServiceCenterById,editServiceCenter,deleteServiceCenter,
+  getAllBrand,getBrandById,getUserServerById,editBrand,updateBrandTerms,deleteBrand,getAllServiceCenterAction,getAllServiceCenter,getServiceCenterById,editServiceCenter,deleteServiceCenter,
 getAllEmployee,getEmployeeById,editEmployee,deleteEmployee ,getAllDealer,getDealerById,editDealer,deleteDealer,getAllUser,
 getUserById,editUser,deleteUser,otpVerification,otpVerificationSending,forgetPassword,mobileEmailVerification,
 otpSending}=require("../controllers/registrationController")
@@ -43,6 +43,7 @@ router.get("/getUserServerById/:id",getUserServerById )
 
 
 router.get("/getAllService",getAllServiceCenter )
+router.get("/getAllServiceCenterAction",getAllServiceCenterAction )
 router.get("/getServiceBy/:id",getServiceCenterById )
 router.patch("/editService/:id",editServiceCenter )
 router.delete("/deleteService/:id",deleteServiceCenter )
