@@ -901,6 +901,33 @@ const getComplaintsByCustomerSidePending = async (req, res) => {
    }
 };
 
+const getTodayCreatedComplaints = async (req, res) => {
+   try {
+      // Define today's date range
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      // Query for complaints created today
+      const data = await ComplaintModal.find({
+         createdAt: { $gte: startOfDay, $lte: endOfDay }
+      }).sort({ _id: -1 });
+
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No complaints created today." });
+      }
+
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
+
+
+
+
 const getTodayCompletedComplaints = async (req, res) => {
    try {
       // Define today's date range
@@ -925,7 +952,6 @@ const getTodayCompletedComplaints = async (req, res) => {
       res.status(400).send(err);
    }
 };
-
 
 // const getPendingComplaints = async (req, res) => {
 //    try {
@@ -1688,5 +1714,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint,getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming,getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints,getTodayCompletedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
