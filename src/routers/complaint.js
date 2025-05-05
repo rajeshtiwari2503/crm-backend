@@ -3,7 +3,7 @@ const ComplaintModal = require("../models/complaint")
 
 const {addComplaint,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
-    getPendingComplaints,getTodayCompletedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
+    getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload}  = require("../services/service");
  
 const uploadVideo = require("../googleConfig/uploadMiddleware");
@@ -35,6 +35,7 @@ router.get("/getComplaintsByCustomerSidePending",getComplaintsByCustomerSidePend
 router.get("/getComplaintsByPending",getComplaintsByPending)
 router.get("/getComplaintsByFinalVerification",getComplaintsByFinalVerification)
 router.get("/getTodayCompletedComplaints",getTodayCompletedComplaints)
+router.get("/getTodayCreatedComplaints",getTodayCreatedComplaints)
  
 router.get("/getComplaintById/:id",getComplaintById)
 router.get("/getPendingComplaints/:days",getPendingComplaints)
