@@ -166,6 +166,7 @@ const createWalletTransactions = async () => {
          serviceCenterType: 'Authorized',
        });
  
+       
        if (!serviceCenter || !data.pincode || !serviceCenter.postalCode) continue;
  
        const existingPayment = await ServicePaymentModel.findOne({
@@ -187,13 +188,14 @@ const createWalletTransactions = async () => {
        const isCSP = data.cspStatus === "YES";
        const isInCity = distance <= 30;
        let paymentAmount = 0;
+       let timeDiffInHours = 0;
  
        if (isCSP) {
          paymentAmount = isInCity ? 250 : 350;
        } else {
          const assignTime = moment(data.assignServiceCenterTime);
          const closeTime = moment(data.complaintCloseTime);
-         const timeDiffInHours = closeTime.diff(assignTime, 'hours');
+           timeDiffInHours = closeTime.diff(assignTime, 'hours');
  
          if (isInCity) {
            if (timeDiffInHours <= 24) {
@@ -222,8 +224,9 @@ const createWalletTransactions = async () => {
          serviceCenterId: data.assignServiceCenterId,
          serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
          payment: paymentAmount.toString(),
-         description: `Payment for Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km charge, ₹${paymentAmount})`,
+         description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${timeDiffInHours} hours , charge, ₹${paymentAmount})`,
          contactNo: serviceCenter.contact,
+         month: moment(data.createdAt).format("MMMM YYYY"),
          complaintId: data._id,
          city: serviceCenter.city,
          address: serviceCenter.streetAddress,
@@ -232,7 +235,7 @@ const createWalletTransactions = async () => {
  
        console.log("Creating service center payment:", paymentData);
  
-       // await ServicePaymentModel.create(paymentData);
+       await ServicePaymentModel.create(paymentData);
        createdCount++;
      }
  
@@ -242,10 +245,10 @@ const createWalletTransactions = async () => {
    }
  };
  
-// cron.schedule("0 16 5 * *", () => {
-//   console.log("Running wallet transaction job on the 5th at 04:00 PM...");
-//   createWalletTransactions();
-// });
+ cron.schedule("29 15 6 * *", () => {
+  console.log("Running wallet transaction job on the 6th at 3:22 PM...");
+  // createWalletTransactions();
+});
 
  
  
