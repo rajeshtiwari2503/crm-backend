@@ -118,3 +118,137 @@ const sendNotification = async (serviceCenterId, title, body) => {
       console.error("Notification failed", error);
    }
 };
+ 
+const moment = require('moment');
+const { Client } = require('@googlemaps/google-maps-services-js');
+const client = new Client({});
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyC_L9VzjnWL4ent9VzCRAabM52RCcJJd2k";
+ 
+const ServicePaymentModel = require('./models/servicePaymentModel');
+
+const getDistanceInKm = async (originPincode, destinationPincode) => {
+  try {
+    const response = await client.distancematrix({
+      params: {
+        origins: [originPincode],
+        destinations: [destinationPincode],
+        key: GOOGLE_MAPS_API_KEY,
+      },
+    });
+
+    const distanceInMeters = response.data.rows[0].elements[0].distance.value;
+    return distanceInMeters / 1000; // convert to KM
+  } catch (error) {
+    console.error("Distance fetch error:", error);
+    return null;
+  }
+};
+
+const createWalletTransactions = async () => {
+   try {
+     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
+     const endOfPrevMonth = moment().subtract(1, 'month').endOf('month').toDate();
+ console.log("startOfPrevMonth",startOfPrevMonth);
+ console.log("endOfPrevMonth",endOfPrevMonth);
+ 
+     const complaints = await ComplaintModal.find({
+       createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+       status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+     });
+     console.log("Total complaints found:", complaints.length);
+     let createdCount = 0;
+ console.log("createdCount",createdCount);
+ 
+     for (const data of complaints) {
+       const serviceCenter = await ServiceModel.findOne({
+         _id: data.assignServiceCenterId,
+         serviceCenterType: 'Authorized',
+       });
+ 
+       
+       if (!serviceCenter || !data.pincode || !serviceCenter.postalCode) continue;
+ 
+       const existingPayment = await ServicePaymentModel.findOne({
+         serviceCenterId: data.assignServiceCenterId,
+         complaintId: data._id,
+       });
+ 
+       if (existingPayment) {
+         console.log("Payment already exists for complaint:", data._id);
+         continue;
+       }
+ 
+       const distance = await getDistanceInKm(data.pincode, serviceCenter.postalCode);
+       if (distance === null || isNaN(distance)) {
+         console.warn("Skipping complaint due to distance calculation failure:", data._id);
+         continue;
+       }
+ 
+       const isCSP = data.cspStatus === "YES";
+       const isInCity = distance <= 30;
+       let paymentAmount = 0;
+       let timeDiffInHours = 0;
+ 
+       if (isCSP) {
+         paymentAmount = isInCity ? 250 : 350;
+       } else {
+         const assignTime = moment(data.assignServiceCenterTime);
+         const closeTime = moment(data.complaintCloseTime);
+           timeDiffInHours = closeTime.diff(assignTime, 'hours');
+ 
+         if (isInCity) {
+           if (timeDiffInHours <= 24) {
+             paymentAmount = 250;
+           } else if (timeDiffInHours <= 48) {
+             paymentAmount = 180;
+           } else if (timeDiffInHours <= 72) {
+             paymentAmount = 130;
+           } else {
+             paymentAmount = 80;
+           }
+         } else {
+           if (timeDiffInHours <= 24) {
+             paymentAmount = 350;
+           } else if (timeDiffInHours <= 48) {
+             paymentAmount = 300;
+           } else if (timeDiffInHours <= 72) {
+             paymentAmount = 250;
+           } else {
+             paymentAmount = 200;
+           }
+         }
+       }
+ 
+       const paymentData = {
+         serviceCenterId: data.assignServiceCenterId,
+         serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
+         payment: paymentAmount.toString(),
+         description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${timeDiffInHours} hours , charge, ₹${paymentAmount})`,
+         contactNo: serviceCenter.contact,
+         month: moment(data.createdAt).format("MMMM YYYY"),
+         complaintId: data._id,
+         city: serviceCenter.city,
+         address: serviceCenter.streetAddress,
+         status: "UNPAID",
+       };
+ 
+       console.log("Creating service center payment:", paymentData);
+ 
+       await ServicePaymentModel.create(paymentData);
+       createdCount++;
+     }
+ 
+     console.log(`Wallet transactions generated successfully. Total created: ${createdCount}`);
+   } catch (error) {
+     console.error("Error creating wallet transactions:", error);
+   }
+ };
+ 
+ cron.schedule("29 15 6 * *", () => {
+  console.log("Running wallet transaction job on the 6th at 3:22 PM...");
+  // createWalletTransactions();
+});
+
+ 
+ 

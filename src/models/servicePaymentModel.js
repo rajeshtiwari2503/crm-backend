@@ -8,6 +8,7 @@ const servicePaymentSchema = new mongoose.Schema({
     contactNo:{ type: String },
     complaintId:{ type: String },
     city:{ type: String },
+    month:{ type: String },
     address:{ type: String },
     payScreenshot:{ type: String },
     qrCode:{ type: String },

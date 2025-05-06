@@ -572,7 +572,8 @@ const getAllActivationWarranty = async (req, res) => {
           termsCondtions: "$records.termsCondtions",
         },
       },
-      { $sort: { _id: -1 } },
+      // { $sort: { _id: -1 } },
+      { $sort: { activationDate: -1 } }, 
     ]);
 
     res.send(data);
