@@ -180,102 +180,160 @@ const sendSMS = async (phoneNumber, message) => {
 };
 
 
+// const addComplaint = async (req, res) => {
+//    try {
+//       let body = req.body;
+//       let { city, pincode, emailAddress, fullName, phoneNumber, serviceAddress, brandId } = body; // Extract email and fullName from request body
+//       const email = emailAddress;
+//       const uniqueId = body?.uniqueId;
+      
+//       let user = await UserModel.findOne({ email });
+
+//       // If user is not registered, register them
+//       if (!user) {
+//          user = new UserModel({ email: emailAddress, name: fullName, contact: phoneNumber, address: serviceAddress, password: "12345678" });
+//          await user.save();
+//       }
+//       // console.log(uniqueId);
+
+//       if (uniqueId) {
+//          const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
+//          console.timeEnd("Find Warranty");
+//          if (!warranty) {
+//             return res.status(404).json({ status: false, msg: 'Warranty not found' });
+//          }
+
+//          // Find the specific record with the matching uniqueId
+//          const record = warranty.records.find(record => record.uniqueId === uniqueId);
+//          console.timeEnd("Find Record");
+//          if (!record) {
+//             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
+//          }
+
+
+
+//          // Activate the warranty
+//          record.isActivated = true;
+//          record.userName = fullName;
+//          record.email = email;
+//          record.contact = phoneNumber;
+//          record.address = serviceAddress;
+//          record.district = body?.district;
+//          record.state = body?.state;
+//          record.pincode = pincode;
+//          record.activationDate = new Date();
+
+//          // Save the updated warranty
+//          await warranty.save();
+//       }
+
+//       // Find a service center based on city or pincode
+//       let serviceCenter;
+//       // if (pincode) {
+//       //    serviceCenter = await ServiceModel.findOne({
+//       //       $or: [
+//       //          { postalCode: pincode },
+//       //          { pincodeSupported: { $in: [pincode] } }
+//       //       ]
+//       //    });
+//       // } 
+//       if (pincode) {
+//          serviceCenter = await ServiceModel.findOne({
+//             $and: [
+//                {
+//                   $or: [
+//                      { postalCode: pincode },
+//                      { pincodeSupported: { $in: [pincode] } }
+//                   ]
+//                },
+//                { brandsSupported: { $in: [brandId] } }
+//             ]
+//          });
+
+//       }
+      
+
+
+//       // Prepare the complaint object
+//       let obj = {
+//          ...body,
+//          userId: user._id,
+//          userName: user.name,
+//          issueImages: req.file?.location,
+//          assignServiceCenterId: serviceCenter?._id,
+//          assignServiceCenter: serviceCenter?.serviceCenterName,
+//          serviceCenterContact: serviceCenter?.contact,
+//          assignServiceCenterTime: new Date()
+//       };
+//       //  && serviceCenter.serviceCenterType === "Independent"
+//       if (serviceCenter) {
+//          obj.status = "ASSIGN";
+//       }
+//       // Save the complaint
+//       let data = new ComplaintModal(obj);
+//       await data.save();
+
+//       // Create a notification for the user
+//       const notification = new NotificationModel({
+//          complaintId: data._id,
+//          userId: data.userId,
+//          brandId: data.brandId,
+//          serviceCenterId: serviceCenter?._id,
+//          dealerId: data.dealerId,
+//          userName: fullName,
+//          title: `Complaint`,
+//          message: `Registered Your Complaint, ${fullName}!`,
+//       });
+//       await notification.save();
+
+
+//       const _id = data._id
+//       // await sendWhatsAppMessage(fullName, phoneNumber, _id);
+
+//       // const smsMessage = `Hello ${fullName}, your complaint (ID: ${data._id}) has been registered successfully.Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
+//       // await sendSMS(phoneNumber, smsMessage);
+//       res.json({ status: true, msg: "Complaint Added", user: user });
+//    } catch (err) {
+//       console.error(err);
+//       res.status(400).send(err);
+//    }
+// };
+
+
 const addComplaint = async (req, res) => {
    try {
-      let body = req.body;
-      let { city, pincode, emailAddress, fullName, phoneNumber, serviceAddress, brandId } = body; // Extract email and fullName from request body
+      const body = req.body;
+      const {
+         city,
+         pincode,
+         emailAddress,
+         fullName,
+         phoneNumber,
+         serviceAddress,
+         brandId,
+         uniqueId,
+         district,
+         state,
+      } = body;
+
       const email = emailAddress;
-      const uniqueId = body?.uniqueId;
-      // close create service
-      // if(brandId==="67ab1ec2bfe41718e6ddfb6e"){
-      //    return res.status(404).json({ status: false, msg: 'Complaint not added' });
-      // }
-      let user = await UserModel.findOne({ email });
 
-      // If user is not registered, register them
-      if (!user) {
-         user = new UserModel({ email: emailAddress, name: fullName, contact: phoneNumber, address: serviceAddress, password: "12345678" });
-         await user.save();
-      }
-      // console.log(uniqueId);
+      // Create or find user
+      const user = await findOrCreateUser(email, fullName, phoneNumber, serviceAddress);
 
+      // Handle warranty lookup and update
       if (uniqueId) {
-         const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
-         if (!warranty) {
-            return res.status(404).json({ status: false, msg: 'Warranty not found' });
-         }
-
-         // Find the specific record with the matching uniqueId
-         const record = warranty.records.find(record => record.uniqueId === uniqueId);
-         if (!record) {
+         const success = await handleWarrantyUpdate(uniqueId, fullName, email, phoneNumber, serviceAddress, district, state, pincode);
+         if (!success) {
             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
          }
-
-
-
-         // Activate the warranty
-         record.isActivated = true;
-         record.userName = fullName;
-         record.email = email;
-         record.contact = phoneNumber;
-         record.address = serviceAddress;
-         record.district = body?.district;
-         record.state = body?.state;
-         record.pincode = pincode;
-         record.activationDate = new Date();
-
-         // Save the updated warranty
-         await warranty.save();
       }
 
-      // Find a service center based on city or pincode
-      let serviceCenter;
-      // if (pincode) {
-      //    serviceCenter = await ServiceModel.findOne({
-      //       $or: [
-      //          { postalCode: pincode },
-      //          { pincodeSupported: { $in: [pincode] } }
-      //       ]
-      //    });
-      // } 
-      if (pincode) {
-         serviceCenter = await ServiceModel.findOne({
-            $and: [
-               {
-                  $or: [
-                     { postalCode: pincode },
-                     { pincodeSupported: { $in: [pincode] } }
-                  ]
-               },
-               { brandsSupported: { $in: [brandId] } }
-            ]
-         });
+      // Find service center
+      const serviceCenter = await findServiceCenter(pincode, brandId);
 
-      }
-      // else if (city) {
-      //    serviceCenter = await ServiceModel.findOne({ city: city });
-      // }
-
-      // let serviceCenter;
-      // if (pincode) {
-      //     serviceCenter = await ServiceModel.findOne({
-      //         $or: [
-      //             { postalCode: pincode },
-      //             { pincodeSupported: { $in: [pincode] } }
-      //         ],
-      //         "brandsSupported.value": req?.body?.brandId // Matching inside array of objects
-      //     });
-      // } else if (city) {
-      //     serviceCenter = await ServiceModel.findOne({
-      //         city: city,
-      //         "brandsSupported.value": req?.body?.brandId
-      //     });
-      // }
-
-
-
-      // Prepare the complaint object
-      let obj = {
+      // Prepare complaint object
+      const complaintData = {
          ...body,
          userId: user._id,
          userName: user.name,
@@ -283,41 +341,101 @@ const addComplaint = async (req, res) => {
          assignServiceCenterId: serviceCenter?._id,
          assignServiceCenter: serviceCenter?.serviceCenterName,
          serviceCenterContact: serviceCenter?.contact,
-         assignServiceCenterTime: new Date()
+         assignServiceCenterTime: new Date(),
+         status: serviceCenter ? 'ASSIGN' : 'PENDING',
       };
-      //  && serviceCenter.serviceCenterType === "Independent"
-      if (serviceCenter) {
-         obj.status = "ASSIGN";
-      }
-      // Save the complaint
-      let data = new ComplaintModal(obj);
-      await data.save();
 
-      // Create a notification for the user
+      const complaint = new ComplaintModal(complaintData);
+      await complaint.save();
+
+      // Create notification
       const notification = new NotificationModel({
-         complaintId: data._id,
-         userId: data.userId,
-         brandId: data.brandId,
+         complaintId: complaint._id,
+         userId: user._id,
+         brandId: complaint.brandId,
          serviceCenterId: serviceCenter?._id,
-         dealerId: data.dealerId,
+         dealerId: complaint.dealerId,
          userName: fullName,
-         title: `Complaint`,
+         title: 'Complaint',
          message: `Registered Your Complaint, ${fullName}!`,
       });
       await notification.save();
 
-
-      const _id = data._id
-      // await sendWhatsAppMessage(fullName, phoneNumber, _id);
-
-      // const smsMessage = `Hello ${fullName}, your complaint (ID: ${data._id}) has been registered successfully.Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
-      // await sendSMS(phoneNumber, smsMessage);
-      res.json({ status: true, msg: "Complaint Added", user: user });
+      return res.json({ status: true, msg: 'Complaint Added', user });
    } catch (err) {
-      console.error(err);
-      res.status(400).send(err);
+      console.error('Error in addComplaint:', err);
+      return res.status(500).json({ status: false, msg: 'Internal Server Error', error: err.message });
    }
 };
+
+// ===================== HELPERS ====================== //
+
+const findOrCreateUser = async (email, name, contact, address) => {
+   let user = await UserModel.findOne({ email });
+   if (!user) {
+      user = new UserModel({
+         email,
+         name,
+         contact,
+         address,
+         password: '12345678', // Default password (make this secure in production)
+      });
+      await user.save();
+   }
+   return user;
+};
+
+const handleWarrantyUpdate = async (uniqueId, name, email, contact, address, district, state, pincode) => {
+   try {
+      console.time('Update Warranty');
+
+      const result = await ProductWarrantyModal.updateOne(
+         { 'records.uniqueId': uniqueId },
+         {
+            $set: {
+               'records.$.isActivated': true,
+               'records.$.userName': name,
+               'records.$.email': email,
+               'records.$.contact': contact,
+               'records.$.address': address,
+               'records.$.district': district,
+               'records.$.state': state,
+               'records.$.pincode': pincode,
+               'records.$.activationDate': new Date()
+            }
+         }
+      );
+
+      console.log('Update result',result);
+      console.timeEnd('Update Warranty');
+
+      // Check if the update matched and modified a document
+      return result.modifiedCount > 0;
+   } catch (err) {
+      console.error('Error updating warranty:', err);
+      return false;
+   }
+};
+
+
+const findServiceCenter = async (pincode, brandId) => {
+   if (!pincode || !brandId) return null;
+   return await ServiceModel.findOne({
+      $and: [
+         {
+            $or: [
+               { postalCode: pincode },
+               { pincodeSupported: { $in: [pincode] } },
+            ],
+         },
+         { brandsSupported: { $in: [brandId] } },
+      ],
+   });
+};
+
+ 
+
+
 
 const addAPPComplaint = async (req, res) => {
    try {
