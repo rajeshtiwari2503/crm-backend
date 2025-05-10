@@ -245,9 +245,9 @@ const createWalletTransactions = async () => {
    }
  };
  
- cron.schedule("3 11 7 * *", () => {
-  console.log("Running wallet transaction job on the 6th at 10:42 AM...");
-  createWalletTransactions();
+ cron.schedule("01 17 8 * *", () => {
+  console.log("Running wallet transaction job on the 6th at 5:58 PM...");
+  // createWalletTransactions();
 });
 
  

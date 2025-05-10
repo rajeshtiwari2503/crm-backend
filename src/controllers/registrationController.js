@@ -301,25 +301,53 @@ const getBrandById = async (req, res) => {
     }
 }
 
+// const editBrand = async (req, res) => {
+//     try {
+//         let _id = req.params.id;
+//         let body = req.body;
+//         let data = await BrandRegistrationModel.findByIdAndUpdate(_id, body);
+//         if (body.status) {
+//             const notification = new NotificationModel({
+//                 brandId: newData.brandID,
+//                 userName: newData.brandName,
+//                 title: `   Verification    `,
+//                 message: `   Brand  Verified     ${newData.brandName} !`,
+//             });
+//             await notification.save();
+//         }
+//         res.json({ status: true, msg: "Brand Updated" });
+//     } catch (err) {
+//         res.status(500).send(err);
+//     }
+// }
+
+
 const editBrand = async (req, res) => {
-    try {
-        let _id = req.params.id;
-        let body = req.body;
-        let data = await BrandRegistrationModel.findByIdAndUpdate(_id, body);
-        if (body.status) {
-            const notification = new NotificationModel({
-                brandId: newData.brandID,
-                userName: newData.brandName,
-                title: `   Verification    `,
-                message: `   Brand  Verified     ${newData.brandName} !`,
-            });
-            await notification.save();
-        }
-        res.json({ status: true, msg: "Brand Updated" });
-    } catch (err) {
-        res.status(500).send(err);
+  try {
+    const _id = req.params.id;
+    const body = req.body;
+
+    // Get the updated brand document
+    const updatedData = await BrandRegistrationModel.findByIdAndUpdate(_id, body, { new: true });
+
+    if (body.status === "ACTIVE") {
+      const notification = new NotificationModel({
+        brandId: updatedData._id,
+        userName: updatedData.brandName,
+        title: "Verification",
+        message: `Brand Verified: ${updatedData.brandName}!`,
+      });
+      await notification.save();
     }
-}
+
+    res.json({ status: true, msg: "Brand Updated" });
+  } catch (err) {
+    console.error("Error in editBrand:", err);
+    res.status(500).send(err);
+  }
+};
+
+
 const updateBrandTerms = async (req, res) => {
     const { warrantyCondition } = req.body;
     try {
