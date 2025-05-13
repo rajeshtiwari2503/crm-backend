@@ -1388,7 +1388,7 @@ const editComplaint = async (req, res) => {
 
             serviceCenterWallet.totalCommission = (parseInt(serviceCenterWallet.totalCommission || 0) + parseInt(subCatData.payout));
             serviceCenterWallet.dueAmount = (parseInt(serviceCenterWallet.dueAmount || 0) + parseInt(subCatData.payout));
-            await serviceCenterWallet.save();
+            // await serviceCenterWallet.save();
 
 
             const dealerWallet = await WalletModel.findOne({ serviceCenterId: data.dealerId }).exec();
@@ -1541,7 +1541,7 @@ const updatePartPendingImage = async (req, res) => {
             if (serviceCenterWallet) {
                serviceCenterWallet.totalCommission = (parseInt(serviceCenterWallet.totalCommission || 0) + parseInt(subCatData.payout));
                serviceCenterWallet.dueAmount = (parseInt(serviceCenterWallet.dueAmount || 0) + parseInt(subCatData.payout));
-               await serviceCenterWallet.save();
+               // await serviceCenterWallet.save();
             } else {
                console.error('Wallet not found for service center:', data.assignServiceCenterId);
                return res.json({ status: true, msg: "Complaint Updated" });
@@ -1696,7 +1696,7 @@ const updateFinalVerification = async (req, res) => {
             if (serviceCenterWallet) {
                serviceCenterWallet.totalCommission += payout;
                serviceCenterWallet.dueAmount += payout;
-               await serviceCenterWallet.save();
+               // await serviceCenterWallet.save();
             } else {
                console.warn("No wallet found for service center:", data.assignServiceCenterId);
             }
@@ -1747,7 +1747,7 @@ const updateFinalVerification = async (req, res) => {
                serviceCenterWallet.totalCommission += paymentServiceCenter;
                serviceCenterWallet.dueAmount += paymentServiceCenter;
 
-               await serviceCenterWallet.save();
+               // await serviceCenterWallet.save();
             } else {
                console.warn("No wallet found for service center:", data.assignServiceCenterId);
             }
