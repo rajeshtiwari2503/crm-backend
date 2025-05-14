@@ -761,6 +761,7 @@ const getAllComplaint1 = async (req, res) => {
 };
 
 
+ 
 const getAllComplaint = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -768,23 +769,27 @@ const getAllComplaint = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Step 1: Get all ACTIVE brand IDs
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
-    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+    const activeBrandIds = await BrandRegistrationModel
+      .find({ status: "ACTIVE" }, { _id: 1 })
+      .lean()
+      .then(brands => brands.map(b => b._id));
 
-    // Step 2: Fetch all complaints
-    const complaints = await ComplaintModal.find().sort({ createdAt: -1 });
+    // Step 2: Query complaints with active brandId + pagination
+    const [complaints, total] = await Promise.all([
+      ComplaintModal.find({ brandId: { $in: activeBrandIds } })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
 
-    // Step 3: Filter complaints with active brandId
-    const filteredComplaints = complaints.filter(c =>
-      activeBrandIds.includes(c.brandId?.toString())
-    );
-
-    // Step 4: Paginate
-    const paginatedData = filteredComplaints.slice(skip, skip + limit);
+      ComplaintModal.countDocuments({ brandId: { $in: activeBrandIds } })
+    ]);
 
     res.status(200).json({
-      data: paginatedData,
-      totalComplaints: filteredComplaints.length
+      data: complaints,
+      totalComplaints: total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit)
     });
   } catch (err) {
     console.error("Error in getAllComplaint:", err);
