@@ -7,6 +7,7 @@ const adminRegistrationSchema = new mongoose.Schema({
     contact: { type: Number, required: true },
     password: { type: String, required: true },
     role: { type: String, default: "ADMIN" },
+     status: { type: String, default: "ACTIVE" },
 },
     { timestamps: true });
   
@@ -290,6 +291,7 @@ const employeeRegistrationSchema = new mongoose.Schema({
     stateZone:{type:Array},
     brand:{type:Array},
     salary:{type:Number ,default: 0},
+     status: { type: String, default: "ACTIVE" },
     role: { type: String, default: "EMPLOYEE" }
 },
     { timestamps: true });
@@ -300,7 +302,8 @@ const employeeRegistrationSchema = new mongoose.Schema({
       password: { type: String, required: true },
       brandId: { type: Number, required: true },
       brandName: { type: String, required: true },
-      role: { type: String, default: "BRAND EMPLOYEE" }
+      role: { type: String, default: "BRAND EMPLOYEE" },
+       status: { type: String, default: "ACTIVE" },
   },
       { timestamps: true });
 
@@ -352,6 +355,7 @@ const dealerRegistrationSchema = new mongoose.Schema({
     , otp: { type: Number },
     role: { type: String, default: "DEALER" },
     totalAmount: { type: Number, default: 0 },
+     status: { type: String, default: "ACTIVE" },
     walletAmount: { type: Number, default: 0 }
 },
     { timestamps: true });
@@ -373,7 +377,8 @@ const userRegistrationSchema = new mongoose.Schema({
       type: Boolean,
       
     },
-    otp: { type: Number }
+    otp: { type: Number },
+     status: { type: String, default: "ACTIVE" },
 },
     { timestamps: true });
 
