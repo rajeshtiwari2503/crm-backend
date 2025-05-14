@@ -104,7 +104,7 @@ cron.schedule("0 * * * *", async () => {
         },
         {
           $addFields: {
-            activeCalls: { $size: "$activeComplaints" } // activeComplaints assumed to be an array
+            activeCalls: { $size: { $ifNull: ["$activeComplaints", []] } } // activeComplaints assumed to be an array
           }
         },
         {

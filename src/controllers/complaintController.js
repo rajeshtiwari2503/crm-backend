@@ -1,7 +1,7 @@
 const ComplaintModal = require("../models/complaint")
 const NotificationModel = require("../models/notification")
 const { ServiceModel } = require("../models/registration")
-const { UserModel } = require("../models/registration")
+const { UserModel,BrandRegistrationModel } = require("../models/registration")
 const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
 const WalletModel = require("../models/wallet")
@@ -738,7 +738,7 @@ const getAllBrandComplaint = async (req, res) => {
 //    }
 //  };
 
-const getAllComplaint = async (req, res) => {
+const getAllComplaint1 = async (req, res) => {
    try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 50;
@@ -759,6 +759,42 @@ const getAllComplaint = async (req, res) => {
       res.status(400).send(err);
    }
 };
+
+
+const getAllComplaint = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    // Step 1: Get all ACTIVE brand IDs
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find().sort({ createdAt: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+
+    // Step 4: Paginate
+    const paginatedData = filteredComplaints.slice(skip, skip + limit);
+
+    res.status(200).json({
+      data: paginatedData,
+      totalComplaints: filteredComplaints.length
+    });
+  } catch (err) {
+    console.error("Error in getAllComplaint:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
 
 
 const getAllComplaintByRole = async (req, res) => {
@@ -898,7 +934,18 @@ const getComplaintByCenterId = async (req, res) => {
 
 const getComplaintsByPending = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -909,7 +956,19 @@ const getComplaintsByPending = async (req, res) => {
 };
 const getComplaintsByAssign = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "ASSIGN" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "ASSIGN" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+     
+        const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "ASSIGN" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -920,7 +979,18 @@ const getComplaintsByAssign = async (req, res) => {
 };
 const getComplaintsByInProgress = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "IN PROGRESS" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "IN PROGRESS" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+         const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "IN PROGRESS" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -931,7 +1001,19 @@ const getComplaintsByInProgress = async (req, res) => {
 };
 const getComplaintsByComplete = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+     
+        const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -942,7 +1024,18 @@ const getComplaintsByComplete = async (req, res) => {
 };
 const getComplaintsByCancel = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "CANCELED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "CANCELED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "CANCELED" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -962,11 +1055,20 @@ const getComplaintsByUpcomming = async (req, res) => {
       endOfToday.setHours(23, 59, 59, 999); // End of today
 
       // Find complaints where preferredServiceDate is strictly in the future
-      let data = await ComplaintModal.find({
+      let complaints = await ComplaintModal.find({
          preferredServiceDate: { $gt: endOfToday }, // Future complaints only (not today)
          status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }// Exclude unwanted statuses
       }).sort({ preferredServiceDate: 1 });
+     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
 
+   
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).json({ status: false, msg: "No upcoming complaints found." });
       }
@@ -985,7 +1087,19 @@ const getComplaintsByUpcomming = async (req, res) => {
 
 const getComplaintsByFinalVerification = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "FINAL VERIFICATION" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "FINAL VERIFICATION" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+     
+       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "FINAL VERIFICATION" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -996,7 +1110,19 @@ const getComplaintsByFinalVerification = async (req, res) => {
 };
 const getComplaintsByPartPending = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "PART PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "PART PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      
+        const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "PART PENDING" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
@@ -1009,7 +1135,19 @@ const getComplaintsByPartPending = async (req, res) => {
 
 const getComplaintsByCustomerSidePending = async (req, res) => {
    try {
-      let data = await ComplaintModal.find({ status: "CUSTOMER SIDE PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+      // let data = await ComplaintModal.find({ status: "CUSTOMER SIDE PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+     
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+    const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+    // Step 2: Fetch all complaints
+    const complaints = await ComplaintModal.find({ status: "CUSTOMER SIDE PENDING" }).sort({ _id: -1 });
+
+    // Step 3: Filter complaints with active brandId
+    const filteredComplaints = complaints.filter(c =>
+      activeBrandIds.includes(c.brandId?.toString())
+    );
+     let data=filteredComplaints;
       if (data.length === 0) {
          return res.status(404).send({ status: false, msg: "No pending complaints found." });
       }
