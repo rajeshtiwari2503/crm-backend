@@ -694,15 +694,38 @@ const editIssueImage = async (req, res) => {
 
 
 
+// const getAllBrandComplaint = async (req, res) => {
+//    try {
+//       let data = await ComplaintModal.find({}).sort({ _id: -1 });
+//       res.send(data)
+//    }
+//    catch (err) {
+//       res.status(400).send(err);
+//    }
+// }
 const getAllBrandComplaint = async (req, res) => {
-   try {
-      let data = await ComplaintModal.find({}).sort({ _id: -1 });
-      res.send(data)
-   }
-   catch (err) {
-      res.status(400).send(err);
-   }
-}
+  try {
+    // Step 1: Get active brand IDs (lean for performance)
+    const activeBrandIds = await BrandRegistrationModel
+      .find({ status: "ACTIVE" })
+      .lean()
+      .select("_id");
+
+    // Step 2: Extract just the ObjectId values
+    const brandIds = activeBrandIds.map(brand => brand._id);
+
+    // Step 3: Get complaints for those brands (lean for performance)
+    const complaints = await ComplaintModal
+      .find({ brandId: { $in: brandIds } })
+      .sort({ _id: -1 })
+      .lean();
+
+    // Step 4: Send response
+    res.status(200).json(complaints);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 // const getAllComplaint = async (req, res) => {
 //    try {
@@ -1352,7 +1375,7 @@ const getPartPendingComplaints = async (req, res) => {
          endDate.setDate(now.getDate() - 6); // Ensure correct range
          endDate.setHours(23, 59, 59, 999);
       }
-
+    
       let filter = { status: "PART PENDING" };
 
 

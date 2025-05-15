@@ -1149,8 +1149,19 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
 router.get('/getStatewisePendingComplaints', async (req, res) => {
   try {
     // Aggregation pipeline to get count of pending complaints by state
-    const complaints = await Complaints.aggregate([
-      { $match: { status: 'PENDING' } },  // Filter to include only pending complaints
+     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+  const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+ 
+
+    // Step 2: Aggregate complaints with desired statuses and active brands
+    const complaints = await ComplaintModal.aggregate([
+      {
+        $match: {
+          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
+          brandId: { $in: activeBrandIds }
+        }
+      },  // Filter to include only pending complaints
       { $group: { _id: "$state", count: { $sum: 1 } } }, // Group by state and count
       { $sort: { count: -1 } }
     ]);
@@ -1163,45 +1174,97 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 });
 
 
+// router.get('/getDistrictWisePendingComplaints', async (req, res) => {
+//   try {
+//     // Aggregation pipeline to get count of pending complaints by state and district
+//     const complaints = await Complaints.aggregate([
+//       {
+//         $match: { status: 'PENDING' }  // Filter to include only pending complaints
+//       },
+//       {
+//         $group: {
+//           _id: { state: "$state", district: "$district" },  // Group by state and district
+//           count: { $sum: 1 }  // Count the number of complaints
+//         }
+//       },
+//       {
+//         $sort: { "count": -1 }  // Sort by count in descending order
+//       }
+//     ]);
+
+//     // Transform the output to a more readable format (optional)
+//     const transformedComplaints = complaints.map(item => ({
+//       state: item._id.state,
+//       district: item._id.district,
+//       count: item.count
+//     }));
+
+//     res.status(200).json(transformedComplaints);  // Send response with aggregated data
+//   } catch (error) {
+//     console.error('Error fetching district-wise pending complaints:', error);
+//     res.status(500).json({ error: 'Error fetching district-wise pending complaints' });
+//   }
+// });
+
 router.get('/getDistrictWisePendingComplaints', async (req, res) => {
   try {
-    // Aggregation pipeline to get count of pending complaints by state and district
-    const complaints = await Complaints.aggregate([
+    // Step 1: Get ACTIVE brand IDs
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+  const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+ 
+
+    // Step 2: Aggregate complaints with desired statuses and active brands
+    const complaints = await ComplaintModal.aggregate([
       {
-        $match: { status: 'PENDING' }  // Filter to include only pending complaints
-      },
-      {
-        $group: {
-          _id: { state: "$state", district: "$district" },  // Group by state and district
-          count: { $sum: 1 }  // Count the number of complaints
+        $match: {
+          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
+          brandId: { $in: activeBrandIds }
         }
       },
       {
-        $sort: { "count": -1 }  // Sort by count in descending order
+        $group: {
+          _id: { state: "$state", district: "$district" },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
       }
     ]);
-
-    // Transform the output to a more readable format (optional)
+ 
+    // Step 3: Transform result
     const transformedComplaints = complaints.map(item => ({
       state: item._id.state,
       district: item._id.district,
       count: item.count
     }));
 
-    res.status(200).json(transformedComplaints);  // Send response with aggregated data
+    res.status(200).json(transformedComplaints);
   } catch (error) {
     console.error('Error fetching district-wise pending complaints:', error);
-    res.status(500).json({ error: 'Error fetching district-wise pending complaints' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 
-
 router.get('/getServiceCenterWisePendingComplaints', async (req, res) => {
   try {
-    // Aggregation pipeline to get count of pending complaints by service center
-    const complaints = await Complaints.aggregate([
-      { $match: { status: 'PENDING', assignServiceCenter: { $ne: null } } }, // Filter to include only pending complaints with a valid service center
+     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+  const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+ 
+
+    // Step 2: Aggregate complaints with desired statuses and active brands
+    const complaints = await ComplaintModal.aggregate([
+      {
+        $match: {
+          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
+           assignServiceCenter: { $ne: null },
+          brandId: { $in: activeBrandIds }
+        }
+      },
+      // { $match: { status: 'PENDING', assignServiceCenter: { $ne: null } } }, // Filter to include only pending complaints with a valid service center
       { $group: { _id: "$assignServiceCenter", count: { $sum: 1 } } },       // Group by service center and count
       { $sort: { count: -1 } }                                              // Sort by count in descending order
     ]);
@@ -1215,9 +1278,14 @@ router.get('/getServiceCenterWisePendingComplaints', async (req, res) => {
 
 router.get('/getNoServiceableAreaComplaints', async (req, res) => {
   try {
-    // Aggregation pipeline to get pending complaints with no associated service center, including userName and district
-    const complaints = await Complaints.aggregate([
-      { $match: { status: 'PENDING', assignServiceCenter: { $exists: false } } },  // Filter for pending complaints without service center
+     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+  const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+ 
+
+    // Step 2: Aggregate complaints with desired statuses and active brands
+    const complaints = await ComplaintModal.aggregate([  
+      { $match: { status: 'PENDING', assignServiceCenter: { $exists: false }, brandId: { $in: activeBrandIds } } },  // Filter for pending complaints without service center
       { $project: { fullName: 1, district: 1, state: 1, phoneNumber: 1 } }                             // Project only userName and district fields
     ]);
 
@@ -1229,21 +1297,83 @@ router.get('/getNoServiceableAreaComplaints', async (req, res) => {
 });
 
 
+// router.get('/getComplaintInsights', async (req, res) => {
+//   try {
+//       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+//   const activeBrandIds = activeBrands.map(b => b._id.toString());
+//     const [
+//       complaintsByBrand,
+//       complaintsByLocationAndProduct,
+//       commonFaults,
+//       pendingComplaintsByBrand
+//     ] = await Promise.all([
+//       Complaints.aggregate([
+//         // Group complaints by productBrand and count them
+//         { $group: { _id: "$productBrand", count: { $sum: 1 } } },
+//         { $sort: { count: -1 } }
+//       ]),
+//       Complaints.aggregate([
+//         // Group complaints by both product and productBrand
+//         {
+//           $group: {
+//             _id: { product: "$productName", productBrand: "$productBrand" },
+//             count: { $sum: 1 }
+//           }
+//         },
+//         { $sort: { count: -1 } }
+//       ]),
+//       Complaints.aggregate([
+//         // Unwind the issueType array
+//         { $unwind: { path: "$issueType", preserveNullAndEmptyArrays: true } },
+//         {
+//           $group: {
+//             _id: "$issueType",
+//             productBrand: { $first: "$productBrand" },
+//             count: { $sum: 1 }
+//           }
+//         },
+//         { $sort: { count: -1 } }
+//       ]),
+//       Complaints.aggregate([
+//         // Filter only complaints with 'pending' status and group by brand
+//         { $match: { status: "PENDING" } },
+//         { $group: { _id: "$productBrand", count: { $sum: 1 } } },
+//         { $sort: { count: -1 } }
+//       ])
+//     ]);
+
+//     res.status(200).json({
+//       complaintsByBrand,
+//       complaintsByLocationAndProduct,
+//       commonFaults,
+//       pendingComplaintsByBrand
+//     });
+//   } catch (error) {
+//     console.error('Error fetching complaint insights:', error);
+//     res.status(500).json({ error: 'Error fetching complaint insights' });
+//   }
+// });
+
 router.get('/getComplaintInsights', async (req, res) => {
   try {
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+    const activeBrandIds = activeBrands.map(b => b._id.toString());
+
     const [
       complaintsByBrand,
       complaintsByLocationAndProduct,
       commonFaults,
       pendingComplaintsByBrand
     ] = await Promise.all([
+      // 1. Complaints by brand (filtered by active brands)
       Complaints.aggregate([
-        // Group complaints by productBrand and count them
+        { $match: { brandId: { $in: activeBrandIds } } },
         { $group: { _id: "$productBrand", count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
+      // 2. Complaints by location and product (filtered by active brands)
       Complaints.aggregate([
-        // Group complaints by both product and productBrand
+        { $match: { brandId: { $in: activeBrandIds } } },
         {
           $group: {
             _id: { product: "$productName", productBrand: "$productBrand" },
@@ -1252,8 +1382,9 @@ router.get('/getComplaintInsights', async (req, res) => {
         },
         { $sort: { count: -1 } }
       ]),
+      // 3. Most common faults (filtered by active brands)
       Complaints.aggregate([
-        // Unwind the issueType array
+        { $match: { brandId: { $in: activeBrandIds } } },
         { $unwind: { path: "$issueType", preserveNullAndEmptyArrays: true } },
         {
           $group: {
@@ -1264,9 +1395,14 @@ router.get('/getComplaintInsights', async (req, res) => {
         },
         { $sort: { count: -1 } }
       ]),
+      // 4. Pending complaints by brand (filtered by active brands)
       Complaints.aggregate([
-        // Filter only complaints with 'pending' status and group by brand
-        { $match: { status: "PENDING" } },
+        {
+          $match: {
+            status: "PENDING",
+            brandId: { $in: activeBrandIds }
+          }
+        },
         { $group: { _id: "$productBrand", count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ])
@@ -1283,7 +1419,6 @@ router.get('/getComplaintInsights', async (req, res) => {
     res.status(500).json({ error: 'Error fetching complaint insights' });
   }
 });
-
 
 router.get('/getAllUnAssignComplaint', async (req, res) => {
   try {
