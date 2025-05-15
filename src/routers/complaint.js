@@ -1,6 +1,8 @@
 const express = require("express")
 const ComplaintModal = require("../models/complaint")
-
+const {
+  BrandRegistrationModel
+} = require('../models/registration');
 const {addComplaint,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
@@ -110,13 +112,21 @@ router.get("/check-part-pending", async (req, res) => {
     const todayEnd = moment().endOf("day").toDate();
 
     // Find all complaints with status "Part Pending"
+
+ const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+      .select("_id")
+      .lean();
+    const activeBrandIds = activeBrands.map(b => b._id.toString());
+
     const updatedToday = await ComplaintModal.find({
       status: "PART PENDING",
+        brandId: { $in: activeBrandIds },
       updatedAt: { $gte: todayStart, $lte: todayEnd }, // Updated today
     }).lean(); // Convert to plain objects
 
     const notUpdatedToday = await ComplaintModal.find({
       status: "PART PENDING",
+        brandId: { $in: activeBrandIds },
       updatedAt: { $lt: todayStart }, // Not updated today
     }).lean(); // Convert to plain objects
 
