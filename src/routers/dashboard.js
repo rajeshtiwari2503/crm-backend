@@ -1422,12 +1422,15 @@ router.get('/getComplaintInsights', async (req, res) => {
 
 router.get('/getAllUnAssignComplaint', async (req, res) => {
   try {
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+ const activeBrandIds = activeBrands.map(b => b._id.toString());
     const unassignedComplaints = await Complaints.find({
       $or: [
         { assignServiceCenterId: null },
         { assignServiceCenterId: { $exists: false } }
       ],
-      status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING"] } // Filtering based on status
+      status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING"] } ,// Filtering based on status
+    brandId: { $in: activeBrandIds }
     });
 
     res.status(200).json({ success: true, data: unassignedComplaints });
@@ -1438,21 +1441,129 @@ router.get('/getAllUnAssignComplaint', async (req, res) => {
 
 
 
+// router.get('/getComplaintCountByCityState', async (req, res) => {
+//   try {
+    
+//     const complaintCounts = await Complaints.aggregate([
+//       {
+//         $group: {
+//           _id: { city: "$district" }, // Group by city (district)
+//           TOTAL: { $sum: 1 },
+//           state: { $first: "$state" },  
+//           PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
+//           INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
+//           PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
+//           ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
+//           CANCEL: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CANCELED"] }, 1, 0] } },
+//           COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
+//           FINAL_VERIFICATION: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] }, 1, 0] } }
+//         }
+//       },
+//       {
+//         $addFields: {
+//           ACTIVE_COUNT: {
+//             $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+//           }
+//         }
+//       },
+//       {
+//         $sort: {
+//           ACTIVE_COUNT: -1, // First sort by combined count of key statuses
+//           PENDING: -1,
+//           INPROGRESS: -1,
+//           PART_PENDING: -1,
+//           ASSIGN: -1
+//         } 
+//       } 
+//     ]);
+
+//     res.status(200).json({ success: true, data: complaintCounts });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Error retrieving complaints", error });
+//   }
+// });
+
+ 
 router.get('/getComplaintCountByCityState', async (req, res) => {
   try {
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+    const activeBrandIds = activeBrands.map(b => b._id.toString());
+
     const complaintCounts = await Complaints.aggregate([
       {
+        $match: {
+          brandId: { $in: activeBrandIds }
+        }
+      },
+      {
         $group: {
-          _id: { city: "$district" }, // Group by city (district)
+           _id: { city: "$district" }, // Group by city (district)
           TOTAL: { $sum: 1 },
-          state: { $first: "$state" },  
-          PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
-          INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
-          PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
-          ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
-          CANCEL: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CANCELED"] }, 1, 0] } },
-          COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
-          FINAL_VERIFICATION: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] }, 1, 0] } }
+          state: { $first: "$state" }, 
+          TOTAL: { $sum: 1 },
+          PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
+          INPROGRESS: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] },
+                1,
+                0
+              ]
+            }
+          },
+          PART_PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PART PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
+          ASSIGN: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "ASSIGN"] },
+                1,
+                0
+              ]
+            }
+          },
+          CANCEL: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "CANCELED"] },
+                1,
+                0
+              ]
+            }
+          },
+          COMPLETE: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "COMPLETED"] },
+                1,
+                0
+              ]
+            }
+          },
+          FINAL_VERIFICATION: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] },
+                1,
+                0
+              ]
+            }
+          }
         }
       },
       {
@@ -1464,28 +1575,32 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
       },
       {
         $sort: {
-          ACTIVE_COUNT: -1, // First sort by combined count of key statuses
+          ACTIVE_COUNT: -1,
           PENDING: -1,
           INPROGRESS: -1,
           PART_PENDING: -1,
           ASSIGN: -1
-        } 
-      } 
+        }
+      }
     ]);
 
     res.status(200).json({ success: true, data: complaintCounts });
   } catch (error) {
+    console.error("Error fetching complaint counts by city/state:", error);
     res.status(500).json({ success: false, message: "Error retrieving complaints", error });
   }
 });
 
- 
+
  
 router.get("/getComplaintCountByServiceCenter", async (req, res) => {
   try {
+
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+    const activeBrandIds = activeBrands.map(b => b._id.toString());
     const complaintCounts = await Complaints.aggregate([
       {
-        $match: { assignServiceCenterId: { $ne: null } } // Exclude complaints without assignServiceCenterId
+        $match: { assignServiceCenterId: { $ne: null },   brandId: { $in: activeBrandIds } } // Exclude complaints without assignServiceCenterId
       },
       {
         $group: {
@@ -1531,40 +1646,148 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
 
 
  
-router.get('/getComplaintCountByBrand', async (req, res) => {
-  try {
-    const complaintCounts = await Complaints.aggregate([
-      {
-        $group: {
-          _id: { brandId: "$brandId" }, // Group by city (district)
-          TOTAL: { $sum: 1 },
-          productBrand: { $first: "$productBrand" },  
-          PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
-          INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
-          PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
-          ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
-          CANCEL: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CANCELED"] }, 1, 0] } },
-          COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
-          FINAL_VERIFICATION: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] }, 1, 0] } }
-        }
-      },
-      {
-        $sort: { PENDING: -1 } // Sort by PENDING complaints in descending order
-      } 
-    ]);
+// router.get('/getComplaintCountByBrand', async (req, res) => {
+//   try {
+//      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+//     const activeBrandIds = activeBrands.map(b => b._id.toString());
+//     const complaintCounts = await Complaints.aggregate([
+//       {
+//         $group: {
+//           _id: { brandId: "$brandId" }, // Group by city (district)
+//           TOTAL: { $sum: 1 },
+//           productBrand: { $first: "$productBrand" },  
+//           PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
+//           INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
+//           PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
+//           ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
+//           CANCEL: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CANCELED"] }, 1, 0] } },
+//           COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
+//           FINAL_VERIFICATION: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] }, 1, 0] } }
+//         }
+//       },
+//       {
+//         $sort: { PENDING: -1 } // Sort by PENDING complaints in descending order
+//       } 
+//     ]);
 
 
 
-    res.status(200).json({ success: true, data: complaintCounts });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Error retrieving complaints", error });
-  }
-});
+//     res.status(200).json({ success: true, data: complaintCounts });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: "Error retrieving complaints", error });
+//   }
+// });
 
 
  
 
 // Helper function to calculate time difference
+
+router.get('/getComplaintCountByBrand', async (req, res) => {
+  try {
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id productBrand").lean();
+    const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+    const complaintCounts = await Complaints.aggregate([
+      {
+        $match: {
+          brandId: { $in: activeBrandIds }
+        }
+      },
+      {
+        $group: {
+          _id: "$brandId", // Group by brandId
+          TOTAL: { $sum: 1 },
+          productBrand: { $first: "$productBrand" },
+          PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
+          INPROGRESS: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] },
+                1,
+                0
+              ]
+            }
+          },
+          PART_PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PART PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
+          ASSIGN: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "ASSIGN"] },
+                1,
+                0
+              ]
+            }
+          },
+          CANCEL: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "CANCELED"] },
+                1,
+                0
+              ]
+            }
+          },
+          COMPLETE: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "COMPLETED"] },
+                1,
+                0
+              ]
+            }
+          },
+          FINAL_VERIFICATION: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "FINAL VERIFICATION"] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          ACTIVE_COUNT: {
+            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+          }
+        }
+      },
+      {
+        $sort: {
+          ACTIVE_COUNT: -1,
+          PENDING: -1
+        }
+      }
+    ]);
+
+    res.status(200).json({ success: true, data: complaintCounts });
+  } catch (error) {
+    console.error("Error retrieving complaints by brand:", error);
+    res.status(500).json({ success: false, message: "Error retrieving complaints", error });
+  }
+});
+
+
+
 const getTimeDifference = (start, end) => {
   if (!start || !end) return { days: 0, hours: 0 };
   let diffMs = new Date(end) - new Date(start);
