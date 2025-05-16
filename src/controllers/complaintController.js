@@ -1209,67 +1209,110 @@ const getComplaintsByCustomerSidePending = async (req, res) => {
 };
 
 const getTodayCreatedComplaints = async (req, res) => {
-   try {
-      // Define today's date range
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+  try {
+    const { date } = req.query;
 
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+    if (!date) {
+      return res.status(400).send({ status: false, msg: "Date query parameter is required." });
+    }
 
-      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-         .select("_id")
-         .lean();
-      const activeBrandIds = activeBrands.map((b) => b._id.toString());
-      // Query for complaints created today
-      const data = await ComplaintModal.find({
-         createdAt: { $gte: startOfDay, $lte: endOfDay },
-         brandId: { $in: activeBrandIds }
-      }).sort({ _id: -1 });
+    // Parse the date string to Date object for start and end of day
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
 
-      if (data.length === 0) {
-         return res.status(404).send({ status: false, msg: "No complaints created today." });
-      }
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-      res.send(data);
-   } catch (err) {
-      res.status(400).send(err);
-   }
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+      .select("_id")
+      .lean();
+
+    const activeBrandIds = activeBrands.map((b) => b._id.toString());
+
+    const data = await ComplaintModal.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+      brandId: { $in: activeBrandIds }
+    }).sort({ _id: -1 });
+
+    if (data.length === 0) {
+      return res.status(404).send({ status: false, msg: "No complaints created on this date." });
+    }
+
+    res.send(data);
+  } catch (err) {
+    res.status(400).send(err);
+  }
 };
 
 
+
+
+// const getTodayCompletedComplaints = async (req, res) => {
+//    try {
+//       // Define today's date range
+//       const startOfDay = new Date();
+//       startOfDay.setHours(0, 0, 0, 0);
+
+//       const endOfDay = new Date();
+//       endOfDay.setHours(23, 59, 59, 999);
+
+
+//       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+//          .select("_id")
+//          .lean();
+//       const activeBrandIds = activeBrands.map((b) => b._id.toString());
+//       // Query for complaints with status "COMPLETED" or "FINAL VERIFICATION" updated today
+//       const data = await ComplaintModal.find({
+//          status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
+//          brandId: { $in: activeBrandIds },
+//          updatedAt: { $gte: startOfDay, $lte: endOfDay }
+//       }).sort({ _id: -1 });
+
+//       if (data.length === 0) {
+//          return res.status(404).send({ status: false, msg: "No completed or final verification complaints found for today." });
+//       }
+
+//       res.send(data);
+//    } catch (err) {
+//       res.status(400).send(err);
+//    }
+// };
 
 
 const getTodayCompletedComplaints = async (req, res) => {
-   try {
-      // Define today's date range
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+  try {
+    let { date } = req.query;
 
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+    // Use provided date or default to today's date
+    const baseDate = date ? new Date(date) : new Date();
+    const startOfDay = new Date(baseDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(baseDate.setHours(23, 59, 59, 999));
 
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+      .select("_id")
+      .lean();
 
-      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-         .select("_id")
-         .lean();
-      const activeBrandIds = activeBrands.map((b) => b._id.toString());
-      // Query for complaints with status "COMPLETED" or "FINAL VERIFICATION" updated today
-      const data = await ComplaintModal.find({
-         status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
-         brandId: { $in: activeBrandIds },
-         updatedAt: { $gte: startOfDay, $lte: endOfDay }
-      }).sort({ _id: -1 });
+    const activeBrandIds = activeBrands.map((b) => b._id.toString());
 
-      if (data.length === 0) {
-         return res.status(404).send({ status: false, msg: "No completed or final verification complaints found for today." });
-      }
+    const data = await ComplaintModal.find({
+      status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
+      brandId: { $in: activeBrandIds },
+      updatedAt: { $gte: startOfDay, $lte: endOfDay },
+    }).sort({ _id: -1 });
 
-      res.send(data);
-   } catch (err) {
-      res.status(400).send(err);
-   }
+    if (data.length === 0) {
+      return res.status(404).send({
+        status: false,
+        msg: "No completed or final verification complaints found for the selected date.",
+      });
+    }
+
+    res.send(data);
+  } catch (err) {
+    res.status(400).send(err);
+  }
 };
+
 
 // const getPendingComplaints = async (req, res) => {
 //    try {
