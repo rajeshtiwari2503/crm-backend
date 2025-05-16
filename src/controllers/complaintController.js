@@ -324,7 +324,7 @@ const addComplaint = async (req, res) => {
 
       // Handle warranty lookup and update
       if (uniqueId) {
-         const success = await handleWarrantyUpdate(uniqueId, fullName, productName, productId, email, phoneNumber, serviceAddress, district, state, pincode);
+         const success = await handleWarrantyUpdate(uniqueId,  productName, productId,fullName, email, phoneNumber, serviceAddress, district, state, pincode);
          if (!success) {
             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
          }
@@ -386,7 +386,7 @@ const findOrCreateUser = async (email, name, contact, address) => {
    return user;
 };
 
-const handleWarrantyUpdate = async (uniqueId, productName, productId, name, email, contact, address, district, state, pincode) => {
+const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, email, contact, address, district, state, pincode) => {
    try {
       console.time('Update Warranty');
 
