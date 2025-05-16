@@ -343,33 +343,33 @@ const fetchLocationByPincode = async (pincode) => {
 };
 
 // Cron job to run every night at 2:00 AM
-cron.schedule('7 14 * * *', async () => {
-  console.log('🔁 Running complaint location update job...');
+// cron.schedule('41 15 * * *', async () => {
+//   console.log('🔁 Running complaint location update job...');
 
-  try {
-    // Find complaints with a pincode but missing district or state
-    const complaints = await ComplaintModal.find({
-      pincode: { $exists: true, $ne: '' },
-      $or: [{ district: { $in: [null, ''] } }, { state: { $in: [null, ''] } }]
-    });
+//   try {
+//     // Find complaints with a pincode but missing district or state
+//     const complaints = await ComplaintModal.find({
+//       pincode: { $exists: true, $ne: '' },
+//       $or: [{ district: { $in: [null, ''] } }, { state: { $in: [null, ''] } }]
+//     });
 
-    console.log(`📄 Found ${complaints.length} complaints to update.`);
+//     console.log(`📄 Found ${complaints.length} complaints to update.`);
 
-    for (const complaint of complaints) {
-      const { pincode } = complaint;
-      const location = await fetchLocationByPincode(pincode);
+//     for (const complaint of complaints) {
+//       const { pincode } = complaint;
+//       const location = await fetchLocationByPincode(pincode);
 
-      if (location) {
-        complaint.district = location.district;
-        complaint.state = location.state;
-        await complaint.save();
-        console.log(`✅ Updated complaint ${complaint._id}`);
-      }
-    }
+//       if (location) {
+//         complaint.district = location.district;
+//         complaint.state = location.state;
+//         await complaint.save();
+//         console.log(`✅ Updated complaint ${complaint._id}`);
+//       }
+//     }
 
-    console.log('🎉 Complaint location update job finished.');
-  } catch (error) {
-    console.error('❌ Error during complaint location update job:', error);
-  }
-});
+//     console.log('🎉 Complaint location update job finished.');
+//   } catch (error) {
+//     console.error('❌ Error during complaint location update job:', error);
+//   }
+// });
 
