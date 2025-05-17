@@ -9,162 +9,95 @@ const axios = require('axios');
 console.log("✅ Cron job scheduler initialized...");
 const { admin } = require('../src/firebase/index')
 // Run every 60 minutes
-// cron.schedule("0 * * * *", async () => {
-//    console.log("🔄 Running scheduled task to assign service centers...");
-
-//    try {
-//       // Fetch pending complaints older than 2 minutes
-//       const pendingComplaints = await ComplaintModal.find({
-//          status: "PENDING",
-//          createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) }
-//       });
-
-//       console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
-
-//       for (let complaint of pendingComplaints) {
-       
-//          let serviceCenter = await ServiceModel.findOne({
-//             $and: [
-//                {
-//                   $or: [
-//                      { postalCode: complaint.pincode },
-//                      { pincodeSupported: { $in: [complaint.pincode] } }
-//                   ]
-//                },
-//                { brandsSupported: { $elemMatch: { value: complaint.brandId.toString() } } }
-//             ]
-//          });
-
-//          if (serviceCenter) {
-//             console.log("🏢 Service Center Found:");
-//             // console.log(`Service Center ID: ${serviceCenter._id}`);
-//             // console.log(`Name: ${serviceCenter.serviceCenterName}`);
-//             // console.log(`Contact: ${serviceCenter.contact}`);
-//             let changes = {
-//                assignServiceCenterId: serviceCenter._id,
-//                assignServiceCenter: serviceCenter.serviceCenterName,
-//                serviceCenterContact: serviceCenter.contact,
-//                status: "ASSIGN",
-//                autoAssign: "Yes"  
-//            };
-
-//             await ComplaintModal.findByIdAndUpdate(complaint._id, {
-//                assignServiceCenterId: serviceCenter._id,
-//                assignServiceCenter: serviceCenter.serviceCenterName,
-//                serviceCenterContact: serviceCenter.contact,
-//                status: "ASSIGN",
-//                $push: {
-//                   updateHistory: {
-//                       updatedAt: Date.now(), // Using Date.now() for consistency
-//                       changes,
-//                   }
-//                }
-//             });
-
-
-//             await sendNotification(
-//                serviceCenter._id,  // Use serviceCenter._id instead of complaint.assignServiceCenterId
-//                `Assign Complaint`,
-//                `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please review the details and take the necessary action.`
-//             );
-
-//             console.log(`✅ Assigned Service Center to Complaint ${complaint._id}`);
-//          } else {
-//             console.log(`⚠️ No service center found for complaint ${complaint._id}`);
-//          }
-//       }
-//    } catch (error) {
-//       console.error("❌ Error in assigning service center:", error);
-//    }
-// });
+ 
 
  
 
-cron.schedule("0 * * * *", async () => {
-  console.log("🔄 Running scheduled task to assign service centers...");
+// cron.schedule("0 * * * *", async () => {
+//   console.log("🔄 Running scheduled task to assign service centers...");
 
-  try {
-    const pendingComplaints = await ComplaintModal.find({
-      status: "PENDING",
-      createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) } // 1 hour ago
-    });
+//   try {
+//     const pendingComplaints = await ComplaintModal.find({
+//       status: "PENDING",
+//       createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) } // 1 hour ago
+//     });
 
-    console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
+//     console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
 
-    for (let complaint of pendingComplaints) {
-      // Find best-matched service center
-      const serviceCenters = await ServiceModel.aggregate([
-        {
-          $match: {
-            $or: [
-              { postalCode: complaint.pincode },
-              { pincodeSupported: { $in: [complaint.pincode] } }
-            ],
-            brandsSupported: { $elemMatch: { value: complaint.brandId.toString() } }
-          }
-        },
-        {
-          $addFields: {
-            activeCalls: { $size: { $ifNull: ["$activeComplaints", []] } } // activeComplaints assumed to be an array
-          }
-        },
-        {
-          $project: {
-            serviceCenterName: 1,
-            contact: 1,
-            avgTAT: 1,
-            avgRT: 1,
-            activeCalls: 1,
-            priorityScore: {
-              $add: [
-                { $cond: [{ $lte: ["$avgTAT", 24] }, 10, 0] },
-                { $cond: [{ $lte: ["$avgRT", 15] }, 10, 0] },
-                { $subtract: [100, "$activeCalls"] }
-              ]
-            }
-          }
-        },
-        { $sort: { priorityScore: -1 } },
-        { $limit: 1 }
-      ]);
+//     for (let complaint of pendingComplaints) {
+//       // Find best-matched service center
+//       const serviceCenters = await ServiceModel.aggregate([
+//         {
+//           $match: {
+//             $or: [
+//               { postalCode: complaint.pincode },
+//               { pincodeSupported: { $in: [complaint.pincode] } }
+//             ],
+//             brandsSupported: { $elemMatch: { value: complaint.brandId.toString() } }
+//           }
+//         },
+//         {
+//           $addFields: {
+//             activeCalls: { $size: { $ifNull: ["$activeComplaints", []] } } // activeComplaints assumed to be an array
+//           }
+//         },
+//         {
+//           $project: {
+//             serviceCenterName: 1,
+//             contact: 1,
+//             avgTAT: 1,
+//             avgRT: 1,
+//             activeCalls: 1,
+//             priorityScore: {
+//               $add: [
+//                 { $cond: [{ $lte: ["$avgTAT", 24] }, 10, 0] },
+//                 { $cond: [{ $lte: ["$avgRT", 15] }, 10, 0] },
+//                 { $subtract: [100, "$activeCalls"] }
+//               ]
+//             }
+//           }
+//         },
+//         { $sort: { priorityScore: -1 } },
+//         { $limit: 1 }
+//       ]);
 
-      const serviceCenter = serviceCenters[0];
+//       const serviceCenter = serviceCenters[0];
 
-      if (serviceCenter) {
-        const changes = {
-          assignServiceCenterId: serviceCenter._id,
-          assignServiceCenter: serviceCenter.serviceCenterName,
-          serviceCenterContact: serviceCenter.contact,
-          status: "ASSIGN",
-          autoAssign: "Yes"
-        };
+//       if (serviceCenter) {
+//         const changes = {
+//           assignServiceCenterId: serviceCenter._id,
+//           assignServiceCenter: serviceCenter.serviceCenterName,
+//           serviceCenterContact: serviceCenter.contact,
+//           status: "ASSIGN",
+//           autoAssign: "Yes"
+//         };
 
-        await ComplaintModal.findByIdAndUpdate(complaint._id, {
-          ...changes,
-          $push: {
-            updateHistory: {
-              updatedAt: Date.now(),
-              changes
-            }
-          }
-        });
+//         await ComplaintModal.findByIdAndUpdate(complaint._id, {
+//           ...changes,
+//           $push: {
+//             updateHistory: {
+//               updatedAt: Date.now(),
+//               changes
+//             }
+//           }
+//         });
 
-        await sendNotification(
-          serviceCenter._id,
-          `Assign Complaint`,
-          `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please take action.`
-        );
+//         await sendNotification(
+//           serviceCenter._id,
+//           `Assign Complaint`,
+//           `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please take action.`
+//         );
 
-        console.log(`✅ Assigned Complaint ${complaint._id} to ${serviceCenter.serviceCenterName}`);
-      } else {
-        console.log(`⚠️ No matching service center found for Complaint ${complaint._id}`);
-      }
-    }
-  } catch (error) {
-    console.error("❌ Error assigning service centers:", error);
-  }
-});
-
+//         console.log(`✅ Assigned Complaint ${complaint._id} to ${serviceCenter.serviceCenterName}`);
+//       } else {
+//         console.log(`⚠️ No matching service center found for Complaint ${complaint._id}`);
+//       }
+//     }
+//   } catch (error) {
+//     console.error("❌ Error assigning service centers:", error);
+//   }
+// });
+  // pause
 
 
 const sendNotification = async (serviceCenterId, title, body) => {
