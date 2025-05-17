@@ -97,7 +97,7 @@ const { admin } = require('../src/firebase/index')
 //     console.error("❌ Error assigning service centers:", error);
 //   }
 // });
-
+  // pause
 
 
 const sendNotification = async (serviceCenterId, title, body) => {
