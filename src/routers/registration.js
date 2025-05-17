@@ -105,6 +105,47 @@ router.patch("/uploadBrandLogo/:id", upload().single("brandLogo"), async (req, r
       res.status(500).send(err);
   }
 });
+router.patch("/uploadCenterQrCode/:id", upload().single("qrCode"), async (req, res) => {
+  try {
+      let _id = req.params.id;
+      let obj = await ServiceModel.findById(_id);
+      obj.images = req.file.location;
+      
+      let obj1 = await ServiceModel.findByIdAndUpdate(_id, { qrCode: obj.images }, { new: true });
+      res.json({ status: true, msg: "Qr Code Uploaded Successfully", data: obj1 });
+  } catch (err) {
+      res.status(500).send(err);
+  }
+});
+router.patch("/uploadCenterUPIid/:id", async (req, res) => {
+  try {
+    const _id = req.params.id;
+    const { UPIid } = req.body; // Expecting UPIid in request body
+
+    if (!UPIid) {
+      return res.status(400).json({ status: false, msg: "UPI ID is required" });
+    }
+
+    const updatedService = await ServiceModel.findByIdAndUpdate(
+      _id,
+      { UPIid },
+      { new: true }
+    );
+
+    if (!updatedService) {
+      return res.status(404).json({ status: false, msg: "Service Center not found" });
+    }
+
+    res.json({
+      status: true,
+      msg: "UPI ID updated successfully",
+      data: updatedService
+    });
+  } catch (err) {
+    res.status(500).json({ status: false, msg: "Internal Server Error", error: err.message });
+  }
+});
+
 router.patch("/uploadCenterGstCertificate/:id", upload().single("gstCertificate"), async (req, res) => {
   try {
       let _id = req.params.id;
