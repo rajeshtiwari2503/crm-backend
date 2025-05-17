@@ -251,9 +251,16 @@ const serviceCenterRegistrationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+      UPIid:{
+        type: String  
+    },
+    qrCode: {
+        type: String  
+    },
     gstCertificate: {
         type: String  
     },
+  
     identityProof: {
         type: String  
     },
