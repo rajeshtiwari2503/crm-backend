@@ -13,13 +13,13 @@ const { admin } = require('../src/firebase/index')
 
  
 
-cron.schedule("0 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   console.log("🔄 Running scheduled task to assign service centers...");
 
   try {
     const pendingComplaints = await ComplaintModal.find({
       status: "PENDING",
-      createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) } // 1 hour ago
+      createdAt: { $lte: new Date(Date.now() - 5 * 60 * 1000) } // 5 minutes ago
     });
 
     console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
