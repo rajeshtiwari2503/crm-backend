@@ -13,91 +13,91 @@ const { admin } = require('../src/firebase/index')
 
  
 
-// cron.schedule("0 * * * *", async () => {
-//   console.log("🔄 Running scheduled task to assign service centers...");
+cron.schedule("0 * * * *", async () => {
+  console.log("🔄 Running scheduled task to assign service centers...");
 
-//   try {
-//     const pendingComplaints = await ComplaintModal.find({
-//       status: "PENDING",
-//       createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) } // 1 hour ago
-//     });
+  try {
+    const pendingComplaints = await ComplaintModal.find({
+      status: "PENDING",
+      createdAt: { $lte: new Date(Date.now() - 60 * 60 * 1000) } // 1 hour ago
+    });
 
-//     console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
+    console.log(`🟢 Found ${pendingComplaints.length} pending complaints`);
 
-//     for (let complaint of pendingComplaints) {
-//       // Find best-matched service center
-//       const serviceCenters = await ServiceModel.aggregate([
-//         {
-//           $match: {
-//             $or: [
-//               { postalCode: complaint.pincode },
-//               { pincodeSupported: { $in: [complaint.pincode] } }
-//             ],
-//             brandsSupported: { $elemMatch: { value: complaint.brandId.toString() } }
-//           }
-//         },
-//         {
-//           $addFields: {
-//             activeCalls: { $size: { $ifNull: ["$activeComplaints", []] } } // activeComplaints assumed to be an array
-//           }
-//         },
-//         {
-//           $project: {
-//             serviceCenterName: 1,
-//             contact: 1,
-//             avgTAT: 1,
-//             avgRT: 1,
-//             activeCalls: 1,
-//             priorityScore: {
-//               $add: [
-//                 { $cond: [{ $lte: ["$avgTAT", 24] }, 10, 0] },
-//                 { $cond: [{ $lte: ["$avgRT", 15] }, 10, 0] },
-//                 { $subtract: [100, "$activeCalls"] }
-//               ]
-//             }
-//           }
-//         },
-//         { $sort: { priorityScore: -1 } },
-//         { $limit: 1 }
-//       ]);
+    for (let complaint of pendingComplaints) {
+      // Find best-matched service center
+      const serviceCenters = await ServiceModel.aggregate([
+        {
+          $match: {
+            $or: [
+              { postalCode: complaint.pincode },
+              { pincodeSupported: { $in: [complaint.pincode] } }
+            ],
+            brandsSupported: { $elemMatch: { value: complaint.brandId.toString() } }
+          }
+        },
+        {
+          $addFields: {
+            activeCalls: { $size: { $ifNull: ["$activeComplaints", []] } } // activeComplaints assumed to be an array
+          }
+        },
+        {
+          $project: {
+            serviceCenterName: 1,
+            contact: 1,
+            avgTAT: 1,
+            avgRT: 1,
+            activeCalls: 1,
+            priorityScore: {
+              $add: [
+                { $cond: [{ $lte: ["$avgTAT", 24] }, 10, 0] },
+                { $cond: [{ $lte: ["$avgRT", 15] }, 10, 0] },
+                { $subtract: [100, "$activeCalls"] }
+              ]
+            }
+          }
+        },
+        { $sort: { priorityScore: -1 } },
+        { $limit: 1 }
+      ]);
 
-//       const serviceCenter = serviceCenters[0];
+      const serviceCenter = serviceCenters[0];
 
-//       if (serviceCenter) {
-//         const changes = {
-//           assignServiceCenterId: serviceCenter._id,
-//           assignServiceCenter: serviceCenter.serviceCenterName,
-//           serviceCenterContact: serviceCenter.contact,
-//           status: "ASSIGN",
-//           autoAssign: "Yes"
-//         };
+      if (serviceCenter) {
+        const changes = {
+          assignServiceCenterId: serviceCenter._id,
+          assignServiceCenter: serviceCenter.serviceCenterName,
+          serviceCenterContact: serviceCenter.contact,
+          status: "ASSIGN",
+          autoAssign: "Yes"
+        };
 
-//         await ComplaintModal.findByIdAndUpdate(complaint._id, {
-//           ...changes,
-//           $push: {
-//             updateHistory: {
-//               updatedAt: Date.now(),
-//               changes
-//             }
-//           }
-//         });
+        await ComplaintModal.findByIdAndUpdate(complaint._id, {
+          ...changes,
+          $push: {
+            updateHistory: {
+              updatedAt: Date.now(),
+              changes
+            }
+          }
+        });
 
-//         await sendNotification(
-//           serviceCenter._id,
-//           `Assign Complaint`,
-//           `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please take action.`
-//         );
+        await sendNotification(
+          serviceCenter._id,
+          `Assign Complaint`,
+          `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please take action.`
+        );
 
-//         console.log(`✅ Assigned Complaint ${complaint._id} to ${serviceCenter.serviceCenterName}`);
-//       } else {
-//         console.log(`⚠️ No matching service center found for Complaint ${complaint._id}`);
-//       }
-//     }
-//   } catch (error) {
-//     console.error("❌ Error assigning service centers:", error);
-//   }
-// });
-  // pause
+        console.log(`✅ Assigned Complaint ${complaint._id} to ${serviceCenter.serviceCenterName}`);
+      } else {
+        console.log(`⚠️ No matching service center found for Complaint ${complaint._id}`);
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error assigning service centers:", error);
+  }
+});
+  
 
 
 const sendNotification = async (serviceCenterId, title, body) => {
