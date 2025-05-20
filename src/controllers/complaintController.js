@@ -1038,31 +1038,114 @@ const getComplaintsByInProgress = async (req, res) => {
       res.status(400).send(err);
    }
 };
+
+
+// const getComplaintsByComplete = async (req, res) => {
+//    try {
+//       // let data = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+//       //   const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
+//       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+//          .select("_id")
+//          .lean();
+//       const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+//       // Step 2: Fetch all complaints
+//       const complaints = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 });
+
+//       // Step 3: Filter complaints with active brandId
+//       const filteredComplaints = complaints.filter(c =>
+//          activeBrandIds.includes(c.brandId?.toString())
+//       );
+//       let data = filteredComplaints;
+//       if (data.length === 0) {
+//          return res.status(404).send({ status: false, msg: "No pending complaints found." });
+//       }
+//       res.send(data);
+//    } catch (err) {
+//       res.status(400).send(err);
+//    }
+// };
+
+
 const getComplaintsByComplete = async (req, res) => {
+ 
    try {
-      // let data = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
-      //   const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }, );
-      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-         .select("_id")
-         .lean();
-      const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const skip = (page - 1) * limit;
 
-      // Step 2: Fetch all complaints
-      const complaints = await ComplaintModal.find({ status: "COMPLETED" }).sort({ _id: -1 });
+      // Step 1: Get all ACTIVE brand IDs
+      const activeBrandIds = await BrandRegistrationModel
+         .find({ status: "ACTIVE" }, { _id: 1 })
+         .lean()
+         .then(brands => brands.map(b => b._id));
 
-      // Step 3: Filter complaints with active brandId
-      const filteredComplaints = complaints.filter(c =>
-         activeBrandIds.includes(c.brandId?.toString())
-      );
-      let data = filteredComplaints;
-      if (data.length === 0) {
-         return res.status(404).send({ status: false, msg: "No pending complaints found." });
-      }
-      res.send(data);
+     
+
+      // Step 3: Build the complaint query
+      const complaintQuery = {
+         brandId: { $in: activeBrandIds },
+         status:  "COMPLETED"
+      };
+
+      // Step 4: Fetch complaints and total count
+      const [complaints, total] = await Promise.all([
+         ComplaintModal.find(complaintQuery)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+         ComplaintModal.countDocuments(complaintQuery)
+      ]);
+
+      // Step 5: Return response
+      res.status(200).json({
+         data: complaints,
+         totalComplaints: total,
+         currentPage: page,
+         totalPages: Math.ceil(total / limit)
+      });
    } catch (err) {
-      res.status(400).send(err);
+      console.error("Error in getAllComplaint:", err);
+      res.status(500).json({ error: "Internal server error" });
    }
 };
+
+const getCompleteComplaintByRole = async (req, res) => {
+   try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+
+      // Always include only COMPLETED complaints
+      let filterConditions = { status: "COMPLETED" };
+
+      if (brandId) filterConditions.brandId = brandId;
+      if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+      if (technicianId) filterConditions.technicianId = technicianId;
+      if (userId) filterConditions.userId = userId;
+      if (dealerId) filterConditions.userId = dealerId; // This will override `userId` if both are present
+
+      // Get count
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+      // Get paginated data
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit)
+         .lean(); // lean() for performance
+
+      res.status(200).send({ data, totalComplaints });
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).send({ message: "Internal server error" });
+   }
+};
+
+
 const getComplaintsByCancel = async (req, res) => {
    try {
       // let data = await ComplaintModal.find({ status: "CANCELED" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
@@ -2081,5 +2164,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint,getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
