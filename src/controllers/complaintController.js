@@ -1111,6 +1111,39 @@ const getComplaintsByComplete = async (req, res) => {
    }
 };
 
+const getCompleteComplaintByRole = async (req, res) => {
+   try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+
+      // Always include only COMPLETED complaints
+      let filterConditions = { status: "COMPLETED" };
+
+      if (brandId) filterConditions.brandId = brandId;
+      if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+      if (technicianId) filterConditions.technicianId = technicianId;
+      if (userId) filterConditions.userId = userId;
+      if (dealerId) filterConditions.userId = dealerId; // This will override `userId` if both are present
+
+      // Get count
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+      // Get paginated data
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit)
+         .lean(); // lean() for performance
+
+      res.status(200).send({ data, totalComplaints });
+   } catch (err) {
+      console.error("Error fetching complaints:", err);
+      res.status(500).send({ message: "Internal server error" });
+   }
+};
 
 
 const getComplaintsByCancel = async (req, res) => {
@@ -2131,5 +2164,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint,getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
