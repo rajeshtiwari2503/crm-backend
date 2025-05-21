@@ -22,6 +22,8 @@ const complaintSchema = new mongoose.Schema({
   priorityLevel: { type: String },
   userName: { type: String },
   userId: { type: String },
+   empName: { type: String },
+  empId: { type: String },
   dealerName: { type: String },
   dealerId: { type: String },
   updateComments: [
