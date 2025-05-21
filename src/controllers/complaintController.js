@@ -965,6 +965,47 @@ const getComplaintByCenterId = async (req, res) => {
    }
 };
 
+
+const getCompleteComplaintByUserContact = async (req, res) => {
+   try {
+     
+      
+      const { phoneNumber } = req.query; // or req.body or req.params based on your route setup
+//  console.log("req.query",req.body);
+//  console.log("phoneNumber",req.query);
+ console.log("phoneNumber",phoneNumber);
+      if (!phoneNumber) {
+         return res.status(400).send({ status: false, msg: "Phone number is required." });
+      }
+
+      // Step 1: Get active brand IDs
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+         .select("_id")
+         .lean();
+      const activeBrandIds = activeBrands.map(b => b._id.toString());
+
+      // Step 2: Fetch complaints matching phone number and "ASSIGN" status
+      const complaints = await ComplaintModal.find({
+         phoneNumber: phoneNumber // assuming exact match
+      }).sort({ _id: -1 });
+
+      // Step 3: Filter complaints to only include those with active brands
+      const filteredComplaints = complaints.filter(c =>
+         activeBrandIds.includes(c.brandId?.toString())
+      );
+
+      if (filteredComplaints.length === 0) {
+         return res.status(404).send({ status: false, msg: "No assigned complaints found for this contact." });
+      }
+
+      res.send(filteredComplaints);
+   } catch (err) {
+      res.status(400).send({ status: false, error: err.message });
+   }
+};
+
+
+
 const getComplaintsByPending = async (req, res) => {
    try {
       // let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
@@ -1014,6 +1055,7 @@ const getComplaintsByAssign = async (req, res) => {
       res.status(400).send(err);
    }
 };
+
 const getComplaintsByInProgress = async (req, res) => {
    try {
       // let data = await ComplaintModal.find({ status: "IN PROGRESS" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
@@ -2163,6 +2205,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending,getCompleteComplaintByUserContact, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint,getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
