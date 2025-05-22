@@ -88,6 +88,9 @@ router.get("/searchComplaint", async (req, res) => {
     searchConditions.push({ phoneNumber:trimmedSearchTerm });
     searchConditions.push({ district: { $regex: trimmedSearchTerm, $options: "i" } });
     searchConditions.push({ state: { $regex: trimmedSearchTerm, $options: "i" } });
+    searchConditions.push({ fullName: { $regex: trimmedSearchTerm, $options: "i" } });
+    searchConditions.push({ assignServiceCenter: { $regex: trimmedSearchTerm, $options: "i" } });
+    searchConditions.push({ productBrand: { $regex: trimmedSearchTerm, $options: "i" } });
     
     searchConditions.push({ complaintId:trimmedSearchTerm });
     
