@@ -15,6 +15,8 @@ const ProductModel = require("../models/product");
 const Complaints = require("../models/complaint");
 const ComplaintModal = require("../models/complaint");
 const ServicePayment = require("../models/servicePaymentModel");
+const ServiceCenterDepositModal =require("../models/serviceCenterDepositModel");
+const OrderModel = require("../models/order");
 
 // router.get("/dashboardDetails", async (req, res) => {
 //   try {
@@ -2036,7 +2038,68 @@ router.get("/getAllTatByServiceCenter", async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
-module.exports = router;
+
+
+
+
+
+ 
+
+router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (req, res) => {
+  try {
+    const { serviceCenterId } = req.params;
+    // console.log("serviceCenterId", serviceCenterId);
+
+    // 1. Get all orders for the service center
+    const orderData = await OrderModel.find({ serviceCenterId: serviceCenterId }).lean();
+
+    // Total order price
+    // const totalOrderPrice = orderData.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+const totalOrderPrice = orderData.reduce((sum, order) => {
+  const partsTotal = order.spareParts.reduce((partSum, part) => {
+    return partSum + ((part.price || 0)  );
+  }, 0);
+  return sum + partsTotal;
+}, 0);
+
+    // Categorize orders
+    const order = orderData.filter(f => f.status === "ORDER");
+    const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
+    const notApproveOrder = order.filter(f => f.brandApproval === "NOT_APPROVE");
+    const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
+
+    // 2. Get total deposit for the service center
+    const depositAggregation = await ServiceCenterDepositModal.aggregate([
+      {
+        $match: { serviceCenterId: serviceCenterId }  // Match by plain string
+      },
+      {
+        $group: {
+          _id: null,
+          totalDeposit: { $sum: "$payAmount" },
+        }
+      }
+    ]);
+
+    const totalDeposit = depositAggregation[0]?.totalDeposit || 0;
+
+    res.status(200).json({
+      totalOrderPrice,
+      totalDeposit,
+      orderCount: order.length,
+      approvedOrderCount: approveOrder.length,
+      notApprovedOrderCount: notApproveOrder.length,
+      canceledOrderCount: cancelOrder.length,
+      totalOrders: orderData.length
+    });
+
+  } catch (error) {
+    console.error("Error fetching order price and deposits:", error);
+    res.status(500).json({ error: 'Error fetching order price and deposits' });
+  }
+});
+
+
 
 
 
