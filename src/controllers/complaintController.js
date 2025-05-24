@@ -6,298 +6,15 @@ const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
 const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
-const OneSignal = require('onesignal-node');
+
 const ServicePaymentModel = require("../models/servicePaymentModel")
-const fetch = require("node-fetch");
+
 
 
 const { admin } = require('../firebase/index')
+const { sendBlessTemplateSms } = require("../services/smsService")
+const smsTemplates = require("../services/smsTemplate")
 
-
-// const addComplaint = async (req, res) => {
-//    try {
-//       let body = req.body;
-//       let { city, pincode } = body; // Extract city and pincode from request body
-
-//       // Find a service center based on city or pincode
-//       let serviceCenter;
-//       if (pincode) {
-//          // serviceCenter = await ServiceModel.findOne({ postalCode: pincode });
-//          serviceCenter = await ServiceModel.findOne({
-//             $or: [
-//                { postalCode: pincode },
-//                { pincodeSupported: { $in: [pincode] } }
-//             ]
-//          });
-//       }
-//        else if (city) {
-//          serviceCenter = await ServiceModel.findOne({ city: city });
-//       }
-//       // console.log(serviceCenter);
-
-//       if (!serviceCenter) {
-//          let obj = {
-//             ...body,
-//             issueImages: req.file?.location,
-//             assignServiceCenterId: serviceCenter?._id,
-//             assignServiceCenter: serviceCenter?.serviceCenterName,
-//             assignServiceCenterTime: new Date()
-//          };
-//          let data = new ComplaintModal(obj);
-//          await data.save();
-
-
-//          const notification = new NotificationModel({
-//             complaintId: data._id,
-//             userId: data.userId,
-//             brandId: data.brandId,
-//             serviceCenterId: serviceCenter?._id,
-//             dealerId: data.dealerId,
-//             userName: data.fullName,
-//             title: `  Complaint`,
-//             message: `Registered Your Complaint, ${req.body.fullName}!`,
-//          });
-//          await notification.save();
-//          return res.json({ status: true, msg: "Complaint Added" });
-//          // return res.status(404).json({ status: false, msg: 'No service center found for the provided city or pincode.' });
-//       }
-
-//       let obj = {
-//          ...body,
-//          issueImages: req.file?.location,
-//          assignServiceCenterId: serviceCenter?._id,
-//          assignServiceCenter: serviceCenter?.serviceCenterName,
-//          assignServiceCenterTime: new Date()
-//       };
-//       let data = new ComplaintModal(obj);
-//       await data.save();
-
-
-//       const notification = new NotificationModel({
-//          complaintId: data._id,
-//          userId: data.userId,
-//          brandId: data.brandId,
-//          serviceCenterId: serviceCenter?._id,
-//          dealerId: data.dealerId,
-//          userName: data.fullName,
-//          title: `  Complaint`,
-//          message: `Registered Your Complaint, ${req.body.fullName}!`,
-//       });
-//       await notification.save();
-//       res.json({ status: true, msg: "Complaint Added" });
-//    } catch (err) {
-//       console.error(err);
-//       res.status(400).send(err);
-//    }
-// };
-
-const twilio = require("twilio");
-
-const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-const sendWhatsAppMessage = async (fullName, phoneNumber, _id) => {
-   const formattedPhoneNumber = phoneNumber.startsWith("+")
-      ? phoneNumber
-      : `+91${phoneNumber}`;
-
-   console.log("Formatted phoneNumber:", formattedPhoneNumber);
-
-   const messageBody = `Hello ${fullName}, your complaint has been successfully registered. Our service center will contact you shortly.
-      
-      Complaint ID: ${_id}
-      
-      Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
-   console.log("messageBody", messageBody);
-
-   try {
-      const message = await client.messages.create({
-         from: process.env.TWILIO_WHATSAPP_NUMBER,
-         to: `whatsapp:${formattedPhoneNumber}`,  // Ensure phone number includes country code
-         body: messageBody
-      });
-      console.log("WhatsApp Message Sent:", message.sid);
-   } catch (error) {
-      console.error("WhatsApp Message Error:", error);
-   }
-};
-
-
-
-const clientSms = new OneSignal.Client(process.env.ONESIGNAL_APP_ID, process.env.ONESIGNAL_REST_API_KEY);
-
-// const sendSMS = async (phoneNumber, message) => {
-//    try {
-//       const notification = {
-//          app_id: process.env.ONESIGNAL_APP_ID,
-//          contents: { en: message },
-//          include_phone_numbers: [phoneNumber], // Sending SMS
-//       };
-// console.log("notification",notification);
-// console.log("ONESIGNAL_APP_ID",process.env.ONESIGNAL_APP_ID,process.env.ONESIGNAL_REST_API_KEY);
-
-//       const response = await clientSms.createNotification(notification);
-//       console.log("OneSignal SMS Sent:", response);
-//    } catch (error) {
-//       console.error("OneSignal SMS Error:", error);
-//    }
-// };
-
-const formatPhoneNumber = (phoneNumber) => {
-   if (!phoneNumber.startsWith("+")) {
-      return `+91${phoneNumber}`; // Assuming India (+91), change as needed
-   }
-   return phoneNumber;
-};
-
-const sendSMS = async (phoneNumber, message) => {
-   try {
-      const response = await fetch("https://onesignal.com/api/v1/notifications", {
-         method: "POST",
-         headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Basic ${process.env.ONESIGNAL_API_KEY}` // Ensure API key is correct
-         },
-         body: JSON.stringify({
-            app_id: process.env.ONESIGNAL_APP_ID,
-            name: "Complaint Update",  // 🔹 Add this field
-            include_phone_numbers: [phoneNumber],
-            contents: { en: message }
-         })
-      });
-
-      const data = await response.json();
-      console.log("✅ OneSignal SMS Response:", data);
-
-      if (data.errors) {
-         console.error("❌ OneSignal SMS Error:", data.errors);
-      }
-
-      return data;
-   } catch (error) {
-      console.error("❌ OneSignal SMS Error:", error);
-      throw error;
-   }
-};
-
-
-// const addComplaint = async (req, res) => {
-//    try {
-//       let body = req.body;
-//       let { city, pincode, emailAddress, fullName, phoneNumber, serviceAddress, brandId } = body; // Extract email and fullName from request body
-//       const email = emailAddress;
-//       const uniqueId = body?.uniqueId;
-
-//       let user = await UserModel.findOne({ email });
-
-//       // If user is not registered, register them
-//       if (!user) {
-//          user = new UserModel({ email: emailAddress, name: fullName, contact: phoneNumber, address: serviceAddress, password: "12345678" });
-//          await user.save();
-//       }
-//       // console.log(uniqueId);
-
-//       if (uniqueId) {
-//          const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
-//          console.timeEnd("Find Warranty");
-//          if (!warranty) {
-//             return res.status(404).json({ status: false, msg: 'Warranty not found' });
-//          }
-
-//          // Find the specific record with the matching uniqueId
-//          const record = warranty.records.find(record => record.uniqueId === uniqueId);
-//          console.timeEnd("Find Record");
-//          if (!record) {
-//             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
-//          }
-
-
-
-//          // Activate the warranty
-//          record.isActivated = true;
-//          record.userName = fullName;
-//          record.email = email;
-//          record.contact = phoneNumber;
-//          record.address = serviceAddress;
-//          record.district = body?.district;
-//          record.state = body?.state;
-//          record.pincode = pincode;
-//          record.activationDate = new Date();
-
-//          // Save the updated warranty
-//          await warranty.save();
-//       }
-
-//       // Find a service center based on city or pincode
-//       let serviceCenter;
-//       // if (pincode) {
-//       //    serviceCenter = await ServiceModel.findOne({
-//       //       $or: [
-//       //          { postalCode: pincode },
-//       //          { pincodeSupported: { $in: [pincode] } }
-//       //       ]
-//       //    });
-//       // } 
-//       if (pincode) {
-//          serviceCenter = await ServiceModel.findOne({
-//             $and: [
-//                {
-//                   $or: [
-//                      { postalCode: pincode },
-//                      { pincodeSupported: { $in: [pincode] } }
-//                   ]
-//                },
-//                { brandsSupported: { $in: [brandId] } }
-//             ]
-//          });
-
-//       }
-
-
-
-//       // Prepare the complaint object
-//       let obj = {
-//          ...body,
-//          userId: user._id,
-//          userName: user.name,
-//          issueImages: req.file?.location,
-//          assignServiceCenterId: serviceCenter?._id,
-//          assignServiceCenter: serviceCenter?.serviceCenterName,
-//          serviceCenterContact: serviceCenter?.contact,
-//          assignServiceCenterTime: new Date()
-//       };
-//       //  && serviceCenter.serviceCenterType === "Independent"
-//       if (serviceCenter) {
-//          obj.status = "ASSIGN";
-//       }
-//       // Save the complaint
-//       let data = new ComplaintModal(obj);
-//       await data.save();
-
-//       // Create a notification for the user
-//       const notification = new NotificationModel({
-//          complaintId: data._id,
-//          userId: data.userId,
-//          brandId: data.brandId,
-//          serviceCenterId: serviceCenter?._id,
-//          dealerId: data.dealerId,
-//          userName: fullName,
-//          title: `Complaint`,
-//          message: `Registered Your Complaint, ${fullName}!`,
-//       });
-//       await notification.save();
-
-
-//       const _id = data._id
-//       // await sendWhatsAppMessage(fullName, phoneNumber, _id);
-
-//       // const smsMessage = `Hello ${fullName}, your complaint (ID: ${data._id}) has been registered successfully.Track your complaint here: https://crm.servsy.in/complaint/details/${_id}`;
-//       // await sendSMS(phoneNumber, smsMessage);
-//       res.json({ status: true, msg: "Complaint Added", user: user });
-//    } catch (err) {
-//       console.error(err);
-//       res.status(400).send(err);
-//    }
-// };
 
 
 const addComplaint = async (req, res) => {
@@ -324,7 +41,7 @@ const addComplaint = async (req, res) => {
 
       // Handle warranty lookup and update
       if (uniqueId) {
-         const success = await handleWarrantyUpdate(uniqueId,  productName, productId,fullName, email, phoneNumber, serviceAddress, district, state, pincode);
+         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode);
          if (!success) {
             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
          }
@@ -348,6 +65,21 @@ const addComplaint = async (req, res) => {
 
       const complaint = new ComplaintModal(complaintData);
       await complaint.save();
+
+      // Prepare and send SMS
+      const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
+         fullName,
+         complaintId: complaint.complaintId || complaint._id.toString(),
+         issueType: complaint?.detailedDescription,
+         serviceCenterName: serviceCenter?.serviceCenterName || 'Our Service Center',
+         visitTime: '10:00 AM Tomorrow', // Dynamically set your visit time here
+         serviceCenterPhone: serviceCenter?.contact || 'N/A',
+         otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
+         helpline: '1800-123-456' // Change to your helpline
+      });
+      // console.log("smsVars", smsVars);
+
+      // await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
 
       // Create notification
       const notification = new NotificationModel({
@@ -968,12 +700,12 @@ const getComplaintByCenterId = async (req, res) => {
 
 const getCompleteComplaintByUserContact = async (req, res) => {
    try {
-     
-      
+
+
       const { phoneNumber } = req.query; // or req.body or req.params based on your route setup
-//  console.log("req.query",req.body);
-//  console.log("phoneNumber",req.query);
- console.log("phoneNumber",phoneNumber);
+      //  console.log("req.query",req.body);
+      //  console.log("phoneNumber",req.query);
+      console.log("phoneNumber", phoneNumber);
       if (!phoneNumber) {
          return res.status(400).send({ status: false, msg: "Phone number is required." });
       }
@@ -1029,6 +761,30 @@ const getComplaintsByPending = async (req, res) => {
    } catch (err) {
       res.status(400).send(err);
    }
+};
+const getComplaintsByHighPriorityPending = async (req, res) => {
+   try {
+      // let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+      .select("_id")
+   .lean();
+const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+// Step 2: Fetch all complaints
+const complaints = await ComplaintModal.find({ status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] } }).sort({ _id: -1 });
+
+// Step 3: Filter complaints with active brandId
+const filteredComplaints = complaints.filter(c =>
+   activeBrandIds.includes(c.brandId?.toString())
+);
+let data = filteredComplaints;
+if (data.length === 0) {
+   return res.status(404).send({ status: false, msg: "No pending complaints found." });
+}
+res.send(data);
+   } catch (err) {
+   res.status(400).send(err);
+}
 };
 const getComplaintsByAssign = async (req, res) => {
    try {
@@ -1110,7 +866,7 @@ const getComplaintsByInProgress = async (req, res) => {
 
 
 const getComplaintsByComplete = async (req, res) => {
- 
+
    try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 50;
@@ -1122,12 +878,12 @@ const getComplaintsByComplete = async (req, res) => {
          .lean()
          .then(brands => brands.map(b => b._id));
 
-     
+
 
       // Step 3: Build the complaint query
       const complaintQuery = {
          brandId: { $in: activeBrandIds },
-         status:  "COMPLETED"
+         status: "COMPLETED"
       };
 
       // Step 4: Fetch complaints and total count
@@ -1334,39 +1090,39 @@ const getComplaintsByCustomerSidePending = async (req, res) => {
 };
 
 const getTodayCreatedComplaints = async (req, res) => {
-  try {
-    const { date } = req.query;
+   try {
+      const { date } = req.query;
 
-    if (!date) {
-      return res.status(400).send({ status: false, msg: "Date query parameter is required." });
-    }
+      if (!date) {
+         return res.status(400).send({ status: false, msg: "Date query parameter is required." });
+      }
 
-    // Parse the date string to Date object for start and end of day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+      // Parse the date string to Date object for start and end of day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
 
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-      .select("_id")
-      .lean();
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+         .select("_id")
+         .lean();
 
-    const activeBrandIds = activeBrands.map((b) => b._id.toString());
+      const activeBrandIds = activeBrands.map((b) => b._id.toString());
 
-    const data = await ComplaintModal.find({
-      createdAt: { $gte: startOfDay, $lte: endOfDay },
-      brandId: { $in: activeBrandIds }
-    }).sort({ _id: -1 });
+      const data = await ComplaintModal.find({
+         createdAt: { $gte: startOfDay, $lte: endOfDay },
+         brandId: { $in: activeBrandIds }
+      }).sort({ _id: -1 });
 
-    if (data.length === 0) {
-      return res.status(404).send({ status: false, msg: "No complaints created on this date." });
-    }
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No complaints created on this date." });
+      }
 
-    res.send(data);
-  } catch (err) {
-    res.status(400).send(err);
-  }
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
 };
 
 
@@ -1405,37 +1161,37 @@ const getTodayCreatedComplaints = async (req, res) => {
 
 
 const getTodayCompletedComplaints = async (req, res) => {
-  try {
-    let { date } = req.query;
+   try {
+      let { date } = req.query;
 
-    // Use provided date or default to today's date
-    const baseDate = date ? new Date(date) : new Date();
-    const startOfDay = new Date(baseDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(baseDate.setHours(23, 59, 59, 999));
+      // Use provided date or default to today's date
+      const baseDate = date ? new Date(date) : new Date();
+      const startOfDay = new Date(baseDate.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(baseDate.setHours(23, 59, 59, 999));
 
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-      .select("_id")
-      .lean();
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+         .select("_id")
+         .lean();
 
-    const activeBrandIds = activeBrands.map((b) => b._id.toString());
+      const activeBrandIds = activeBrands.map((b) => b._id.toString());
 
-    const data = await ComplaintModal.find({
-      status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
-      brandId: { $in: activeBrandIds },
-      updatedAt: { $gte: startOfDay, $lte: endOfDay },
-    }).sort({ _id: -1 });
+      const data = await ComplaintModal.find({
+         status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
+         brandId: { $in: activeBrandIds },
+         updatedAt: { $gte: startOfDay, $lte: endOfDay },
+      }).sort({ _id: -1 });
 
-    if (data.length === 0) {
-      return res.status(404).send({
-        status: false,
-        msg: "No completed or final verification complaints found for the selected date.",
-      });
-    }
+      if (data.length === 0) {
+         return res.status(404).send({
+            status: false,
+            msg: "No completed or final verification complaints found for the selected date.",
+         });
+      }
 
-    res.send(data);
-  } catch (err) {
-    res.status(400).send(err);
-  }
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
 };
 
 
@@ -1741,14 +1497,14 @@ const editComplaint = async (req, res) => {
          // let subCatData = await SubCategoryModal.findById({categoryId:data.categoryId});
          let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
 
-            const brandTrans = new BrandRechargeModel({
-               brandId: data.brandId,
-               brandName: data.productBrand,
-               amount: -body?.paymentBrand,
-               complaintId: data._id,
-               description: "Complaint Close  Payout"
-            });
-            await brandTrans.save();
+         const brandTrans = new BrandRechargeModel({
+            brandId: data.brandId,
+            brandName: data.productBrand,
+            amount: -body?.paymentBrand,
+            complaintId: data._id,
+            description: "Complaint Close  Payout"
+         });
+         await brandTrans.save();
          // if (subCatData) {
 
          //    const serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId }).exec();
@@ -2205,6 +1961,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending,getCompleteComplaintByUserContact, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint,getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact,getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
