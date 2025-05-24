@@ -18,139 +18,7 @@ const ServicePayment = require("../models/servicePaymentModel");
 const ServiceCenterDepositModal =require("../models/serviceCenterDepositModel");
 const OrderModel = require("../models/order");
 
-// router.get("/dashboardDetails", async (req, res) => {
-//   try {
-//     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
-//     const datetoday = new Date();
-//     datetoday.setHours(23, 59, 59, 999);
-//     const [
-//       customerCount,
-//       orderCount,
-//       serviceCount,
-//       technicianCount,
-//       dealerCount,
-//       sparePartCount,
-//       brandCount,
-//       allComplaintCount,
-//       complaintProdressCount,
-//       complaintAssignCount,
-//       complaintPendingCount,
-//       complaintCompleteCount,
-//       complaintCancelCount,
-//       complaintPartPendingCount,
-//       complaintCustomerSidePendingCount,
-//       complaintFinalVerificationCount,
-//       complaints0To1Days,
-//       complaints2To5Days,
-//       complaintsMoreThan5Days,
-//       complaintsCompletedToday,
-//       complaintsCreatedToday,
-//       complaints0To1PartPendingDays,
-//       complaints2To5PartPendingDays,
-//       complaintsMoreThan5PartPendingDays,
-//       schedule,
-//       scheduleUpcomming,
-//       centerPayment,
-//       centerPaidPayment,
-//       centerUnPaidPayment,
-//     ] = await Promise.all([
-//       UserModel.countDocuments({}),
-//       Orders.countDocuments({}),
-//       ServiceModel.countDocuments({}),
-//       TechnicianModal.countDocuments({}),
-//       DealerModel.countDocuments({}),
-//       SpareParts.countDocuments({}),
-//       BrandRegistrationModel.countDocuments({ status: "ACTIVE" }),
-//       Complaints.countDocuments({}),
-//       Complaints.countDocuments({ status: 'IN PROGRESS' }),
-//       Complaints.countDocuments({ status: 'ASSIGN' }),
-//       Complaints.countDocuments({ status: 'PENDING' }),
-//       Complaints.countDocuments({ status: 'COMPLETED' }),
-//       Complaints.countDocuments({ status: 'CANCELED' }),
-//       Complaints.countDocuments({ status: 'PART PENDING' }),
-//       Complaints.countDocuments({ status: 'CUSTOMER SIDE PENDING' }),
-//       Complaints.countDocuments({ status: 'FINAL VERIFICATION' }),
-     
  
-//       Complaints.countDocuments({
-//         $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
-//         createdAt: { $gte: oneDayAgo }
-//       }),
-//       Complaints.countDocuments({
-//         $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
-//         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo }
-//       }),
-//       Complaints.countDocuments({
-//         $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
-//         createdAt: { $lt: fiveDaysAgo }
-//       }),
-//       Complaints.countDocuments({    $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } }),
-//       Complaints.countDocuments({ createdAt: { $gte: todayStart, $lte: datetoday } }),
-
-//       Complaints.countDocuments({ status: 'PART PENDING', createdAt: { $gte: oneDayAgo } }),
-//       Complaints.countDocuments({ status: 'PART PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
-//       Complaints.countDocuments({ status: 'PART PENDING', createdAt: { $lt: fiveDaysAgo } }),
-//       // Complaints.countDocuments({ status: 'SCHEDULE UPCOMMING' }),
-//       Complaints.countDocuments({
-//         $or: [
-          
-//           { preferredServiceDate: { $gte: datetoday }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
-//         ]
-//       }),
-//       // Complaints.countDocuments({  preferredServiceDate: { $gte: todayStart  } }),
-//       Complaints.countDocuments({
-//         $or: [
-          
-//           { preferredServiceDate: { $lt: todayStart }, status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] } } // Past but not completed/canceled
-//         ]
-//       }),
-      
-//       ServicePayment.countDocuments({} ),
-//       ServicePayment.countDocuments({ status: 'PAID' }),
-//       ServicePayment.countDocuments({ status: 'UNPAID' }),
-     
-//     ]);
-
-//     res.json({
-//       customers: customerCount,
-//       orders: orderCount,
-//       services: serviceCount,
-//       technicians: technicianCount,
-//       dealers: dealerCount,
-//       spareParts: sparePartCount,
-//       brands: brandCount,
-//       complaints: {
-//         allComplaints: allComplaintCount,
-//         inProgress: complaintProdressCount,
-//         assign: complaintAssignCount,
-//         pending: complaintPendingCount,
-//         complete: complaintCompleteCount,
-//         cancel: complaintCancelCount,
-//         partPending: complaintPartPendingCount,
-//         customerSidePending: complaintCustomerSidePendingCount,
-//         finalVerification: complaintFinalVerificationCount,
-//         zeroToOneDays: complaints0To1Days,
-//         twoToFiveDays: complaints2To5Days,
-//         moreThanFiveDays: complaintsMoreThan5Days,
-//         completedToday: complaintsCompletedToday,
-//         createdToday: complaintsCreatedToday,
-//         zeroToOneDaysPartPending: complaints0To1PartPendingDays,
-//         twoToFiveDaysPartPending: complaints2To5PartPendingDays,
-//         moreThanFiveDaysPartPending: complaintsMoreThan5PartPendingDays,
-//         completedToday: complaintsCompletedToday,
-//         schedule: schedule,
-//         scheduleUpcomming: scheduleUpcomming,
-       
-//       },
-//       centerPayment:centerPayment,
-//       centerPaidPayment:centerPaidPayment,
-//       centerUnPaidPayment:centerUnPaidPayment,
-//     });
-//   } catch (err) {
-//     res.status(500).send(err);
-//   }
-// });
-
 
 router.get("/dashboardDetails", async (req, res) => {
   try {
@@ -213,17 +81,17 @@ router.get("/dashboardDetails", async (req, res) => {
       Complaints.countDocuments({ status: 'FINAL VERIFICATION', brandId: { $in: activeBrandIds } }),
 
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
         createdAt: { $gte: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
         createdAt: { $lt: fiveDaysAgo },
         brandId: { $in: activeBrandIds }
       }),
@@ -344,115 +212,7 @@ router.get('/getUserAndProduct', async (req, res) => {
 });
 
 
-
  
-
- 
-
-// router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
-//   try {
-//     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
-//     const { stateZone = [], brand = [] } = req.body;
-//     const datetoday = new Date();
-//     datetoday.setHours(23, 59, 59, 999);
-
-//     // 🔍 Optional filters
-//     const filters = [];
-
-//     if (Array.isArray(stateZone) && stateZone.length > 0) {
-//       filters.push({
-//         $or: [
-//           { state: { $in: stateZone.map(zone => zone.trim()) } },
-//           { state: { $elemMatch: { $in: stateZone.map(zone => zone.trim()) } } },
-//         ]
-//       });
-//     }
-
-//     if (Array.isArray(brand) && brand.length > 0) {
-//       filters.push({
-//         brandId: { $in: brand.map(b => b.value) }
-//       });
-//     }
-
-//     // 🔧 Define queries
-//     const queries = {
-//       allComplaints: {},
-//       inProgress: { status: "IN PROGRESS" },
-//       assign: { status: "ASSIGN" },
-//       pending: { status: "PENDING" },
-//       complete: { status: "COMPLETED" },
-//       cancel: { status: "CANCELED" },
-//       partPending: { status: "PART PENDING" },
-//       customerSidePending: { status: "CUSTOMER SIDE PENDING" },
-//       finalVerification: { status: "FINAL VERIFICATION" },
-//       schedule: {
-//         $and: [
-//           {
-//             preferredServiceDate: { $gte: datetoday },
-//             status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
-//           }
-//         ]
-//       },
-//       zeroToOneDays: {
-//         status: { $in: ["PENDING", "IN PROGRESS"] },
-//         createdAt: { $gte: new Date(oneDayAgo) },
-//       },
-//       twoToFiveDays: {
-//         status: { $in: ["PENDING", "IN PROGRESS"] },
-//         createdAt: { $gte: new Date(fiveDaysAgo), $lt: new Date(oneDayAgo) },
-//       },
-//       moreThanFiveDays: {
-//         status: { $in: ["PENDING", "IN PROGRESS"] },
-//         createdAt: { $lt: new Date(fiveDaysAgo) },
-//       },
-//       completedToday: {  $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } },
-//       createdToday:{ createdAt: { $gte: todayStart, $lte: datetoday } },
-//       zeroToOneDaysPartPending: { status: "PART PENDING", createdAt: { $gte: oneDayAgo } },
-//       twoToFiveDaysPartPending: {
-//         status: "PART PENDING",
-//         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
-//       },
-//       moreThanFiveDaysPartPending: { status: "PART PENDING", createdAt: { $lt: fiveDaysAgo } },
-//       scheduleUpcomming: {
-//         $and: [
-//           {
-//             preferredServiceDate: { $lt: todayStart },
-//             status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
-//           }
-//         ]
-//       },
-//     };
-
-//     // 🔁 Count each query with filters
-//     const complaintCounts = await Promise.all(
-//       Object.entries(queries).map(async ([key, query]) => {
-//         let combinedQuery = { ...query };
-
-//         if (filters.length > 0) {
-//           if (combinedQuery.$and) {
-//             combinedQuery.$and = [...combinedQuery.$and, ...filters];
-//           } else {
-//             combinedQuery = { $and: [combinedQuery, ...filters] };
-//           }
-//         }
-
-//         const count = await Complaints.countDocuments(combinedQuery);
-//         return count;
-//       })
-//     );
-
-//     const response = Object.fromEntries(
-//       Object.keys(queries).map((key, index) => [key, complaintCounts[index]])
-//     );
-
-//     res.json({ complaints: response });
-//   } catch (err) {
-//     console.error("Error fetching dashboard details:", err);
-//     res.status(500).json({ message: "Internal Server Error", error: err.message });
-//   }
-// });
-
-
 
 router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
   try {
@@ -511,15 +271,15 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
         ]
       },
       zeroToOneDays: {
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: new Date(oneDayAgo) },
       },
       twoToFiveDays: {
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: new Date(fiveDaysAgo), $lt: new Date(oneDayAgo) },
       },
       moreThanFiveDays: {
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $lt: new Date(fiveDaysAgo) },
       },
       completedToday: {
@@ -713,9 +473,9 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $lt: fiveDaysAgo } }),
-      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS"] }, createdAt: { $gte: oneDayAgo } }),
-      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS"] }, createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
-      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS"] }, createdAt: { $lt: fiveDaysAgo } }),
+      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] }, createdAt: { $gte: oneDayAgo } }),
+      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] }, createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
+      Complaints.countDocuments({ ...query,  status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] }, createdAt: { $lt: fiveDaysAgo } }),
       
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: oneDayAgo } }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
@@ -1058,21 +818,21 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       // Complaints in 0-1 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: oneDayAgo }
       }),
 
       // Complaints in 2-5 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo }
       }),
 
       // Complaints older than 5 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING","ASSIGN","CUSTOMER SIDE PENDING"] },
         createdAt: { $lt: fiveDaysAgoEnd }
       }),
       Complaints.countDocuments({   ...query,  $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } }),
@@ -1429,7 +1189,7 @@ router.get('/getAllUnAssignComplaint', async (req, res) => {
     const unassignedComplaints = await Complaints.find({
       $or: [
         { assignServiceCenterId: null },
-        { assignServiceCenterId: { $exists: false } }
+        { assignServiceCenterId: { $exists: false } }    
       ],
       status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING"] } ,// Filtering based on status
     brandId: { $in: activeBrandIds }
@@ -1530,6 +1290,15 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
               ]
             }
           },
+          CUSTOMER_SIDE_PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "CUSTOMER SIDE PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
           ASSIGN: {
             $sum: {
               $cond: [
@@ -1571,7 +1340,7 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
       {
         $addFields: {
           ACTIVE_COUNT: {
-            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN" ,"$CUSTOMER_SIDE_PENDING"]
           }
         }
       },
@@ -1581,6 +1350,7 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
           PENDING: -1,
           INPROGRESS: -1,
           PART_PENDING: -1,
+          CUSTOMER_SIDE_PENDING:-1,
           ASSIGN: -1
         }
       }
@@ -1614,6 +1384,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
           INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
           PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
+          CUSTOMER_SIDE_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CUSTOMER SIDE PENDING"] }, 1, 0] } },
           ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
           CANCEL: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CANCELED"] }, 1, 0] } },
           COMPLETE: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "COMPLETED"] }, 1, 0] } },
@@ -1624,7 +1395,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
       {
         $addFields: {
           ACTIVE_COUNT: {
-            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN" ,"$CUSTOMER_SIDE_PENDING"]
           }
         }
       },
@@ -1634,6 +1405,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           PENDING: -1,
           INPROGRESS: -1,
           PART_PENDING: -1,
+          CUSTOMER_SIDE_PENDING:-1,
           ASSIGN: -1
         } // Sort by PENDING complaints in descending order
       }
@@ -1723,6 +1495,15 @@ router.get('/getComplaintCountByBrand', async (req, res) => {
             $sum: {
               $cond: [
                 { $eq: [{ $toUpper: "$status" }, "PART PENDING"] },
+                1,
+                0
+              ]
+            }
+          },
+          CUSTOMER_SIDE_PENDING: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "CUSTOMER SIDE PENDING"] },
                 1,
                 0
               ]
