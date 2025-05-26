@@ -31,30 +31,46 @@
 //   sendBlessTemplateSms
 // };
 
-
-   const axios = require('axios');
+ const axios = require('axios');
 const qs = require('querystring');
+ require('dotenv').config();
 
 async function sendBlessTemplateSms(to, templateId, smsVars) {
   const mobile = to.startsWith('91') ? to : `91${to}`;
+ const varString = smsVars.join('|');
+  const templateText = `Dear {#var#}, Your complain {#var#} regarding {#var#} has been registered with us. Please visit {#var#} at {#var#} Mobile : {#var#} If you are satisfied with his work, you can provide him/her OTP : {#var#} on Completion. Your Complain Number is {#var#}.@Lybley For any assistance give us a call on - {#var#}`;
+// console.log("templateText",templateText);
+ 
 
+let filledText = templateText;
+
+smsVars.forEach(value => {
+  filledText = filledText.replace('{#var#}', value);
+});
+
+console.log(filledText);
   const params = {
-    user: 'Lybley@gmail.com',
-    password: 'Lay@5875',
-    senderid: 'LYBLEY',
+      user: process.env.BLESS_SMS_USER,
+    password: process.env.BLESS_SMS_PASS,
+    sender: process.env.BLESS_SMS_SENDER,
     number: mobile,
-    message: smsVars.join('|'),
-    type: '3',
-    template_id: templateId,
-    // route: '##',  // remove or fix this
-    channel: 'Promo'
+    text: filledText,
+    VAR: varString,           // 🔥 Required for filling {#var#}
+    DLTTemplateId: templateId,
+    PEID: '1201160327926710602',
+    channel: 'Trans',
+    route: '4',                       // Often '4' for transactional; check docs
+    DCS: '0',
+    flashsms: '0'
   };
 
   const queryString = qs.stringify(params);
+  // console.log("queryString",queryString);
+  
   const url = `http://login.blesssms.com/api/mt/SendSMS?${queryString}`;
 
   try {
-    const response = await axios.post(url);
+    const response = await axios.get(url);
     console.log('SMS sent:', response.data);
     return response.data;
   } catch (error) {
