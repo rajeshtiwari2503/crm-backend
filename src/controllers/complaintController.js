@@ -50,6 +50,8 @@ const addComplaint = async (req, res) => {
       // Find service center
       const serviceCenter = await findServiceCenter(pincode, brandId);
 
+        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
       // Prepare complaint object
       const complaintData = {
          ...body,
@@ -61,25 +63,31 @@ const addComplaint = async (req, res) => {
          serviceCenterContact: serviceCenter?.contact,
          assignServiceCenterTime: new Date(),
          status: serviceCenter ? 'ASSIGN' : 'PENDING',
+          otp: generatedOtp,
       };
 
       const complaint = new ComplaintModal(complaintData);
       await complaint.save();
 
-      // Prepare and send SMS
-      const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
-         fullName,
-         complaintId: complaint.complaintId || complaint._id.toString(),
-         issueType: complaint?.detailedDescription,
-         serviceCenterName: serviceCenter?.serviceCenterName || 'Our Service Center',
-         visitTime: '10:00 AM Tomorrow', // Dynamically set your visit time here
-         serviceCenterPhone: serviceCenter?.contact || 'N/A',
-         otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
-         helpline: '1800-123-456' // Change to your helpline
-      });
-      // console.log("smsVars", smsVars);
+      // Build vars as array for direct replacement in template
+      const smsVars = [
+         fullName || 'N/A',
+         complaint.complaintId || complaint._id.toString(),
+         complaint?.detailedDescription || 'N/A',
+         // `https://crm.servsy.in/feedback/add-customer-feedback/${complaint._id}`,
+         "cooming soon link",
+         '10:00 AM Tomorrow', // Set dynamically if needed
+         complaint?.phoneNumber || 'N/A',
+         complaint.otp || Math.floor(100000 + Math.random() * 900000).toString() , // Save OTP in DB if required
+         complaint.complaintId || complaint._id.toString(),
+         '7777883885' // your helpline number
+      ];
 
-      // await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
+      // DLT Template ID — must match exactly
+      const templateId = smsTemplates.COMPLAINT_REGISTERED.id; // e.g., '1207167611795178628'
+
+      await sendBlessTemplateSms(phoneNumber, templateId, smsVars);
+
 
       // Create notification
       const notification = new NotificationModel({
@@ -765,26 +773,26 @@ const getComplaintsByPending = async (req, res) => {
 const getComplaintsByHighPriorityPending = async (req, res) => {
    try {
       // let data = await ComplaintModal.find({ status: "PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
-     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
-      .select("_id")
-   .lean();
-const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+         .select("_id")
+         .lean();
+      const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
 
-// Step 2: Fetch all complaints
-const complaints = await ComplaintModal.find({ status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] } }).sort({ _id: -1 });
+      // Step 2: Fetch all complaints
+      const complaints = await ComplaintModal.find({ status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] } }).sort({ _id: -1 });
 
-// Step 3: Filter complaints with active brandId
-const filteredComplaints = complaints.filter(c =>
-   activeBrandIds.includes(c.brandId?.toString())
-);
-let data = filteredComplaints;
-if (data.length === 0) {
-   return res.status(404).send({ status: false, msg: "No pending complaints found." });
-}
-res.send(data);
+      // Step 3: Filter complaints with active brandId
+      const filteredComplaints = complaints.filter(c =>
+         activeBrandIds.includes(c.brandId?.toString())
+      );
+      let data = filteredComplaints;
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No pending complaints found." });
+      }
+      res.send(data);
    } catch (err) {
-   res.status(400).send(err);
-}
+      res.status(400).send(err);
+   }
 };
 const getComplaintsByAssign = async (req, res) => {
    try {
@@ -1961,6 +1969,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact,getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };

@@ -27,7 +27,7 @@ cron.schedule("*/5 * * * *", async () => {
     for (let complaint of pendingComplaints) {
       // Find best-matched service center
       if (!complaint?.brandId) {
-        console.warn(`⚠️ Skipping complaint ${complaint._id} due to missing brandId`);
+        console.warn(`⚠️ Skipping complaint ${complaint.complaintId} due to missing brandId`);
         continue;
       }
       const serviceCenters = await ServiceModel.aggregate([
@@ -92,9 +92,9 @@ cron.schedule("*/5 * * * *", async () => {
           `You have been assigned a new complaint (ID: ${complaint.complaintId}). Please take action.`
         );
 
-        console.log(`✅ Assigned Complaint ${complaint._id} to ${serviceCenter.serviceCenterName}`);
+        console.log(`✅ Assigned Complaint ${complaint?.complaintId} to ${serviceCenter.serviceCenterName}`);
       } else {
-        console.log(`⚠️ No matching service center found for Complaint ${complaint._id}`);
+        console.log(`⚠️ No matching service center found for Complaint ${complaint.complaintId}`);
       }
     }
   } catch (error) {
