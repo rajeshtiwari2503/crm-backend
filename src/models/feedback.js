@@ -3,6 +3,8 @@ const mongoose=require("mongoose")
 const feedbackSchema=mongoose.Schema({
     ticketNumber: { type: String, required: true },
     customerName: { type: String, required: true },
+    complaintId: { type: String },
+    ticketNumber2: { type: String },
     emailAddress: { type: String },
     overallsatisfaction: { type: Number },
     servicequality: { type: Number,  },
