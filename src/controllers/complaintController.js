@@ -50,8 +50,6 @@ const addComplaint = async (req, res) => {
       // Find service center
       const serviceCenter = await findServiceCenter(pincode, brandId);
 
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
       // Prepare complaint object
       const complaintData = {
          ...body,
@@ -63,31 +61,32 @@ const addComplaint = async (req, res) => {
          serviceCenterContact: serviceCenter?.contact,
          assignServiceCenterTime: new Date(),
          status: serviceCenter ? 'ASSIGN' : 'PENDING',
-          otp: generatedOtp,
       };
 
       const complaint = new ComplaintModal(complaintData);
       await complaint.save();
 
-      // Build vars as array for direct replacement in template
-      const smsVars = [
-         fullName || 'N/A',
-         complaint.complaintId || complaint._id.toString(),
-         complaint?.detailedDescription || 'N/A',
-         // `https://crm.servsy.in/feedback/add-customer-feedback/${complaint._id}`,
-         "cooming soon link",
-         '10:00 AM Tomorrow', // Set dynamically if needed
-         complaint?.phoneNumber || 'N/A',
-         complaint.otp || Math.floor(100000 + Math.random() * 900000).toString() , // Save OTP in DB if required
-         complaint.complaintId || complaint._id.toString(),
-         '7777883885' // your helpline number
-      ];
+      // Prepare and send SMS
+      // const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
+      //    fullName,
+      //    complaintId: complaint.complaintId || complaint._id.toString(),
+      //    issueType: complaint?.detailedDescription,
+      //    serviceCenterName: serviceCenter?.serviceCenterName || 'Our Service Center',
+      //    visitTime: '10:00 AM Tomorrow', // Dynamically set your visit time here
+      //     phoneNumber: phoneNumber,
+      //    otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
+      //    complaintId: complaint.complaintId || complaint._id.toString(),
+      //    helpline: '7777883885' // Change to your helpline
+      // });
+      
+     
 
-      // DLT Template ID — must match exactly
-      const templateId = smsTemplates.COMPLAINT_REGISTERED.id; // e.g., '1207167611795178628'
+      // // 2. Log smsVars to confirm correctness
+      // console.log('smsVars:', smsVars);
 
-      await sendBlessTemplateSms(phoneNumber, templateId, smsVars);
+      // console.log("phoneNumber", phoneNumber);
 
+      // await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
 
       // Create notification
       const notification = new NotificationModel({

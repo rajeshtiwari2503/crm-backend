@@ -1,4 +1,4 @@
-//  // smsService.js
+ //  // smsService.js
 // const axios = require('axios');
 // require('dotenv').config();
 
@@ -37,9 +37,10 @@ const qs = require('querystring');
 
 async function sendBlessTemplateSms(to, templateId, smsVars) {
   const mobile = to.startsWith('91') ? to : `91${to}`;
- const varString = smsVars.join('|');
+ 
   const templateText = `Dear {#var#}, Your complain {#var#} regarding {#var#} has been registered with us. Please visit {#var#} at {#var#} Mobile : {#var#} If you are satisfied with his work, you can provide him/her OTP : {#var#} on Completion. Your Complain Number is {#var#}.@Lybley For any assistance give us a call on - {#var#}`;
-// console.log("templateText",templateText);
+console.log("smsVars",smsVars);
+ 
  
 
 let filledText = templateText;
@@ -50,16 +51,16 @@ smsVars.forEach(value => {
 
 console.log(filledText);
   const params = {
-      user: process.env.BLESS_SMS_USER,
-    password: process.env.BLESS_SMS_PASS,
-    sender: process.env.BLESS_SMS_SENDER,
+      user: "Lybley@gmail.com",
+    password: "Lay@5875",
+    sender: "LYBLEY",
     number: mobile,
     text: filledText,
-    VAR: varString,           // 🔥 Required for filling {#var#}
+    VAR: smsVars.join('|'),          // 🔥 Required for filling {#var#}
     DLTTemplateId: templateId,
     PEID: '1201160327926710602',
     channel: 'Trans',
-    route: '4',                       // Often '4' for transactional; check docs
+    route: '10',                       // Often '4' for transactional; check docs
     DCS: '0',
     flashsms: '0'
   };
@@ -70,7 +71,7 @@ console.log(filledText);
   const url = `http://login.blesssms.com/api/mt/SendSMS?${queryString}`;
 
   try {
-    const response = await axios.get(url);
+    const response = await axios.post(url);
     console.log('SMS sent:', response.data);
     return response.data;
   } catch (error) {
