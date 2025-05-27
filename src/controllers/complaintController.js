@@ -8,7 +8,7 @@ const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
 
 const ServicePaymentModel = require("../models/servicePaymentModel")
-
+const moment = require('moment');
 
 
 const { admin } = require('../firebase/index')
@@ -67,26 +67,29 @@ const addComplaint = async (req, res) => {
       await complaint.save();
 
       // Prepare and send SMS
-      // const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
-      //    fullName,
-      //    complaintId: complaint.complaintId || complaint._id.toString(),
-      //    issueType: complaint?.detailedDescription,
-      //    serviceCenterName: serviceCenter?.serviceCenterName || 'Our Service Center',
-      //    visitTime: '10:00 AM Tomorrow', // Dynamically set your visit time here
-      //     phoneNumber: phoneNumber,
-      //    otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
-      //    complaintId: complaint.complaintId || complaint._id.toString(),
-      //    helpline: '7777883885' // Change to your helpline
-      // });
-      
-     
+     const visitTime = moment(
+  `${moment(complaint.preferredServiceDate).format('YYYY-MM-DD')}T${complaint.preferredServiceTime}`
+).format('hh:mm A on MMMM D, YYYY');
+      const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
+         fullName,
+         complaintId: complaint.complaintId || complaint._id.toString(),
+         issueType: complaint?.detailedDescription,
+         serviceCenterName: 'Service Center visit your location',
+         visitTime: visitTime, // Dynamically set your visit time here
+         phoneNumber: phoneNumber,
+         otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
+         complaintId: complaint.complaintId || complaint._id.toString(),
+         helpline: '7777883885' // Change to your helpline
+      });
 
-      // // 2. Log smsVars to confirm correctness
+
+
+      // 2. Log smsVars to confirm correctness
       // console.log('smsVars:', smsVars);
 
       // console.log("phoneNumber", phoneNumber);
 
-      // await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
+      await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
 
       // Create notification
       const notification = new NotificationModel({
