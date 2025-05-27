@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 
 
 
- 
+
 
 // Helper function to generate a unique record with retry logic
 
@@ -234,7 +234,7 @@ const generateUniqueId = async () => {
 
   while (!isUnique) {
     // uniqueId = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit number
-       uniqueId = Math.floor(1000000 + Math.random() * 9000000).toString(); // ✅ 7-digit unique ID
+    uniqueId = Math.floor(1000000 + Math.random() * 9000000).toString(); // ✅ 7-digit unique ID
 
     // Check if this uniqueId already exists in the database
     const existingRecord = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
@@ -366,7 +366,7 @@ const getAllProductWarranty = async (req, res) => {
 //   }
 // };
 
- //21032025
+//21032025
 const getAllProductWarrantyWithPage = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;  // Default page 1
@@ -573,7 +573,7 @@ const getAllActivationWarranty = async (req, res) => {
         },
       },
       // { $sort: { _id: -1 } },
-      { $sort: { activationDate: -1 } }, 
+      { $sort: { activationDate: -1 } },
     ]);
 
     res.send(data);
@@ -645,38 +645,113 @@ const getAllActivationWarrantyWithPage = async (req, res) => {
   }
 };
 
+// const getActivationWarrantySearch = async (req, res) => {
+//   try {
+//     const { search = "" } = req.query;
+//     // console.log("Received search query:", search);
+//   if (search.trim() === "") {
+//       // return empty array if no search term
+//       return res.json({ success: true, count: 0, data: [] });
+//     }
+//     // Base pipeline - unwind records, match isActivated true
+//     const pipeline = [
+//       { $unwind: "$records" },
+//       { $match: { "records.isActivated": true } },
+//     ];
+
+//     // If search term is provided, add regex matching
+//     if (search.trim() !== "") {
+//       const regex = new RegExp(search, "i");
+//       pipeline.push({
+//         $match: {
+//           $or: [
+//             { "records.userName": regex },
+//             { "records.contact": regex },
+//             { "records.pincode": regex },
+//             { "records.uniqueId": regex },
+//             { "records.brandName": regex },
+//           ],
+//         },
+//       });
+//     }
+
+//     // Project fields you want in output
+//     pipeline.push(
+//       {
+//         $project: {
+//           _id: "$records._id",
+//           brandName: "$records.brandName",
+//           brandId: "$records.brandId",
+//           productName: "$records.productName",
+//           productId: "$records.productId",
+//           categoryId: "$records.categoryId",
+//           categoryName: "$records.categoryName",
+//           uniqueId: "$records.uniqueId",
+//           year: "$records.year",
+//           batchNo: "$records.batchNo",
+//           warrantyInDays: "$records.warrantyInDays",
+//           qrCodes: "$records.qrCodes",
+//           userId: "$records.userId",
+//           userName: "$records.userName",
+//           email: "$records.email",
+//           contact: "$records.contact",
+//           address: "$records.address",
+//           lat: "$records.lat",
+//           long: "$records.long",
+//           pincode: "$records.pincode",
+//           district: "$records.district",
+//           state: "$records.state",
+//           complaintId: "$records.complaintId",
+//           activationDate: "$records.activationDate",
+//           isActivated: "$records.isActivated",
+//           termsCondtions: "$records.termsCondtions",
+//         },
+//       },
+//       { $sort: { activationDate: -1 } }
+//     );
+
+//     // console.log("Aggregation pipeline:", JSON.stringify(pipeline, null, 2));
+
+//     // Run aggregation
+//     const data = await ProductWarrantyModal.aggregate(pipeline);
+//     // console.log("Found results count:", data.length);
+
+//     // Send response
+//     res.json({
+//       success: true,
+//       count: data.length,
+//       data,
+//     });
+//   } catch (err) {
+//     console.error("Aggregation error:", err);
+//     res.status(500).json({ success: false, error: "Server error" });
+//   }
+// };
+
 const getActivationWarrantySearch = async (req, res) => {
   try {
     const { search = "" } = req.query;
-    // console.log("Received search query:", search);
-  if (search.trim() === "") {
-      // return empty array if no search term
+
+    if (search.trim() === "") {
       return res.json({ success: true, count: 0, data: [] });
     }
-    // Base pipeline - unwind records, match isActivated true
+
+    const searchTerm = search.trim();
+
     const pipeline = [
       { $unwind: "$records" },
       { $match: { "records.isActivated": true } },
-    ];
-
-    // If search term is provided, add regex matching
-    if (search.trim() !== "") {
-      const regex = new RegExp(search, "i");
-      pipeline.push({
+      {
         $match: {
           $or: [
-            { "records.userName": regex },
-            { "records.contact": regex },
-            { "records.pincode": regex },
-            { "records.uniqueId": regex },
-            { "records.brandName": regex },
+            { "records.userName": { $regex: `^${searchTerm}$`, $options: "i" } },
+            { "records.contact": { $regex: `^${searchTerm}$`, $options: "i" } },
+            { "records.pincode": { $regex: `^${searchTerm}$`, $options: "i" } },
+            { "records.uniqueId": { $regex: `^${searchTerm}$`, $options: "i" } },
+            { "records.brandName": { $regex: `^${searchTerm}$`, $options: "i" } },
           ],
         },
-      });
-    }
-
-    // Project fields you want in output
-    pipeline.push(
+      },
       {
         $project: {
           _id: "$records._id",
@@ -707,16 +782,11 @@ const getActivationWarrantySearch = async (req, res) => {
           termsCondtions: "$records.termsCondtions",
         },
       },
-      { $sort: { activationDate: -1 } }
-    );
+      { $sort: { activationDate: -1 } },
+    ];
 
-    // console.log("Aggregation pipeline:", JSON.stringify(pipeline, null, 2));
-
-    // Run aggregation
     const data = await ProductWarrantyModal.aggregate(pipeline);
-    // console.log("Found results count:", data.length);
 
-    // Send response
     res.json({
       success: true,
       count: data.length,
@@ -727,7 +797,6 @@ const getActivationWarrantySearch = async (req, res) => {
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
-
 
 
 
@@ -917,7 +986,7 @@ const getProductWarrantyByUniqueId = async (req, res) => {
     // Optimized Query: Using Projection & .lean()
     const data = await ProductWarrantyModal.findOne(
       { "records.uniqueId": uniqueId },
-      { "records.$": 1 ,brandName: 1, brandId: 1, productName: 1, productId: 1,categoryId:1} // Returns only the matched record
+      { "records.$": 1, brandName: 1, brandId: 1, productName: 1, productId: 1, categoryId: 1 } // Returns only the matched record
     ).lean(); // Makes query lightweight by returning plain JS object
 
     if (!data) {
@@ -998,7 +1067,7 @@ const deleteProductWarranty = async (req, res) => {
       { isDeleted: true },
       { new: true }
     );
-    res.json({ status: true, msg: "Product warranty Deteled",data: result });
+    res.json({ status: true, msg: "Product warranty Deteled", data: result });
   } catch (err) {
     res.status(500).send(err);
   }
@@ -1016,4 +1085,4 @@ const deleteProductWarranty = async (req, res) => {
 
 
 
-module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty,getAllProductWarrantyByBrandStickers ,getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById,getActivationWarrantySearch,getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
+module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
