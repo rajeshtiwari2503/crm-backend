@@ -18,7 +18,7 @@ const addFeedback = async (req, res) => {
             message: `Thank you for your feedback, ${req.body.customerName}!`,
         });
         await notification.save();
-        res.json({ status: true, msg: "Feedback   Added" });
+        res.json({ status: true, msg: "Thank you for your feedback" });
     } catch (err) {
         res.status(400).send(err);
     }
