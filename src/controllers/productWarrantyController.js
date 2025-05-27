@@ -648,26 +648,26 @@ const getAllActivationWarrantyWithPage = async (req, res) => {
 const getActivationWarrantySearch = async (req, res) => {
   try {
     const { search = "" } = req.query;
-    console.log("Received search query:", search);
-
+    // console.log("Received search query:", search);
+  if (search.trim() === "") {
+      // return empty array if no search term
+      return res.json({ success: true, count: 0, data: [] });
+    }
+    // Base pipeline - unwind records, match isActivated true
     const pipeline = [
       { $unwind: "$records" },
-      { $match: { "records.isActivated": true } }
+      { $match: { "records.isActivated": true } },
     ];
 
+    // If search term is provided, add regex matching
     if (search.trim() !== "") {
       const regex = new RegExp(search, "i");
-
       pipeline.push({
         $match: {
           $or: [
             { "records.userName": regex },
-            { "records.email": regex },
             { "records.contact": regex },
-            { "records.address": regex },
             { "records.pincode": regex },
-            { "records.district": regex },
-            { "records.state": regex },
             { "records.uniqueId": regex },
             { "records.brandName": regex },
           ],
@@ -675,6 +675,7 @@ const getActivationWarrantySearch = async (req, res) => {
       });
     }
 
+    // Project fields you want in output
     pipeline.push(
       {
         $project: {
@@ -709,15 +710,21 @@ const getActivationWarrantySearch = async (req, res) => {
       { $sort: { activationDate: -1 } }
     );
 
-    console.log("Aggregation pipeline:", JSON.stringify(pipeline, null, 2));
+    // console.log("Aggregation pipeline:", JSON.stringify(pipeline, null, 2));
 
+    // Run aggregation
     const data = await ProductWarrantyModal.aggregate(pipeline);
-    console.log("Found results count:", data.length);
+    // console.log("Found results count:", data.length);
 
-    res.send(data);
+    // Send response
+    res.json({
+      success: true,
+      count: data.length,
+      data,
+    });
   } catch (err) {
     console.error("Aggregation error:", err);
-    res.status(400).send(err);
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
