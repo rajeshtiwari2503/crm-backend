@@ -280,7 +280,7 @@ const fetchLocationByPincode = async (pincode) => {
 };
 
 // Cron job to run every night at 2:00 AM
-// cron.schedule('41 15 * * *', async () => {
+// cron.schedule('41 17 * * *', async () => {
 //   console.log('🔁 Running complaint location update job...');
 
 //   try {
