@@ -1628,52 +1628,6 @@ const updatePartPendingImage = async (req, res) => {
       if (!data.complaintCloseTime && body.complaintCloseTime) {
          data.complaintCloseTime = new Date();
       }
-      if (body.status === "FINAL VERIFICATION") {
-         data.complaintCloseTime = new Date();
-
-         // 🟡 Order Creation Starts
-         let spareParts = body.spareParts;
-
-         if (typeof spareParts === "string") {
-            try {
-               spareParts = JSON.parse(spareParts);
-            } catch (error) {
-               return res.status(400).json({ status: false, msg: "Invalid spareParts format" });
-            }
-         }
-
-         if (!Array.isArray(spareParts) || spareParts.length === 0) {
-            return res.status(400).json({ status: false, msg: "No spare parts selected" });
-         }
-
-         // Validate each part
-         for (const part of spareParts) {
-            const { sparePartId, quantity } = part;
-            const numericQuantity = parseInt(quantity, 10) || 0;
-
-            const sparePart = await BrandStockModel.findOne({ sparepartId: sparePartId });
-            if (!sparePart) {
-               return res.status(404).json({ status: false, msg: `Spare part not found: ${sparePartId}` });
-            }
-         }
-
-         const chalanImage = req.file ? req.file.location || req.file.path : null;
-
-         const newOrder = new OrderModel({
-            spareParts,
-            brandId: body.brandId || data.brandId,
-            brandName: body.brandName || data.productBrand,
-            serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
-            serviceCenter: body.serviceCenter || data.assignServiceCenter,
-            docketNo: body.docketNo,
-            brandApproval: body.brandApproval,
-            trackLink: body.trackLink,
-            chalanImage,
-         });
-
-         await newOrder.save();
-         // 🟡 Order Creation Ends
-      }
 
       // Apply updates
       Object.assign(data, body);
@@ -1709,6 +1663,40 @@ const updatePartPendingImage = async (req, res) => {
             message: `Assign Technician on Your Complaint!`,
          }).save();
       }
+      if (body.status === "FINAL VERIFICATION") {
+         data.complaintCloseTime = new Date();
+
+         let spareParts = body.spareParts;
+
+         if (typeof spareParts === "string") {
+            try {
+               spareParts = JSON.parse(spareParts);
+            } catch (error) {
+               spareParts = []; // fallback to empty array
+            }
+         }
+
+         if (Array.isArray(spareParts) && spareParts.length > 0) {
+            const chalanImage = req.file ? req.file.location || req.file.path : null;
+
+            const newOrder = new OrderModel({
+               spareParts,
+               brandId: body.brandId || data.brandId,
+               brandName: body.brandName || data.productBrand,
+               serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
+               serviceCenter: body.serviceCenter || data.assignServiceCenter,
+               docketNo: body.docketNo,
+               brandApproval: body.brandApproval,
+               trackLink: body.trackLink,
+               chalanImage,
+            });
+
+            await newOrder.save();
+         }
+
+         // Continue with the rest of your complaint update logic...
+      }
+
 
       // Wallet & Payout handling
       if (body.status === "COMPLETED") {
