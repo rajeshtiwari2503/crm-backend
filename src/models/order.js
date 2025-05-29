@@ -70,7 +70,7 @@ const OrderSchema = mongoose.Schema({
             sparePartId: { type: String, required: true },
             sparePartName: { type: String, required: true },
             quantity: { type: Number, required: true },
-            price: { type: Number, required: true },
+            price: { type: Number  },
         }
     ],
     brandId: {
@@ -80,9 +80,9 @@ const OrderSchema = mongoose.Schema({
     },
     serviceCenterId: { type: String, required: true },
     serviceCenter: { type: String, required: true },
-    docketNo: { type: String, required: true },
-    trackLink: { type: String, required: true },
-    chalanImage: { type: String, required: true },
+    docketNo: { type: String },
+    trackLink: { type: String },
+    chalanImage: { type: String  },
     status: { type: String, default: "ORDER" },
     comments: {
         type: String

@@ -6,7 +6,7 @@ const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
 const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
-
+const OrderModel = require("../models/order")
 const ServicePaymentModel = require("../models/servicePaymentModel")
 const moment = require('moment');
 
@@ -67,9 +67,9 @@ const addComplaint = async (req, res) => {
       await complaint.save();
 
       // Prepare and send SMS
-     const visitTime = moment(
-  `${moment(complaint.preferredServiceDate).format('YYYY-MM-DD')}T${complaint.preferredServiceTime}`
-).format('hh:mm A on MMMM D, YYYY');
+      const visitTime = moment(
+         `${moment(complaint.preferredServiceDate).format('YYYY-MM-DD')}T${complaint.preferredServiceTime}`
+      ).format('hh:mm A on MMMM D, YYYY');
       const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
          fullName,
          complaintId: complaint.complaintId || complaint._id.toString(),
@@ -1627,6 +1627,52 @@ const updatePartPendingImage = async (req, res) => {
 
       if (!data.complaintCloseTime && body.complaintCloseTime) {
          data.complaintCloseTime = new Date();
+      }
+      if (body.status === "FINAL VERIFICATION") {
+         data.complaintCloseTime = new Date();
+
+         // 🟡 Order Creation Starts
+         let spareParts = body.spareParts;
+
+         if (typeof spareParts === "string") {
+            try {
+               spareParts = JSON.parse(spareParts);
+            } catch (error) {
+               return res.status(400).json({ status: false, msg: "Invalid spareParts format" });
+            }
+         }
+
+         if (!Array.isArray(spareParts) || spareParts.length === 0) {
+            return res.status(400).json({ status: false, msg: "No spare parts selected" });
+         }
+
+         // Validate each part
+         for (const part of spareParts) {
+            const { sparePartId, quantity } = part;
+            const numericQuantity = parseInt(quantity, 10) || 0;
+
+            const sparePart = await BrandStockModel.findOne({ sparepartId: sparePartId });
+            if (!sparePart) {
+               return res.status(404).json({ status: false, msg: `Spare part not found: ${sparePartId}` });
+            }
+         }
+
+         const chalanImage = req.file ? req.file.location || req.file.path : null;
+
+         const newOrder = new OrderModel({
+            spareParts,
+            brandId: body.brandId || data.brandId,
+            brandName: body.brandName || data.productBrand,
+            serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
+            serviceCenter: body.serviceCenter || data.assignServiceCenter,
+            docketNo: body.docketNo,
+            brandApproval: body.brandApproval,
+            trackLink: body.trackLink,
+            chalanImage,
+         });
+
+         await newOrder.save();
+         // 🟡 Order Creation Ends
       }
 
       // Apply updates
