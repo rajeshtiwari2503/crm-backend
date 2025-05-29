@@ -937,6 +937,75 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 });
 
 
+// router.post("/getStatewiseBrandData", async (req, res) => {
+//   try {
+//     const { brand, state, city, startDate, endDate } = req.body;
+
+//     // Build dynamic filter
+//     const filter = {};
+
+//     if (brand) filter.productBrand = brand;
+//     if (state) filter["serviceAddress.state"] = state;
+//     if (city) filter["serviceAddress.city"] = city;
+//     if (startDate && endDate) {
+//       filter.createdAt = {
+//         $gte: new Date(startDate),
+//         $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+//       };
+//     }
+
+//     const complaints = await ComplaintModal.find(filter);
+
+//     // Optional: Format data for pie chart
+//     const chartData = [
+//       ["Status", "Count"],
+//       ...Object.entries(
+//         complaints.reduce((acc, c) => {
+//           acc[c.status] = (acc[c.status] || 0) + 1;
+//           return acc;
+//         }, {})
+//       ),
+//     ];
+
+//     res.json({
+//       status: true,
+//       data: complaints,
+//       chartData,
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ status: false, msg: "Server error", error: err.message });
+//   }
+// });
+
+
+const fetchFilteredData = async () => {
+  try {
+    setLoading(true);
+
+    // Build dynamic filter payload
+    const payload = {};
+    if (brand) payload.brand = brand;
+    if (state) payload.state = state;
+    if (city) payload.city = city;
+    if (startDate) payload.startDate = startDate;
+    if (endDate) payload.endDate = endDate;
+
+    const response = await http_request.post("/getStatewiseBrandData", payload);
+
+    if (response.data && response.data.chartData) {
+      setFilteredData(response.data.chartData); // Already in format [["Status", "Count"], ...]
+    } else {
+      setFilteredData([]);
+    }
+
+    setLoading(false);
+  } catch (error) {
+    console.error("Error fetching filtered data", error);
+    setLoading(false);
+  }
+};
+
 // router.get('/getDistrictWisePendingComplaints', async (req, res) => {
 //   try {
 //     // Aggregation pipeline to get count of pending complaints by state and district

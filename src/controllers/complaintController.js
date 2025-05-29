@@ -1611,10 +1611,22 @@ const updatePartPendingImage = async (req, res) => {
          data.partPendingImage = image;
       }
 
+      // data.updateHistory.push({
+      //    updatedAt: new Date(),
+      //    changes: { ...body },
+      // });
+      const sanitizedChanges = { ...body };
+
+      // Sanitize serviceCenterId
+      if (Array.isArray(sanitizedChanges.serviceCenterId)) {
+         sanitizedChanges.serviceCenterId = sanitizedChanges.serviceCenterId[0]; // or join(',') if multiple values make sense
+      }
+
       data.updateHistory.push({
          updatedAt: new Date(),
-         changes: { ...body },
+         changes: sanitizedChanges,
       });
+
 
       // Handle status updates
       if (body.status === "PART PENDING") {
@@ -1685,12 +1697,10 @@ const updatePartPendingImage = async (req, res) => {
                brandName: body.brandName || data.productBrand,
                serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
                serviceCenter: body.serviceCenter || data.assignServiceCenter,
-               docketNo: body.docketNo,
-               brandApproval: body.brandApproval,
-               trackLink: body.trackLink,
-               chalanImage,
+               
             });
-
+     console.log("newOrder",newOrder);
+     
             await newOrder.save();
          }
 
