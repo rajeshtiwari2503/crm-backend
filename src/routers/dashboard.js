@@ -2034,9 +2034,10 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
     // Categorize orders
     const order = orderData.filter(f => f.status === "ORDER");
-    const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
-    const notApproveOrder = order.filter(f => f.brandApproval === "NOT_APPROVE");
-    const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
+    const approveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "APPROVED");
+      const notApproveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "DISAPPROVED");
+
+      const cancelOrder = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDERCANCELED");
 
     // 2. Get total deposit for the service center
     const depositAggregation = await ServiceCenterDepositModal.aggregate([
