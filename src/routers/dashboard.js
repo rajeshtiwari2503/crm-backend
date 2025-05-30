@@ -979,32 +979,56 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 // });
 
 
-const fetchFilteredData = async () => {
+router.post("/getStatewiseBrandData", async (req, res) => {
   try {
-    setLoading(true);
+    const { brand, state, city, startDate, endDate } = req.body;
+    const matchStage = {};
 
-    // Build dynamic filter payload
-    const payload = {};
-    if (brand) payload.brand = brand;
-    if (state) payload.state = state;
-    if (city) payload.city = city;
-    if (startDate) payload.startDate = startDate;
-    if (endDate) payload.endDate = endDate;
-
-    const response = await http_request.post("/getStatewiseBrandData", payload);
-
-    if (response.data && response.data.chartData) {
-      setFilteredData(response.data.chartData); // Already in format [["Status", "Count"], ...]
-    } else {
-      setFilteredData([]);
+    if (brand) matchStage.brand = brand;
+    if (state) matchStage.state = state;
+    if (city) matchStage.city = city;
+    if (startDate && endDate) {
+      matchStage.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+      };
     }
 
-    setLoading(false);
+    const groupedData = await Complaints.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: {
+            brandName: "$productBrand",
+            state: "$state",
+            district: "$district", // assuming `city` is used as district
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandName: "$_id.brandName",
+          state: "$_id.state",
+          district: "$_id.district",
+          date: "$_id.date",
+          count: 1
+        }
+      },
+      { $sort: { date: -1 } }
+    ]);
+
+    res.json({ chartData: groupedData });
   } catch (error) {
-    console.error("Error fetching filtered data", error);
-    setLoading(false);
+    console.error("Error generating chart data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-};
+});
+
 
 // router.get('/getDistrictWisePendingComplaints', async (req, res) => {
 //   try {
