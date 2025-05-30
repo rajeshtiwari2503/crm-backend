@@ -2072,28 +2072,30 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
 
 
-
+ 
 // router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) => {
 //   try {
-//     const serviceCenters = await ServiceModel.find().lean();
+//     // Step 1: Get only service centers with type "Authorized" or "Franchise"
+//     const serviceCenters = await ServiceModel.find({
+//       serviceCenterType: { $in: ["Authorized", "Franchise"] }
+//     }).lean();
 
+//     // Step 2: Process each center's data
 //     const summaries = await Promise.all(serviceCenters.map(async (center) => {
 //       const serviceCenterId = center._id.toString();
 
 //       const [orderData, depositAggregation] = await Promise.all([
 //         OrderModel.find({ serviceCenterId }).lean(),
 //         ServiceCenterDepositModal.aggregate([
-//           {
-//             $match: { serviceCenterId }
-//           },
-//           {
-//             $group: {
-//               _id: null,
-//               totalDeposit: { $sum: "$payAmount" }
-//             }
-//           }
+//           { $match: { serviceCenterId } },
+//           { $group: { _id: null, totalDeposit: { $sum: "$payAmount" } } }
 //         ])
 //       ]);
+
+//       // Skip if no orders and no deposit
+//       if (orderData.length === 0 && (!depositAggregation[0] || depositAggregation[0].totalDeposit === 0)) {
+//         return null;
+//       }
 
 //       const totalOrderPrice = orderData.reduce((sum, order) => {
 //         const partsTotal = order.spareParts?.reduce((partSum, part) => {
@@ -2102,10 +2104,10 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 //         return sum + partsTotal;
 //       }, 0);
 
-//       const order = orderData.filter(f => f.status === "ORDER");
-//       const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
-//       const notApproveOrder = order.filter(f => f.brandApproval === "NOT_APPROVE");
-//       const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
+//      const order = orderData.filter(f => f.status === "ORDER");
+// const approveOrder = order.filter(f => f.brandApproval?.toUpperCase() === "APPROVED");
+// const notApproveOrder = order.filter(f => f.brandApproval?.toUpperCase() === "DISAPPROVED");
+// const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
 
 //       return {
 //         serviceCenterId,
@@ -2120,8 +2122,11 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 //       };
 //     }));
 
-//     // Aggregate global totals
-//     const result = summaries.reduce(
+//     // Filter out null summaries
+//     const filteredSummaries = summaries.filter(Boolean);
+
+//     // Step 3: Aggregate global totals
+//     const result = filteredSummaries.reduce(
 //       (acc, summary) => {
 //         acc.totalOrderPriceAll += summary.totalOrderPrice;
 //         acc.totalDepositAll += summary.totalDeposit;
@@ -2143,7 +2148,7 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 //       }
 //     );
 
-//     result.serviceCenters = summaries;
+//     result.serviceCenters = filteredSummaries;
 
 //     res.status(200).json(result);
 
@@ -2177,6 +2182,7 @@ router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) =>
         return null;
       }
 
+      // Calculate total order price
       const totalOrderPrice = orderData.reduce((sum, order) => {
         const partsTotal = order.spareParts?.reduce((partSum, part) => {
           return partSum + (part.price || 0);
@@ -2184,10 +2190,13 @@ router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) =>
         return sum + partsTotal;
       }, 0);
 
-      const order = orderData.filter(f => f.status === "ORDER");
-      const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
-      const notApproveOrder = order.filter(f => f.brandApproval === "NOT_APPROVE");
-      const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
+      // Filter and count different order statuses
+      const order = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDER");
+
+      const approveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "APPROVED");
+      const notApproveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "DISAPPROVED");
+
+      const cancelOrder = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDERCANCELED");
 
       return {
         serviceCenterId,
@@ -2271,8 +2280,8 @@ router.get('/getAllServiceCenterOrdersAndDeposits', async (req, res) => {
 
       const order = orderData.filter(f => f.status === "ORDER");
       const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
-      const notApproveOrder = order.filter(f => f.brandApproval === "NOT_APPROVE");
-      const cancelOrder = orderData.filter(f => f.status === "OrderCanceled");
+      const notApproveOrder = order.filter(f => f.brandApproval === "DISAPPROVED");
+      const cancelOrder = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDERCANCELED");
 
       return {
         totalOrderPrice,
