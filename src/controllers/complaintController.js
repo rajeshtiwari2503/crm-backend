@@ -49,7 +49,9 @@ const addComplaint = async (req, res) => {
 
       // Find service center
       const serviceCenter = await findServiceCenter(pincode, brandId);
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+const otp = generateOtp();
       // Prepare complaint object
       const complaintData = {
          ...body,
@@ -61,6 +63,7 @@ const addComplaint = async (req, res) => {
          serviceCenterContact: serviceCenter?.contact,
          assignServiceCenterTime: new Date(),
          status: serviceCenter ? 'ASSIGN' : 'PENDING',
+         otp: otp
       };
 
       const complaint = new ComplaintModal(complaintData);
