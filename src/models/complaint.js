@@ -21,6 +21,7 @@ const complaintSchema = new mongoose.Schema({
  stockComplaint: { type: Boolean, default: false },
   warrantyYears: { type: String },
   priorityLevel: { type: String },
+  useSpareParts:{ type: String },
   userName: { type: String },
   userId: { type: String },
   createEmpName: { type: String },
