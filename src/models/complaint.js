@@ -17,12 +17,13 @@ const complaintSchema = new mongoose.Schema({
   purchaseDate: { type: Date },
   lat: { type: String },
   long: { type: String },
-  warrantyStatus: { type: String },
+ warrantyStatus: { type: Boolean, default: true },
+ stockComplaint: { type: Boolean, default: false },
   warrantyYears: { type: String },
   priorityLevel: { type: String },
   userName: { type: String },
   userId: { type: String },
-   createEmpName: { type: String },
+  createEmpName: { type: String },
   createEmpId: { type: String },
   dealerName: { type: String },
   dealerId: { type: String },
@@ -75,7 +76,7 @@ const complaintSchema = new mongoose.Schema({
   pincode: { type: String },
   district: { type: String },
   state: { type: String },
-  orderId:{ type: String },
+  orderId: { type: String },
   serviceAddress: { type: String },
   cancelComp: { type: String, default: "NO" },
   status: { type: String, default: "PENDING" },
@@ -88,7 +89,7 @@ const complaintSchema = new mongoose.Schema({
 
   statusComment: { type: String },
   otp: { type: String, default: null }
-  
+
 }, { timestamps: true });
 
 // Pre-save middleware to generate a unique complaintId
