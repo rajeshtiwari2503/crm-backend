@@ -77,6 +77,7 @@ const complaintSchema = new mongoose.Schema({
   state: { type: String },
   orderId:{ type: String },
   serviceAddress: { type: String },
+  cancelComp: { type: String, default: "NO" },
   status: { type: String, default: "PENDING" },
   payment: { type: Number, default: 0 },
 

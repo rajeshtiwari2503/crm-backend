@@ -310,3 +310,55 @@ const fetchLocationByPincode = async (pincode) => {
 //   }
 // });
 
+
+
+const BRAND_ID = "677262f28b89ee789f62b03e"; // Replace with actual brand ID
+
+// const updateCancelledComplaintsForBrand = async () => {
+//   try {
+//     // Step 1: Find all CANCEL complaints for the brand
+//     const complaints = await ComplaintModal.find(
+//       {
+//         status: "CANCELED",
+//         brandId: BRAND_ID
+//       },
+//       { _id: 1 } // Only fetch _id
+//     );
+
+//     if (complaints.length === 0) {
+//       console.log(`[CRON] No CANCEL complaints found for brand ${BRAND_ID}.`);
+//       return;
+//     }
+
+//     // Step 2: Log each Complaint ID
+//     complaints.forEach((complaint) => {
+//       console.log(`[CRON] ComplaintId: ${complaint._id} will be updated.`);
+//     });
+
+//     // Step 3: Update those complaints
+//     const result = await ComplaintModal.updateMany(
+//       {
+//         _id: { $in: complaints.map(c => c._id) }
+//       },
+//       {
+//         $set: {
+//           status: "COMPLETED",
+//           cancelComp: "yes",
+//           assignServiceCenter: "",
+//           assignServiceCenterId: ""
+//         }
+//       }
+//     );
+
+//     console.log(`[CRON] Updated ${result.modifiedCount} cancelled complaints for brand ${BRAND_ID}.`);
+
+//   } catch (error) {
+//     console.error("[CRON] Error updating cancelled complaints:", error);
+//   }
+// };
+
+// Run every hour
+//  cron.schedule("26 11 * * *", () => {
+//   console.log("[CRON] Running complaint updater for CANCEL → COMPLETED for specific brand at 11:20 AM...");
+//   updateCancelledComplaintsForBrand();
+// });
