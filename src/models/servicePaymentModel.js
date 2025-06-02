@@ -12,6 +12,7 @@ const servicePaymentSchema = new mongoose.Schema({
     address:{ type: String },
     payScreenshot:{ type: String },
     qrCode:{ type: String },
+    UPIid:{ type: String },
     status: { type: String, default: "UNPAID" },
 }, { timestamps: true })
 
