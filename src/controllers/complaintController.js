@@ -77,7 +77,7 @@ const otp = generateOtp();
          fullName,
          complaintId: complaint.complaintId || complaint._id.toString(),
          issueType: complaint?.detailedDescription,
-         serviceCenterName: 'Service Center visit your location',
+         // serviceCenterName: 'Service Center visit your location',
          visitTime: visitTime, // Dynamically set your visit time here
          phoneNumber: phoneNumber,
          otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
