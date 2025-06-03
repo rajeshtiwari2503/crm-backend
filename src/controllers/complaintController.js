@@ -30,12 +30,15 @@ const addComplaint = async (req, res) => {
          brandId,
          uniqueId,
          district,
+         createEmpName,
          state,
       } = body;
 
       const email = emailAddress;
       const productName = body?.productName;
       const productId = body?.productId;
+     const createEmpName1 = createEmpName || fullName;
+
       // Create or find user
       const user = await findOrCreateUser(email, fullName, phoneNumber, serviceAddress);
 
@@ -63,6 +66,7 @@ const otp = generateOtp();
          serviceCenterContact: serviceCenter?.contact,
          assignServiceCenterTime: new Date(),
          status: serviceCenter ? 'ASSIGN' : 'PENDING',
+        createEmpName:createEmpName1,
          otp: otp
       };
 
