@@ -80,6 +80,21 @@ const complaintSchema = new mongoose.Schema({
   orderId: { type: String },
   serviceAddress: { type: String },
   cancelComp: { type: String, default: "NO" },
+   assignedTimeSlot: {
+    type: String,
+  },
+  audioRecording: {
+    type: String, // store audio file URL or S3 key
+    default: null,
+  },
+  showCustomerNumberTimestamp: {
+  type: Date,
+  default: null,
+},
+ audioRecording: {
+    type: String, // URL or S3 key for the uploaded audio file
+    default: null,
+  },
   status: { type: String, default: "PENDING" },
   payment: { type: Number, default: 0 },
 
