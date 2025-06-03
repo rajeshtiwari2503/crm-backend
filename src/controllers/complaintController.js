@@ -718,7 +718,7 @@ const getCompleteComplaintByUserContact = async (req, res) => {
       const { phoneNumber } = req.query; // or req.body or req.params based on your route setup
       //  console.log("req.query",req.body);
       //  console.log("phoneNumber",req.query);
-      console.log("phoneNumber", phoneNumber);
+      // console.log("phoneNumber", phoneNumber);
       if (!phoneNumber) {
          return res.status(400).send({ status: false, msg: "Phone number is required." });
       }

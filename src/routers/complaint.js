@@ -6,7 +6,7 @@ const {
 const {addComplaint,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByHighPriorityPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
-const {upload}  = require("../services/service");
+const {upload, uploadAudio}  = require("../services/service");
  
 const uploadVideo = require("../googleConfig/uploadMiddleware");
 const { updateComplaintWithVideo } = require("../googleConfig/complaintVideoController");
@@ -60,6 +60,37 @@ router.patch("/editComplaint/:id",editComplaint)
 router.patch("/updateComplaintComments/:id",updateComplaintComments)
 router.delete("/deleteComplaint/:id",deleteComplaint)
 router.patch("/updateComplaint/:id",updateComplaint )
+
+
+// POST /api/complaints/upload-audio
+router.post("/upload-audio", uploadAudio.single("audio"), async (req, res) => {
+  const { complaintId } = req.body;
+
+  if (!req.file || !complaintId) {
+    return res.status(400).json({ message: "Missing audio file or complaintId." });
+  }
+
+  try {
+    const audioUrl = req.file.location; // S3 public URL
+
+    const updatedComplaint = await ComplaintModal.findByIdAndUpdate(
+      complaintId,
+      { audioRecording: audioUrl },
+      { new: true }
+    );
+
+    if (!updatedComplaint) {
+      return res.status(404).json({ message: "Complaint not found." });
+    }
+
+    res.json({
+      status: true, msg: "Recording add Your complaint!"
+    });
+  } catch (error) {
+    console.error("Error uploading audio:", error);
+    res.status(500).json({ status: false, msg: "Failed to upload audio." });
+  }
+});
 
 const mongoose = require("mongoose");
 
