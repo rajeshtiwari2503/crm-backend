@@ -37,7 +37,7 @@ const addComplaint = async (req, res) => {
       const email = emailAddress;
       const productName = body?.productName;
       const productId = body?.productId;
-     const createEmpName1 = createEmpName || fullName;
+      const createEmpName1 = createEmpName || fullName;
 
       // Create or find user
       const user = await findOrCreateUser(email, fullName, phoneNumber, serviceAddress);
@@ -52,9 +52,9 @@ const addComplaint = async (req, res) => {
 
       // Find service center
       const serviceCenter = await findServiceCenter(pincode, brandId);
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+      const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const otp = generateOtp();
+      const otp = generateOtp();
       // Prepare complaint object
       const complaintData = {
          ...body,
@@ -66,7 +66,7 @@ const otp = generateOtp();
          serviceCenterContact: serviceCenter?.contact,
          assignServiceCenterTime: new Date(),
          status: serviceCenter ? 'ASSIGN' : 'PENDING',
-        createEmpName:createEmpName1,
+         createEmpName: createEmpName1,
          otp: otp
       };
 
@@ -1294,9 +1294,13 @@ const getPendingComplaints = async (req, res) => {
       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
          .select("_id")
          .lean();
+
       const activeBrandIds = activeBrands.map((b) => b._id.toString());
-      //   let filter = { status: "PENDING"||"IN PROGRESS" };
-      let filter = { status: { $in: ["PENDING", "IN PROGRESS"] }, brandId: { $in: activeBrandIds } };
+
+      let filter = {
+         status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
+         brandId: { $in: activeBrandIds }
+      };
 
       if (days === "0-1" || days === "2-5") {
          filter.createdAt = { $gte: startDate, $lte: endDate };
@@ -1314,7 +1318,8 @@ const getPendingComplaints = async (req, res) => {
 
             {
                preferredServiceDate: { $lt: today },
-               status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] }
+               status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
+                 brandId: { $in: activeBrandIds }
             } // Past but not completed
          ]
       }).sort({ preferredServiceDate: 1 });
@@ -1704,10 +1709,10 @@ const updatePartPendingImage = async (req, res) => {
                brandName: body.brandName || data.productBrand,
                serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
                serviceCenter: body.serviceCenter || data.assignServiceCenter,
-               
+
             });
-     console.log("newOrder",newOrder);
-     
+            console.log("newOrder", newOrder);
+
             await newOrder.save();
          }
 
