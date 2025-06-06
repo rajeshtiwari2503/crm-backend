@@ -348,10 +348,18 @@ router.get("/wallet-payment-summary", async (req, res) => {
     });
 
     // Step 5: Calculate TAT buckets per service center
-   const tatBucketsByServiceCenter = {};
+    const tatBucketsByServiceCenter = {};
 
 for (const [scId, comps] of Object.entries(complaintsByServiceCenter)) {
-  const buckets = { "0": 0, "1": 0, "2-3": 0, "3-5": 0, ">5": 0 };
+  const buckets = {
+    "0": 0,
+    "1": 0,
+    "1-2": 0,
+    "2-3": 0,
+    "3-4": 0,
+    "4-5": 0,
+    ">5": 0,
+  };
 
   comps.forEach(c => {
     const tatMs = new Date(c.complaintCloseTime) - new Date(c.assignServiceCenterTime);
@@ -361,21 +369,22 @@ for (const [scId, comps] of Object.entries(complaintsByServiceCenter)) {
       buckets["0"]++;
     } else if (tatDays === 1) {
       buckets["1"]++;
-    } else if (tatDays <= 3) {
+    } else if (tatDays === 2) {
+      buckets["1-2"]++;
+    } else if (tatDays === 3) {
       buckets["2-3"]++;
-    } else if (tatDays <= 5) {
+    } else if (tatDays === 4) {
       buckets["3-4"]++;
-    } 
-     else if (tatDays <= 5) {
+    } else if (tatDays === 5) {
       buckets["4-5"]++;
-    }
-    else {
+    } else {
       buckets[">5"]++;
     }
   });
 
   tatBucketsByServiceCenter[scId] = buckets;
 }
+
 
 
     // Step 6: Build summary merging payments and complaints info
