@@ -154,6 +154,7 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
   }
 };
 
+ 
 // const createWalletTransactions = async () => {
 //   try {
 //     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
@@ -161,22 +162,38 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 //     console.log("startOfPrevMonth", startOfPrevMonth);
 //     console.log("endOfPrevMonth", endOfPrevMonth);
 
+//     // const complaints = await ComplaintModal.find({
+//     //   createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+//     //   status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+//     // });
 //     const complaints = await ComplaintModal.find({
 //       createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
 //       status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+//       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
+      
 //     });
+
+
 //     console.log("Total complaints found:", complaints.length);
 //     let createdCount = 0;
-//     console.log("createdCount", createdCount);
 
 //     for (const data of complaints) {
+//       if (!data.assignServiceCenterId) {
+//         console.warn("Skipping complaint because assignServiceCenterId is missing:", data._id);
+//         continue;
+//       }
 //       const serviceCenter = await ServiceModel.findOne({
 //         _id: data.assignServiceCenterId,
 //         serviceCenterType: 'Authorized',
 //       });
 
-
 //       if (!serviceCenter || !data.pincode || !serviceCenter.postalCode) continue;
+
+//       // ✅ Ensure either qrCode or UPIid exists
+//       if (!serviceCenter.qrCode && !serviceCenter.UPIid) {
+//         console.warn(`Skipping complaint ${data._id}: QR Code or UPI ID required.`);
+//         continue;
+//       }
 
 //       const existingPayment = await ServicePaymentModel.findOne({
 //         serviceCenterId: data.assignServiceCenterId,
@@ -240,6 +257,8 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 //         city: serviceCenter.city,
 //         address: serviceCenter.streetAddress,
 //         status: "UNPAID",
+//         ...(serviceCenter.qrCode ? { qrCode: serviceCenter.qrCode } : {}),
+//         ...(serviceCenter.UPIid ? { UPIid: serviceCenter.UPIid } : {})
 //       };
 
 //       console.log("Creating service center payment:", paymentData);
@@ -261,17 +280,17 @@ const createWalletTransactions = async () => {
     console.log("startOfPrevMonth", startOfPrevMonth);
     console.log("endOfPrevMonth", endOfPrevMonth);
 
-    // const complaints = await ComplaintModal.find({
-    //   createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-    //   status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
-    // });
-    const complaints = await ComplaintModal.find({
-      createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-      status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
-      assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
-      
-    });
+   const paidComplaintIds = await ServicePaymentModel.distinct("complaintId");
 
+// Step 2: Get complaints which do NOT have a wallet transaction
+const complaints = await ComplaintModal.find({
+  createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+  status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+  assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
+  _id: { $nin: paidComplaintIds }, // ✅ this filters only unpaid ones
+});
+
+console.log("Complaints eligible for wallet transaction:", complaints.length);
 
     console.log("Total complaints found:", complaints.length);
     let createdCount = 0;
@@ -372,10 +391,9 @@ const createWalletTransactions = async () => {
   }
 };
 
-
-cron.schedule("33 14 3 * *", () => {
+cron.schedule("51 9 6 * *", () => {
   console.log("Running wallet transaction job on the 2nd at 11:00 AM...");
-  // createWalletTransactions();
+  createWalletTransactions();
 });
 
 

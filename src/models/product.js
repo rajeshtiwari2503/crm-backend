@@ -37,6 +37,8 @@ const productSchema = new mongoose.Schema({
       warrantyInDays: { type: String },
       warrantyYears: { type: String },
       warrantyStatus: { type: Boolean },
+      videoLink: { type: String },
+      content: { type: String },
       status: { type: String, default: "ACTIVE" }
 
 }, { timestamps: true });

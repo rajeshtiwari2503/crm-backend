@@ -81,17 +81,17 @@ router.get("/dashboardDetails", async (req, res) => {
       Complaints.countDocuments({ status: 'FINAL VERIFICATION', brandId: { $in: activeBrandIds } }),
 
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
         createdAt: { $gte: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
         createdAt: { $lt: fiveDaysAgo },
         brandId: { $in: activeBrandIds }
       }),
