@@ -391,7 +391,7 @@ console.log("Complaints eligible for wallet transaction:", complaints.length);
   }
 };
 
-cron.schedule("51 9 6 * *", () => {
+cron.schedule("12 13 6 * *", () => {
   console.log("Running wallet transaction job on the 2nd at 11:00 AM...");
   createWalletTransactions();
 });
