@@ -1,3 +1,5 @@
+ 
+const BrandFeedback = require("../models/brandFeedbackModel");
 const FeedbackModel = require("../models/feedback")
 const NotificationModel = require("../models/notification")
 
@@ -33,6 +35,15 @@ const getAllFeedback = async (req, res) => {
         res.status(400).send(err);
     }
 }
+const getAllBrandFeedback = async (req, res) => {
+    try {
+        let data = await BrandFeedback.find({}).sort({ _id: -1 });
+        res.send(data);
+    } catch (err) {
+        res.status(400).send(err);
+    }
+}
+
 const getFeedbackByUserId = async (req, res) => {
     try {
         let userId = req.params.id;
@@ -115,6 +126,6 @@ const deleteFeedback = async (req, res) => {
 }
 
 module.exports = {
-    addFeedback, getFeedbackByUserId, getFeedbackByBrandId, getFeedbackByTechnicianId, getFeedbackByServiceCenterId
+    addFeedback, getFeedbackByUserId,getAllBrandFeedback, getFeedbackByBrandId, getFeedbackByTechnicianId, getFeedbackByServiceCenterId
     , getAllFeedback, getFeedbackById, editFeedback, deleteFeedback
 };

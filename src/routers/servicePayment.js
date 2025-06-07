@@ -17,8 +17,19 @@ router.patch("/editServicePayment/:id", upload().single("payScreenshot"), editSe
 router.delete("/deleteServicePayment/:id", deleteServicePayment);
 
 router.put('/updateBulkPayments', updateBulkPayments);
+ 
 
 
+
+router.post('/addDeliveryChargePayment', async (req, res) => {
+  try {
+    const newPayment = new ServicePaymentModel(req.body);
+    const saved = await newPayment.save();
+    res.status(201).json({ success: true, data: saved });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
 
 // router.get("/wallet-payment-summary", async (req, res) => {
 //   try {
