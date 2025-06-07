@@ -29,3 +29,6 @@ const feedbackSchema=mongoose.Schema({
   const FeedbackModal=new mongoose.model("Feedback",feedbackSchema);
   
   module.exports=FeedbackModal;
+
+   
+ 
