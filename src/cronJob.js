@@ -308,10 +308,10 @@ console.log("Complaints eligible for wallet transaction:", complaints.length);
       if (!serviceCenter || !data.pincode || !serviceCenter.postalCode) continue;
 
       // ✅ Ensure either qrCode or UPIid exists
-      if (!serviceCenter.qrCode && !serviceCenter.UPIid) {
-        console.warn(`Skipping complaint ${data._id}: QR Code or UPI ID required.`);
-        continue;
-      }
+      // if (!serviceCenter.qrCode && !serviceCenter.UPIid) {
+      //   console.warn(`Skipping complaint ${data._id}: QR Code or UPI ID required.`);
+      //   continue;
+      // }
 
       const existingPayment = await ServicePaymentModel.findOne({
         serviceCenterId: data.assignServiceCenterId,
@@ -390,8 +390,7 @@ console.log("Complaints eligible for wallet transaction:", complaints.length);
     console.error("Error creating wallet transactions:", error);
   }
 };
-
-cron.schedule("3 10 7 * *", () => {
+cron.schedule("53 09 12 * *", () => {
   console.log("Running wallet transaction job on the 2nd at 11:00 AM...");
   createWalletTransactions();
 });
