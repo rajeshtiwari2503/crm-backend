@@ -25,7 +25,8 @@ router.get("/dashboardDetails", async (req, res) => {
     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
     const datetoday = new Date();
     datetoday.setHours(23, 59, 59, 999);
-
+  const fiveDaysComp = new Date(fiveDaysAgo);
+    fiveDaysComp.setHours(23, 59, 59, 999);
     // Step 1: Get active brand IDs
     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id");
     const activeBrandIds = activeBrands.map(brand => brand._id);
@@ -92,7 +93,7 @@ router.get("/dashboardDetails", async (req, res) => {
       }),
       Complaints.countDocuments({
         $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
-        createdAt: { $lt: fiveDaysAgo },
+        createdAt: { $lt: fiveDaysComp },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
