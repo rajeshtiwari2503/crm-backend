@@ -1460,7 +1460,9 @@ const editComplaint = async (req, res) => {
       if (body.status === "PART PENDING") {
          data.cspStatus = "YES";
       }
-
+ if (body.status === "CUSTOMER SIDE PENDING") {
+         data.cspStatus = "YES";
+      }
       if (body.status === "FINAL VERIFICATION") {
          data.complaintCloseTime = new Date();
 
@@ -1644,7 +1646,9 @@ const updatePartPendingImage = async (req, res) => {
       if (body.status === "PART PENDING") {
          data.cspStatus = "YES";
       }
-
+ if (body.status === "CUSTOMER SIDE PENDING") {
+         data.cspStatus = "YES";
+      }
       if (["FINAL VERIFICATION", "COMPLETED"].includes(body.status)) {
          data.complaintCloseTime = new Date();
       }
