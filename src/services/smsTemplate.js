@@ -7,7 +7,6 @@ module.exports = {
       fullName,              // {#var#} - Customer Name
       complaintId,           // {#var#} - Complaint Number
       issueType,             // {#var#} - Complaint Description
-      serviceCenterName,     // {#var#} - Visit Location
       visitTime,             // {#var#} - Visit Time
       phoneNumber,    // {#var#} - Mobile
       otp,                   // {#var#} - OTP

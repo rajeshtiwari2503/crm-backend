@@ -109,33 +109,68 @@ const complaintSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save middleware to generate a unique complaintId
+// complaintSchema.pre('save', async function (next) {
+//   const complaint = this;
+
+//   // Generate complaintId if it doesn't exist
+//   if (!complaint.complaintId) {
+//     const brandPart = complaint.productBrand ? complaint.productBrand.slice(0, 2).toUpperCase() : "XX"; // Default to 'XX'
+//     const date = new Date();
+//     const dayPart = date.getDate().toString().padStart(2, '0'); // Day in 2 digits
+//     const monthPart = (date.getMonth() + 1).toString().padStart(2, '0'); // Month in 2 digits
+//     const productPart = complaint.productName ? complaint.productName.slice(0, 2).toUpperCase() : "YY"; // Default to 'YY'
+//     const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // Random 3 digit number
+
+//     // Generate complaintId
+//     complaint.complaintId = `${brandPart}${dayPart}${monthPart}${productPart}${randomPart}`;
+
+//     // Ensure uniqueness
+//     const existingComplaint = await ComplaintModal.findOne({ complaintId: complaint.complaintId });
+//     if (existingComplaint) {
+//       // If the generated complaintId already exists, regenerate it
+//       return next();
+//     }
+//   } else {
+//     console.log("complaintId already exists:", complaint.complaintId);
+//   }
+
+//   next();
+// });
+
 complaintSchema.pre('save', async function (next) {
   const complaint = this;
 
-  // Generate complaintId if it doesn't exist
   if (!complaint.complaintId) {
-    const brandPart = complaint.productBrand ? complaint.productBrand.slice(0, 2).toUpperCase() : "XX"; // Default to 'XX'
-    const date = new Date();
-    const dayPart = date.getDate().toString().padStart(2, '0'); // Day in 2 digits
-    const monthPart = (date.getMonth() + 1).toString().padStart(2, '0'); // Month in 2 digits
-    const productPart = complaint.productName ? complaint.productName.slice(0, 2).toUpperCase() : "YY"; // Default to 'YY'
-    const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // Random 3 digit number
+    let isUnique = false;
+    let attempts = 0;
 
-    // Generate complaintId
-    complaint.complaintId = `${brandPart}${dayPart}${monthPart}${productPart}${randomPart}`;
+    while (!isUnique && attempts < 5) {
+      const brandPart = complaint.productBrand ? complaint.productBrand.slice(0, 2).toUpperCase() : "XX";
+      const date = new Date();
+      const dayPart = date.getDate().toString().padStart(2, '0');
+      const monthPart = (date.getMonth() + 1).toString().padStart(2, '0');
+      const productPart = complaint.productName ? complaint.productName.slice(0, 2).toUpperCase() : "YY";
+      const randomPart = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
 
-    // Ensure uniqueness
-    const existingComplaint = await ComplaintModal.findOne({ complaintId: complaint.complaintId });
-    if (existingComplaint) {
-      // If the generated complaintId already exists, regenerate it
-      return next();
+      const generatedId = `${brandPart}${dayPart}${monthPart}${productPart}${randomPart}`;
+      const existing = await mongoose.models.Complaints.findOne({ complaintId: generatedId });
+
+      if (!existing) {
+        complaint.complaintId = generatedId;
+        isUnique = true;
+      } else {
+        attempts++;
+      }
     }
-  } else {
-    console.log("complaintId already exists:", complaint.complaintId);
+
+    if (!isUnique) {
+      return next(new Error("Failed to generate a unique complaintId after multiple attempts"));
+    }
   }
 
   next();
 });
+
 
 // Create the Complaint model
 const ComplaintModal = mongoose.model("Complaints", complaintSchema);

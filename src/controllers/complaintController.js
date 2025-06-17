@@ -74,9 +74,16 @@ const addComplaint = async (req, res) => {
       await complaint.save();
 
       // Prepare and send SMS
+      const preferredDate = complaint.preferredServiceDate
+         ? moment(complaint.preferredServiceDate)
+         : moment().add(1, 'days'); // Tomorrow's date if not present
+
+      const preferredTime = complaint.preferredServiceTime || '09:00'; // Default time if not present
+
       const visitTime = moment(
-         `${moment(complaint.preferredServiceDate).format('YYYY-MM-DD')}T${complaint.preferredServiceTime}`
+         `${preferredDate.format('YYYY-MM-DD')}T${preferredTime}`
       ).format('hh:mm A on MMMM D, YYYY');
+
       const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
          fullName,
          complaintId: complaint.complaintId || complaint._id.toString(),
@@ -1319,7 +1326,7 @@ const getPendingComplaints = async (req, res) => {
             {
                preferredServiceDate: { $lt: today },
                status: { $nin: ["COMPLETED", "FINAL VERIFICATION", "CANCELED"] },
-                 brandId: { $in: activeBrandIds }
+               brandId: { $in: activeBrandIds }
             } // Past but not completed
          ]
       }).sort({ preferredServiceDate: 1 });
@@ -1460,7 +1467,7 @@ const editComplaint = async (req, res) => {
       if (body.status === "PART PENDING") {
          data.cspStatus = "YES";
       }
- if (body.status === "CUSTOMER SIDE PENDING") {
+      if (body.status === "CUSTOMER SIDE PENDING") {
          data.cspStatus = "YES";
       }
       if (body.status === "FINAL VERIFICATION") {
@@ -1646,7 +1653,7 @@ const updatePartPendingImage = async (req, res) => {
       if (body.status === "PART PENDING") {
          data.cspStatus = "YES";
       }
- if (body.status === "CUSTOMER SIDE PENDING") {
+      if (body.status === "CUSTOMER SIDE PENDING") {
          data.cspStatus = "YES";
       }
       if (["FINAL VERIFICATION", "COMPLETED"].includes(body.status)) {
