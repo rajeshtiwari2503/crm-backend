@@ -1288,7 +1288,7 @@ const getPendingComplaints = async (req, res) => {
       } else if (days === "2-5") {
          startDate = new Date(now);
          startDate.setDate(now.getDate() - 5);
-         startDate.setHours(0, 0, 0, 0);
+         startDate.setHours(23, 59, 59, 999);
 
          endDate = new Date(now);
          endDate.setDate(now.getDate() - 2);

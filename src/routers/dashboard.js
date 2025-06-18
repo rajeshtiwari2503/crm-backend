@@ -30,7 +30,7 @@ router.get("/dashboardDetails", async (req, res) => {
     // Step 1: Get active brand IDs
     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id");
     const activeBrandIds = activeBrands.map(brand => brand._id);
-
+ 
     const [
       customerCount,
       orderCount,
@@ -760,7 +760,7 @@ const calculateDateRanges = () => {
 
   const fiveDaysAgo = new Date(now);
   fiveDaysAgo.setDate(now.getDate() - 5);
-  fiveDaysAgo.setHours(0, 0, 0, 0);
+  fiveDaysAgo.setHours(23, 59, 59, 999);
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   return { now, oneDayAgo, twoDaysAgo, fiveDaysAgo, todayStart };
