@@ -17,7 +17,7 @@ router.patch("/editServicePayment/:id", upload().single("payScreenshot"), editSe
 router.delete("/deleteServicePayment/:id", deleteServicePayment);
 
 router.put('/updateBulkPayments', updateBulkPayments);
- 
+
 
 
 
@@ -285,7 +285,7 @@ router.post('/addDeliveryChargePayment', async (req, res) => {
 router.get("/wallet-payment-summary", async (req, res) => {
   try {
     const { month, year, sortBy } = req.query;
-    console.log("req.query:", req.query);
+    // console.log("req.query:", req.query);
 
     const now = new Date();
     const filterMonth = month ? parseInt(month) - 1 : now.getMonth();
@@ -302,15 +302,26 @@ router.get("/wallet-payment-summary", async (req, res) => {
         },
       },
       {
+       
         $group: {
           _id: "$serviceCenterId",
           name: { $first: "$serviceCenterName" },
-          totalAmount: { $sum: { $toDouble: "$payment" } },
+          totalAmount: {
+            $sum: {
+              $convert: {
+                input: { $trim: { input: "$payment" } },
+                to: "double",
+                onError: 0,
+                onNull: 0,
+              },
+            },
+          },
           unpaidCount: { $sum: { $cond: [{ $eq: ["$status", "UNPAID"] }, 1, 0] } },
           paidCount: { $sum: { $cond: [{ $eq: ["$status", "PAID"] }, 1, 0] } },
           totalPayments: { $sum: 1 },
-          complaintIds: { $addToSet: "$complaintId" }, // collect complaintIds from payments
-        },
+          complaintIds: { $addToSet: "$complaintId" },
+        }
+
       },
     ]);
 
@@ -361,40 +372,40 @@ router.get("/wallet-payment-summary", async (req, res) => {
     // Step 5: Calculate TAT buckets per service center
     const tatBucketsByServiceCenter = {};
 
-for (const [scId, comps] of Object.entries(complaintsByServiceCenter)) {
-  const buckets = {
-    "0": 0,
-    "1": 0,
-    "1-2": 0,
-    "2-3": 0,
-    "3-4": 0,
-    "4-5": 0,
-    ">5": 0,
-  };
+    for (const [scId, comps] of Object.entries(complaintsByServiceCenter)) {
+      const buckets = {
+        "0": 0,
+        "1": 0,
+        "1-2": 0,
+        "2-3": 0,
+        "3-4": 0,
+        "4-5": 0,
+        ">5": 0,
+      };
 
-  comps.forEach(c => {
-    const tatMs = new Date(c.complaintCloseTime) - new Date(c.assignServiceCenterTime);
-    const tatDays = Math.ceil(tatMs / (1000 * 60 * 60 * 24));
+      comps.forEach(c => {
+        const tatMs = new Date(c.complaintCloseTime) - new Date(c.assignServiceCenterTime);
+        const tatDays = Math.ceil(tatMs / (1000 * 60 * 60 * 24));
 
-    if (tatDays === 0) {
-      buckets["0"]++;
-    } else if (tatDays === 1) {
-      buckets["1"]++;
-    } else if (tatDays === 2) {
-      buckets["1-2"]++;
-    } else if (tatDays === 3) {
-      buckets["2-3"]++;
-    } else if (tatDays === 4) {
-      buckets["3-4"]++;
-    } else if (tatDays === 5) {
-      buckets["4-5"]++;
-    } else {
-      buckets[">5"]++;
+        if (tatDays === 0) {
+          buckets["0"]++;
+        } else if (tatDays === 1) {
+          buckets["1"]++;
+        } else if (tatDays === 2) {
+          buckets["1-2"]++;
+        } else if (tatDays === 3) {
+          buckets["2-3"]++;
+        } else if (tatDays === 4) {
+          buckets["3-4"]++;
+        } else if (tatDays === 5) {
+          buckets["4-5"]++;
+        } else {
+          buckets[">5"]++;
+        }
+      });
+
+      tatBucketsByServiceCenter[scId] = buckets;
     }
-  });
-
-  tatBucketsByServiceCenter[scId] = buckets;
-}
 
 
 
