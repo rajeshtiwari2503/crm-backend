@@ -427,7 +427,9 @@ router.post('/filterDataOld', async (req, res) => {
 router.post('/filterData', async (req, res) => {
   try {
     const { reportType, startDate, endDate, filters } = req.body;
-
+   
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
     // Step 1: Get all active brand IDs
     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
       .select("_id")
@@ -443,7 +445,7 @@ router.post('/filterData', async (req, res) => {
 
     const dateQuery =
       startDate && endDate
-        ? { createdAt: { $gte: new Date(startDate), $lte: new Date(endDate) } }
+        ? { createdAt: { $gte: new Date(startDate), $lte: new Date(end) } }
         : {};
 
     // USER REPORT
