@@ -1362,7 +1362,7 @@ const getPartPendingComplaints = async (req, res) => {
          endDate.setHours(23, 59, 59, 999);
       } else if (days === "more-than-week") {
          endDate = new Date(now);
-         endDate.setDate(now.getDate() - 6); // Ensure correct range
+         endDate.setDate(now.getDate() - 5); // Ensure correct range
          endDate.setHours(23, 59, 59, 999);
       }
       const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
