@@ -61,11 +61,11 @@ const addComplaint = async (req, res) => {
          userId: user._id,
          userName: user.name,
          issueImages: req.file?.location,
-         assignServiceCenterId: serviceCenter?._id,
-         assignServiceCenter: serviceCenter?.serviceCenterName,
-         serviceCenterContact: serviceCenter?.contact,
-         assignServiceCenterTime: new Date(),
-         status: serviceCenter ? 'ASSIGN' : 'PENDING',
+         // assignServiceCenterId: serviceCenter?._id,
+         // assignServiceCenter: serviceCenter?.serviceCenterName,
+         // serviceCenterContact: serviceCenter?.contact,
+         // assignServiceCenterTime: new Date(),
+         // status: serviceCenter ? 'ASSIGN' : 'PENDING',
          createEmpName: createEmpName1,
          otp: otp
       };
