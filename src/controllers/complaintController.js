@@ -1486,6 +1486,44 @@ const editComplaint = async (req, res) => {
 
       // Save the updated complaint
       await data.save();
+
+
+      await data.save();
+      // console.log("✅ Complaint saved:", data._id);
+
+      const io = req.app.get('socketio');
+      // console.log("🧪 Is IO defined?", !!io);
+
+      if (io) {
+         const payload = {
+            complaintId: data._id,
+            complaintNumber: data.complaintId,
+            status: data.status,
+            brandId: data.brandId,
+            assignedTo: {
+               serviceCenterId: data.assignServiceCenterId,
+            },
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            productBrand: data.productBrand,
+            productName: data.productName,
+            updatedAt: new Date(), // or data.updatedAt if available
+            contact: data.contact || data.phoneNumber,
+            pincode: data.pincode,
+            assignServiceCenter: data.assignServiceCenter, // optional: use name if populated
+            district: data.district,
+            state: data.state,
+            message: `Complaint ${data.complaintId} updated. Status: ${data.status}`,
+         };
+
+         console.log("📢 Emitting complaintStatusUpdated:", payload);
+         io.emit('complaintStatusUpdated', payload);
+      } else {
+         console.warn("⚠️ Socket.IO instance not found on app object");
+      }
+
+
+
       if (body.assignServiceCenterId) {
          if (body.status === "ASSIGN") {
 
