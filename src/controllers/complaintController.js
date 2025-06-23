@@ -171,29 +171,29 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
       console.timeEnd('Update Warranty');
  // Emit socket only if updated successfully
  
-const io = req.app.get('socketio');
+// const io = req.app.get('socketio');
 
-    if (result.modifiedCount > 0 && io) {
-      const payload = {
+//     if (result.modifiedCount > 0 && io) {
+//       const payload = {
         
-          uniqueId,
-          productName,
-          productId,
-          fullName,
-          email,
-          contact,
-          address,
-          district,
-          state,
-          pincode,
-          activationDate: new Date(),
+//           uniqueId,
+//           productName,
+//           productId,
+//           fullName,
+//           email,
+//           contact,
+//           address,
+//           district,
+//           state,
+//           pincode,
+//           activationDate: new Date(),
         
-        message: `Warranty activated for ${productName} by ${fullName}`
-      };
+//         message: `Warranty activated for ${productName} by ${fullName}`
+//       };
 
-      // console.log("📢 Emitting warrantyUpdated:", payload);
-      io.emit('warrantyActivated', payload);
-    }
+//       // console.log("📢 Emitting warrantyUpdated:", payload);
+//       io.emit('warrantyActivated', payload);
+//     }
 
     
       // Check if the update matched and modified a document
@@ -1525,37 +1525,37 @@ const editComplaint = async (req, res) => {
 
 
       // Check if status has changed before emitting socket event
-      if (body.status && body.status !== oldStatus) {
-         const io = req.app.get('socketio');
+      // if (body.status && body.status !== oldStatus) {
+      //    const io = req.app.get('socketio');
 
-         const payload = {
-            complaintId: data._id,
-            complaintNumber: data.complaintId,
-            status: data.status,
-            brandId: data.brandId,
-            assignedTo: {
-               serviceCenterId: data.assignServiceCenterId,
-            },
-            fullName: data.fullName,
-            phoneNumber: data.phoneNumber,
-            productBrand: data.productBrand,
-            productName: data.productName,
-            updatedAt: new Date(),
-            contact: data.contact || data.phoneNumber,
-            pincode: data.pincode,
-            assignServiceCenter: data.assignServiceCenter,
-            district: data.district,
-            state: data.state,
-            message: `Complaint ${data.complaintId} status updated from ${oldStatus} to ${data.status}`,
-         };
+      //    const payload = {
+      //       complaintId: data._id,
+      //       complaintNumber: data.complaintId,
+      //       status: data.status,
+      //       brandId: data.brandId,
+      //       assignedTo: {
+      //          serviceCenterId: data.assignServiceCenterId,
+      //       },
+      //       fullName: data.fullName,
+      //       phoneNumber: data.phoneNumber,
+      //       productBrand: data.productBrand,
+      //       productName: data.productName,
+      //       updatedAt: new Date(),
+      //       contact: data.contact || data.phoneNumber,
+      //       pincode: data.pincode,
+      //       assignServiceCenter: data.assignServiceCenter,
+      //       district: data.district,
+      //       state: data.state,
+      //       message: `Complaint ${data.complaintId} status updated from ${oldStatus} to ${data.status}`,
+      //    };
 
-         if (io) {
-            // console.log("📢 Emitting complaintStatusUpdated:", payload);
-            io.emit('complaintStatusUpdated', payload);
-         } else {
-            console.warn("⚠️ Socket.IO instance not found on app object");
-         }
-      }
+      //    if (io) {
+      //       // console.log("📢 Emitting complaintStatusUpdated:", payload);
+      //       io.emit('complaintStatusUpdated', payload);
+      //    } else {
+      //       console.warn("⚠️ Socket.IO instance not found on app object");
+      //    }
+      // }
 
 
 
