@@ -319,27 +319,27 @@ const activateWarranty = async (req, res) => {
     }
     // Save the updated warranty
     await warranty.save();
- const io = req.app.get('socketio');
-    if (io) {
-      const payload = {   
-          uniqueId: record.uniqueId,
-          productName: record.productName,
-          productId: record.productId,
-          fullName: record.userName,
-          email: record.email,
-          contact: record.contact,
-          address: record.address,
-          district: record.district,
-          state: record.state,
-          pincode: record.pincode,
-          activationDate: record.activationDate,
-        message: `Warranty activated for ${record.productName} by ${record.userName} (${record.brandName || 'N/A'})`,
-      };
-      io.emit('warrantyActivated', payload);
-      // console.log('📢 Emitted warrantyActivated:', payload);
-    } else {
-      console.warn('⚠️ Socket.IO instance not found.');
-    }
+//  const io = req.app.get('socketio');
+//     if (io) {
+//       const payload = {   
+//           uniqueId: record.uniqueId,
+//           productName: record.productName,
+//           productId: record.productId,
+//           fullName: record.userName,
+//           email: record.email,
+//           contact: record.contact,
+//           address: record.address,
+//           district: record.district,
+//           state: record.state,
+//           pincode: record.pincode,
+//           activationDate: record.activationDate,
+//         message: `Warranty activated for ${record.productName} by ${record.userName} (${record.brandName || 'N/A'})`,
+//       };
+//       io.emit('warrantyActivated', payload);
+//       // console.log('📢 Emitted warrantyActivated:', payload);
+//     } else {
+//       console.warn('⚠️ Socket.IO instance not found.');
+//     }
     res.status(200).json({
       status: true,
       msg: 'Warranty activated successfully',
