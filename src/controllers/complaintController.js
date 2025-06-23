@@ -169,7 +169,33 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
 
       console.log('Update result', result);
       console.timeEnd('Update Warranty');
+ // Emit socket only if updated successfully
+ 
+const io = req.app.get('socketio');
 
+    if (result.modifiedCount > 0 && io) {
+      const payload = {
+        
+          uniqueId,
+          productName,
+          productId,
+          fullName,
+          email,
+          contact,
+          address,
+          district,
+          state,
+          pincode,
+          activationDate: new Date(),
+        
+        message: `Warranty activated for ${productName} by ${fullName}`
+      };
+
+      // console.log("📢 Emitting warrantyUpdated:", payload);
+      io.emit('warrantyActivated', payload);
+    }
+
+    
       // Check if the update matched and modified a document
       return result.modifiedCount > 0;
    } catch (err) {
@@ -1481,11 +1507,59 @@ const editComplaint = async (req, res) => {
       if (!data.complaintCloseTime && body.complaintCloseTime) {
          data.complaintCloseTime = new Date(); // Set only if it was never set before
       }
+
+
+      let dataComp = await ComplaintModal.findById(_id);
+
+
+      const oldStatus = dataComp.status;
+
       // Apply updates to the complaint object
       Object.assign(data, body);
 
       // Save the updated complaint
       await data.save();
+
+
+      // Save original value before applying any changes
+
+
+      // Check if status has changed before emitting socket event
+      if (body.status && body.status !== oldStatus) {
+         const io = req.app.get('socketio');
+
+         const payload = {
+            complaintId: data._id,
+            complaintNumber: data.complaintId,
+            status: data.status,
+            brandId: data.brandId,
+            assignedTo: {
+               serviceCenterId: data.assignServiceCenterId,
+            },
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            productBrand: data.productBrand,
+            productName: data.productName,
+            updatedAt: new Date(),
+            contact: data.contact || data.phoneNumber,
+            pincode: data.pincode,
+            assignServiceCenter: data.assignServiceCenter,
+            district: data.district,
+            state: data.state,
+            message: `Complaint ${data.complaintId} status updated from ${oldStatus} to ${data.status}`,
+         };
+
+         if (io) {
+            // console.log("📢 Emitting complaintStatusUpdated:", payload);
+            io.emit('complaintStatusUpdated', payload);
+         } else {
+            console.warn("⚠️ Socket.IO instance not found on app object");
+         }
+      }
+
+
+
+
       if (body.assignServiceCenterId) {
          if (body.status === "ASSIGN") {
 
