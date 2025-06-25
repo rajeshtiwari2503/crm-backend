@@ -37,6 +37,7 @@ const serviceCenterDeposit = require("./src/routers/serviceCenterDeposit");
 const serviceCenterPayment = require("./src/routers/servicePayment");
 const serviceRequest = require("./src/routers/serviceRequest");
 const empAttendance = require("./src/routers/attendanceRouter");
+const dtdcOrder = require("./src/routers/courierService");
 
 app.use(express.json());
 
@@ -98,6 +99,7 @@ app.use(serviceCenterDeposit);
 app.use(serviceCenterPayment);
 app.use(serviceRequest);
 app.use(empAttendance);
+app.use(dtdcOrder);
 
  
 
