@@ -2,7 +2,7 @@ const axios = require('axios');
 const CourierOrderModal = require('../models/courierOrderModel');
 const BrandStockModel = require('../models/brandStock');
 const UserStockModel = require('../models/userStock');
- 
+
 
 
 // Customer Code: GL017
@@ -77,7 +77,7 @@ const CUSTOMER_CODE = 'GL017';
 //       serviceCenterId: data.serviceCenterId,
 //       serviceCenter: data.serviceCenter,
 
-      
+
 //       invoice_number: data.invoice_number,
 //       invoice_date: data.invoice_date,
 //       reference_number: data.reference_number,
@@ -325,7 +325,6 @@ const createConsignmentDTDC = async (req, res) => {
 
 
 
-
 // 🧾 Generate Shipping Label (PDF)
 const generateLabel = async (req, res) => {
   try {
@@ -353,15 +352,30 @@ const generateLabel = async (req, res) => {
 };
 
 // 🔍 Track Shipment
+   
+
 const authenticateDTDC = async () => {
-  const authUrl = `http://dtdcstagingapi.dtdc.com/dtdc-tracking-api/dtdc-api/api/dtdc/authenticate?username=${TRACK_USERNAME}&password=${TRACK_PASSWORD}`;
-  const response = await axios.get(authUrl);
-  return response.data.token; // Assuming it returns { token: '...' }
+  const authUrl = `https://blktracksvc.dtdc.com/dtdc-api/api/dtdc/authenticate?username=${TRACK_USERNAME}&password=${TRACK_PASSWORD}`;
+
+  try {
+    const response = await axios.get(authUrl);
+
+    if (response.data && response.data.token) {
+      console.log("✅ Auth token received from DTDC");
+      return response.data.token;
+    } else {
+      throw new Error("Token not received in DTDC response");
+    }
+  } catch (error) {
+    console.error("❌ DTDC Authentication Failed:", error.response?.data || error.message);
+    throw new Error("DTDC Authentication Failed");
+  }
 };
+
 
 const trackShipment = async (req, res) => {
   try {
-    const { awbNumber } = req.body;
+    const awbNumber = req.params.awb_number;
 
     if (!awbNumber) {
       return res.status(400).json({ message: 'AWB number is required' });
@@ -369,6 +383,11 @@ const trackShipment = async (req, res) => {
 
     // 1. Authenticate
     const token = await authenticateDTDC();
+    console.log("token",token);
+    
+    if (!token) {
+      return res.status(401).json({ message: "Authentication failed: No token received" });
+    }
 
     // 2. Track
     const trackingUrl = `http://dtdcstagingapi.dtdc.com/dtdc-tracking-api/dtdc-api/api/dtdc/track`;
@@ -381,6 +400,7 @@ const trackShipment = async (req, res) => {
       ],
     };
 
+    
     const trackingResponse = await axios.post(trackingUrl, payload, {
       headers: {
         'Content-Type': 'application/json',
@@ -417,7 +437,7 @@ const cancelConsignment = async (req, res) => {
     };
 
     const response = await axios.post(
-      'https://alphademodashboardapi.shipsy.io/api/customer/integration/consignment/cancel',
+      'https://pxapi.dtdc.in/api/customer/integration/consignment/cancel',
       cancelPayload,
       {
         headers: {
@@ -459,24 +479,24 @@ const validatePincodes = async (req, res) => {
       desPincode,
     });
 
- const result = response.data;
-// console.log("📦 DTDC Pincode Response:", result);
+    const result = response.data;
+    // console.log("📦 DTDC Pincode Response:", result);
 
-const isSuccess =
-  result?.ZIPCODE_RESP?.[0]?.MESSAGE === "SUCCESS" &&
-  result?.SERV_LIST?.[0]?.b2C_SERVICEABLE === "YES";
+    const isSuccess =
+      result?.ZIPCODE_RESP?.[0]?.MESSAGE === "SUCCESS" &&
+      result?.SERV_LIST?.[0]?.b2C_SERVICEABLE === "YES";
 
-if (isSuccess) {
-  return res.status(200).json({ valid: true, data: result });
-} else {
-  return res.status(400).json({
-    valid: false,
-    message:
-      result?.ZIPCODE_RESP?.[0]?.MESSAGE !== "SUCCESS"
-        ? "Invalid Pincode"
-        : "Service not available for the selected route",
-  });
-}
+    if (isSuccess) {
+      return res.status(200).json({ valid: true, data: result });
+    } else {
+      return res.status(400).json({
+        valid: false,
+        message:
+          result?.ZIPCODE_RESP?.[0]?.MESSAGE !== "SUCCESS"
+            ? "Invalid Pincode"
+            : "Service not available for the selected route",
+      });
+    }
 
   } catch (err) {
     console.error("❌ Pincode Validation Error:", err.message);
@@ -540,4 +560,4 @@ const editCourierOrder = async (req, res) => {
 }
 
 
-module.exports = { createConsignmentDTDC, validatePincodes,generateLabel, trackShipment, cancelConsignment ,getAllCourierOrder,getCourierOrderById,getAllCourierOrderById,editCourierOrder};
+module.exports = { createConsignmentDTDC, validatePincodes, generateLabel, trackShipment, cancelConsignment, getAllCourierOrder, getCourierOrderById, getAllCourierOrderById, editCourierOrder };
