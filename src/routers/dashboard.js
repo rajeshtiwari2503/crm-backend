@@ -2161,6 +2161,9 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 // });
 
 
+const mongoose = require('mongoose');
+
+
 router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) => {
   try {
     // Step 1: Get only Authorized or Franchise service centers
