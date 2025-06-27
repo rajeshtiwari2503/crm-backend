@@ -381,7 +381,7 @@ function generateDaysInMonth(month) {
 
 
 
- 
+
 
 // const getSalaryUserSlip = async (req, res) => {
 //   const { userId, month } = req.query;
@@ -566,7 +566,7 @@ const getSalaryUserSlip = async (req, res) => {
 
 
 
- 
+
 
 // const getSalaryAdminSlip = async (req, res) => {
 //   const { month } = req.query;
@@ -783,7 +783,7 @@ const getSalaryUserSlip = async (req, res) => {
 //   }
 // };
 
- 
+
 const getSalaryAdminSlip = async (req, res) => {
   const { month } = req.query;
 
@@ -831,17 +831,24 @@ const getSalaryAdminSlip = async (req, res) => {
         let status = "Absent";
 
         if (isSunday) {
-          const prevDay = daysInMonth[i - 1]; // Saturday
-          const prevAttendance = prevDay ? attendanceMap.get(prevDay.date) : null;
-          const wasSaturdayPresent = prevAttendance?.clockIn && prevAttendance?.clockOut;
-
-          if (wasSaturdayPresent) {
+          if (i === 0) {
+            // First day of month is Sunday → count salary without checking Saturday
             sundayDays++;
             payment = dailySalary;
-            status = "Sunday Counted";
+            status = "Sunday Counted (First day of month)";
           } else {
-            payment = 0; // No Sunday salary if Saturday absent
-            status = "Sunday (No Salary)";
+            const prevDay = daysInMonth[i - 1]; // Saturday
+            const prevAttendance = prevDay ? attendanceMap.get(prevDay.date) : null;
+            const wasSaturdayPresent = prevAttendance?.clockIn && prevAttendance?.clockOut;
+
+            if (wasSaturdayPresent) {
+              sundayDays++;
+              payment = dailySalary;
+              status = "Sunday Counted";
+            } else {
+              payment = 0; // No Sunday salary if Saturday absent
+              status = "Sunday (No Salary)";
+            }
           }
         } else {
           if (isPresent) {
@@ -1040,4 +1047,4 @@ const completeTask = async (req, res) => {
   }
 };
 
-module.exports = { clockIn, clockOut,updateAttendance, addDailyComment, getTodayStatus, getMonthlyAttendance, getDailyAttendance, getMonthlyAttendanceByUserId, getDailyAttendanceByUserId, getSalaryUserSlip, getSalaryAdminSlip, assignTask, startTask, pauseTask, completeTask };
+module.exports = { clockIn, clockOut, updateAttendance, addDailyComment, getTodayStatus, getMonthlyAttendance, getDailyAttendance, getMonthlyAttendanceByUserId, getDailyAttendanceByUserId, getSalaryUserSlip, getSalaryAdminSlip, assignTask, startTask, pauseTask, completeTask };
