@@ -12,257 +12,25 @@ const UserStockModel = require('../models/userStock');
 // Tracking Username: GL017_trk_json
 // Tracking Password: 4Fcc8
 
-
-const DTDC_API_URL = 'https://demodashboardapi.shipsy.in/api/customer/integration/consignment/softdata';
+const DTDC_API_URL ='https://dtdcapi.shipsy.io/api/customer/integration/consignment/softdata';
+// const DTDC_API_URL = 'https://demodashboardapi.shipsy.in/api/customer/integration/consignment/softdata';
 const API_TOKEN = 'da66dccac00b76c795e827ffaafd5d'; // Replace with actual token
 const Access_Token = 'GL017_trk_json:521ce7881cb576b9a084489e02534e2e'; // Replace with actual token
 const TRACK_USERNAME = 'GL017_trk_json';
 const TRACK_PASSWORD = '4Fcc8';
 const CUSTOMER_CODE = 'GL017';
 
-// const createConsignmentDTDC = async (req, res) => {
-//   try {
-//     const data = req.body;
-//     // console.log("📥 Incoming Payload:", data);
-
-//     // Build payload
-//     const payload = {
-//       customer_code: CUSTOMER_CODE,
-//       service_type_id: data.service_type_id || 'B2C PRIORITY',
-//       load_type: data.load_type || 'NON-DOCUMENT',
-//       description: data.description || 'Shipment',
-
-//       declared_value: parseFloat(data.declared_value || 0),
-//       num_pieces: parseInt(data.num_pieces || 1),
-//       length: parseInt(data.length || 1),
-//       breadth: parseInt(data.breadth || 1),
-//       height: parseInt(data.height || 1),
-//       weight: parseFloat(data.weight || 0.5),
-
-//       origin_details: {
-//         name: data.origin_details?.name,
-//         phone: data.origin_details?.phone,
-//         alt_phone: data.origin_details?.alt_phone,
-//         address1: data.origin_details?.address1,
-//         address2: data.origin_details?.address2,
-//         pincode: data.origin_details?.pincode,
-//         city: data.origin_details?.city,
-//         state: data.origin_details?.state,
-//       },
-
-//       destination_details: {
-//         name: data.destination_details?.name,
-//         phone: data.destination_details?.phone,
-//         alt_phone: data.destination_details?.alt_phone,
-//         address1: data.destination_details?.address1,
-//         address2: data.destination_details?.address2,
-//         pincode: data.destination_details?.pincode,
-//         city: data.destination_details?.city,
-//         state: data.destination_details?.state,
-//       },
-
-//       return_details: {
-//         name: data.return_details?.name,
-//         phone: data.return_details?.phone,
-//         alt_phone: data.return_details?.alt_phone,
-//         address1: data.return_details?.address1,
-//         address2: data.return_details?.address2,
-//         pincode: data.return_details?.pincode,
-//         city: data.return_details?.city,
-//         state: data.return_details?.state,
-//       },
-//     spareParts: data.spareParts || [],
-//       brandId: data.brandId,
-//       brandName: data.brandName,
-//       serviceCenterId: data.serviceCenterId,
-//       serviceCenter: data.serviceCenter,
-
-
-//       invoice_number: data.invoice_number,
-//       invoice_date: data.invoice_date,
-//       reference_number: data.reference_number,
-//       customer_reference_number: data.customer_reference_number,
-//       cod_collection_mode: data.cod_collection_mode,
-//       cod_amount: data.cod_amount,
-//       commodity_id: data.commodity_id,
-//       eway_bill: data.eway_bill,
-//       is_risk_surcharge_applicable: data.is_risk_surcharge_applicable === 'true',
-//     };
-
-//     // console.log("📤 Sending to DTDC:", DTDC_API_URL, payload);
-
-//     const response = await axios.post(DTDC_API_URL, payload, {
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'API-KEY': API_TOKEN,                     // Your API key
-//         'X-Access-Token': Access_Token // Your access token
-//       },
-//     });
-//  // ✅ Store order in MongoDB
-//     const awbNumber = response.data?.data?.[0]?.reference_number || null;
-
-//     const newOrder = new CourierOrderModal({
-//       ...payload,
-//       awb_number: awbNumber,
-//       dtdc_response: response.data, // optional
-//     });
-
-//     await newOrder.save();
-//     return res.json({
-//       message: 'Consignment created successfully',
-//       dtdcResponse: response.data,
-//     });
-//   } catch (error) {
-//     console.error('DTDC API Error:', error.response?.data || error.message);
-//     return res.status(500).json({
-//       message: 'Error creating consignment',
-//       error: error.response?.data || error.message,
-//     });
-//   }
-// };
-
-
-
-
 const createConsignmentDTDC = async (req, res) => {
   try {
     const data = req.body;
-    let {
-      spareParts,
-      brandApproval,
-      serviceCenterId,
-      serviceCenter,
-      docketNo,
-      trackLink,
-      brandId,
-      brandName,
-    } = data;
+    // console.log("📥 Incoming Payload:", data);
 
-    // Parse spareParts if sent as JSON string
-    if (typeof spareParts === "string") {
-      try {
-        spareParts = JSON.parse(spareParts);
-      } catch {
-        return res.status(400).json({ status: false, msg: "Invalid spareParts format" });
-      }
-    }
-
-    if (!Array.isArray(spareParts) || spareParts.length === 0) {
-      return res.status(400).json({ status: false, msg: "No spare parts selected" });
-    }
-
-    const chalanImage = req.file ? req.file.location : null;
-
-    // Stock check and order creation
-    for (const part of spareParts) {
-      const { sparePartId, quantity } = part;
-      const numericQty = parseInt(quantity, 10) || 0;
-
-      const sparePart = await BrandStockModel.findOne({ sparepartId: sparePartId });
-      if (!sparePart) {
-        return res.status(404).json({ status: false, msg: `Spare part not found: ${sparePartId}` });
-      }
-
-      const freshStock = parseInt(sparePart.freshStock, 10) || 0;
-      if (freshStock < numericQty) {
-        return res.status(400).json({ status: false, msg: `Insufficient stock for ${sparePart.sparePartName}` });
-      }
-    }
-
-    const newOrder = await OrderModel.create({
-      spareParts,
-      brandId,
-      brandName,
-      serviceCenterId,
-      serviceCenter,
-      docketNo,
-      brandApproval,
-      trackLink,
-      chalanImage,
-    });
-
-    // Prepare stock updates
-    const brandStockUpdates = [];
-    const userStockUpdates = [];
-
-    for (const part of spareParts) {
-      const { sparePartId, quantity, sparePartName } = part;
-      const numericQty = parseInt(quantity, 10) || 0;
-
-      brandStockUpdates.push(
-        {
-          updateOne: {
-            filter: { sparepartId: sparePartId },
-            update: { $inc: { freshStock: -numericQty } },
-          },
-        },
-        {
-          updateOne: {
-            filter: { sparepartId: sparePartId },
-            update: {
-              $push: {
-                stock: {
-                  fresh: -numericQty,
-                  title: "Admin Order",
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                },
-              },
-            },
-          },
-        }
-      );
-
-      // Update or create user stock
-      const existingUserStock = await UserStockModel.findOne({ serviceCenterId, sparepartId: sparePartId });
-
-      if (existingUserStock) {
-        userStockUpdates.push({
-          updateOne: {
-            filter: { serviceCenterId, sparepartId: sparePartId },
-            update: {
-              $inc: { freshStock: numericQty },
-              $push: {
-                stock: {
-                  fresh: numericQty,
-                  title: "Admin Order",
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                },
-              },
-            },
-          },
-        });
-      } else {
-        await UserStockModel.create({
-          serviceCenterId,
-          serviceCenterName: serviceCenter,
-          sparepartId: sparePartId,
-          sparepartName: sparePartName,
-          brandId,
-          brandName,
-          freshStock: numericQty,
-          stock: [
-            {
-              fresh: numericQty,
-              title: "Admin Order",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          ],
-        });
-      }
-    }
-
-    if (brandStockUpdates.length > 0) await BrandStockModel.bulkWrite(brandStockUpdates);
-    if (userStockUpdates.length > 0) await UserStockModel.bulkWrite(userStockUpdates);
-
-    // --- Build DTDC Payload ---
+    // Build payload
     const payload = {
       customer_code: CUSTOMER_CODE,
-      service_type_id: data.service_type_id || "B2C PRIORITY",
-      load_type: data.load_type || "NON-DOCUMENT",
-      description: data.description || "Shipment",
+      service_type_id: data.service_type_id || 'B2C PRIORITY',
+      load_type: data.load_type || 'NON-DOCUMENT',
+      description: data.description || 'Shipment',
 
       declared_value: parseFloat(data.declared_value || 0),
       num_pieces: parseInt(data.num_pieces || 1),
@@ -271,9 +39,44 @@ const createConsignmentDTDC = async (req, res) => {
       height: parseInt(data.height || 1),
       weight: parseFloat(data.weight || 0.5),
 
-      origin_details: data.origin_details,
-      destination_details: data.destination_details,
-      return_details: data.return_details,
+      origin_details: {
+        name: data.origin_details?.name,
+        phone: data.origin_details?.phone,
+        alt_phone: data.origin_details?.alt_phone,
+        address1: data.origin_details?.address1,
+        address2: data.origin_details?.address2,
+        pincode: data.origin_details?.pincode,
+        city: data.origin_details?.city,
+        state: data.origin_details?.state,
+      },
+
+      destination_details: {
+        name: data.destination_details?.name,
+        phone: data.destination_details?.phone,
+        alt_phone: data.destination_details?.alt_phone,
+        address1: data.destination_details?.address1,
+        address2: data.destination_details?.address2,
+        pincode: data.destination_details?.pincode,
+        city: data.destination_details?.city,
+        state: data.destination_details?.state,
+      },
+
+      return_details: {
+        name: data.return_details?.name,
+        phone: data.return_details?.phone,
+        alt_phone: data.return_details?.alt_phone,
+        address1: data.return_details?.address1,
+        address2: data.return_details?.address2,
+        pincode: data.return_details?.pincode,
+        city: data.return_details?.city,
+        state: data.return_details?.state,
+      },
+    spareParts: data.spareParts || [],
+      brandId: data.brandId,
+      brandName: data.brandName,
+      serviceCenterId: data.serviceCenterId,
+      serviceCenter: data.serviceCenter,
+
 
       invoice_number: data.invoice_number,
       invoice_date: data.invoice_date,
@@ -283,45 +86,242 @@ const createConsignmentDTDC = async (req, res) => {
       cod_amount: data.cod_amount,
       commodity_id: data.commodity_id,
       eway_bill: data.eway_bill,
-      is_risk_surcharge_applicable: data.is_risk_surcharge_applicable === "true",
-
-      spareParts,
-      brandId,
-      brandName,
-      serviceCenterId,
-      serviceCenter,
+      is_risk_surcharge_applicable: data.is_risk_surcharge_applicable === 'true',
     };
 
-    // 🔗 Send to DTDC
-    const dtdcResponse = await axios.post(DTDC_API_URL, payload, {
+    // console.log("📤 Sending to DTDC:", DTDC_API_URL, payload);
+
+    const response = await axios.post(DTDC_API_URL, payload, {
       headers: {
-        "Content-Type": "application/json",
-        "API-KEY": API_TOKEN,
-        "X-Access-Token": Access_Token,
+        'Content-Type': 'application/json',
+        'API-KEY': API_TOKEN,                     // Your API key
+        'X-Access-Token': Access_Token // Your access token
       },
     });
+ // ✅ Store order in MongoDB
+    const awbNumber = response.data?.data?.[0]?.reference_number || null;
 
-    const awbNumber = dtdcResponse.data?.data?.[0]?.reference_number || null;
-
-    // 📦 Save Courier Order
-    await CourierOrderModal.create({
+    const newOrder = new CourierOrderModal({
       ...payload,
       awb_number: awbNumber,
-      dtdc_response: dtdcResponse.data,
+      dtdc_response: response.data, // optional
     });
 
-    return res.status(200).json({
-      message: "✅ Consignment created & order saved",
-      dtdcResponse: dtdcResponse.data,
+    await newOrder.save();
+    return res.json({
+      message: 'Consignment created successfully',
+      dtdcResponse: response.data,
     });
   } catch (error) {
-    console.error("❌ DTDC API Error:", error.response?.data || error.message);
+    console.error('DTDC API Error:', error.response?.data || error.message);
     return res.status(500).json({
-      message: "Error creating consignment",
+      message: 'Error creating consignment',
       error: error.response?.data || error.message,
     });
   }
 };
+
+
+
+
+// const createConsignmentDTDC = async (req, res) => {
+//   try {
+//     const data = req.body;
+//     let {
+//       spareParts,
+//       brandApproval,
+//       serviceCenterId,
+//       serviceCenter,
+//       docketNo,
+//       trackLink,
+//       brandId,
+//       brandName,
+//     } = data;
+
+//     // Parse spareParts if sent as JSON string
+//     if (typeof spareParts === "string") {
+//       try {
+//         spareParts = JSON.parse(spareParts);
+//       } catch {
+//         return res.status(400).json({ status: false, msg: "Invalid spareParts format" });
+//       }
+//     }
+
+//     if (!Array.isArray(spareParts) || spareParts.length === 0) {
+//       return res.status(400).json({ status: false, msg: "No spare parts selected" });
+//     }
+
+//     const chalanImage = req.file ? req.file.location : null;
+
+//     // Stock check and order creation
+//     for (const part of spareParts) {
+//       const { sparePartId, quantity } = part;
+//       const numericQty = parseInt(quantity, 10) || 0;
+
+//       const sparePart = await BrandStockModel.findOne({ sparepartId: sparePartId });
+//       if (!sparePart) {
+//         return res.status(404).json({ status: false, msg: `Spare part not found: ${sparePartId}` });
+//       }
+
+//       const freshStock = parseInt(sparePart.freshStock, 10) || 0;
+//       if (freshStock < numericQty) {
+//         return res.status(400).json({ status: false, msg: `Insufficient stock for ${sparePart.sparePartName}` });
+//       }
+//     }
+
+//     const newOrder = await OrderModel.create({
+//       spareParts,
+//       brandId,
+//       brandName,
+//       serviceCenterId,
+//       serviceCenter,
+//       docketNo,
+//       brandApproval,
+//       trackLink,
+//       chalanImage,
+//     });
+
+//     // Prepare stock updates
+//     const brandStockUpdates = [];
+//     const userStockUpdates = [];
+
+//     for (const part of spareParts) {
+//       const { sparePartId, quantity, sparePartName } = part;
+//       const numericQty = parseInt(quantity, 10) || 0;
+
+//       brandStockUpdates.push(
+//         {
+//           updateOne: {
+//             filter: { sparepartId: sparePartId },
+//             update: { $inc: { freshStock: -numericQty } },
+//           },
+//         },
+//         {
+//           updateOne: {
+//             filter: { sparepartId: sparePartId },
+//             update: {
+//               $push: {
+//                 stock: {
+//                   fresh: -numericQty,
+//                   title: "Admin Order",
+//                   createdAt: new Date(),
+//                   updatedAt: new Date(),
+//                 },
+//               },
+//             },
+//           },
+//         }
+//       );
+
+//       // Update or create user stock
+//       const existingUserStock = await UserStockModel.findOne({ serviceCenterId, sparepartId: sparePartId });
+
+//       if (existingUserStock) {
+//         userStockUpdates.push({
+//           updateOne: {
+//             filter: { serviceCenterId, sparepartId: sparePartId },
+//             update: {
+//               $inc: { freshStock: numericQty },
+//               $push: {
+//                 stock: {
+//                   fresh: numericQty,
+//                   title: "Admin Order",
+//                   createdAt: new Date(),
+//                   updatedAt: new Date(),
+//                 },
+//               },
+//             },
+//           },
+//         });
+//       } else {
+//         await UserStockModel.create({
+//           serviceCenterId,
+//           serviceCenterName: serviceCenter,
+//           sparepartId: sparePartId,
+//           sparepartName: sparePartName,
+//           brandId,
+//           brandName,
+//           freshStock: numericQty,
+//           stock: [
+//             {
+//               fresh: numericQty,
+//               title: "Admin Order",
+//               createdAt: new Date(),
+//               updatedAt: new Date(),
+//             },
+//           ],
+//         });
+//       }
+//     }
+
+//     if (brandStockUpdates.length > 0) await BrandStockModel.bulkWrite(brandStockUpdates);
+//     if (userStockUpdates.length > 0) await UserStockModel.bulkWrite(userStockUpdates);
+
+//     // --- Build DTDC Payload ---
+//     const payload = {
+//       customer_code: CUSTOMER_CODE,
+//       service_type_id: data.service_type_id || "B2C PRIORITY",
+//       load_type: data.load_type || "NON-DOCUMENT",
+//       description: data.description || "Shipment",
+
+//       declared_value: parseFloat(data.declared_value || 0),
+//       num_pieces: parseInt(data.num_pieces || 1),
+//       length: parseInt(data.length || 1),
+//       breadth: parseInt(data.breadth || 1),
+//       height: parseInt(data.height || 1),
+//       weight: parseFloat(data.weight || 0.5),
+
+//       origin_details: data.origin_details,
+//       destination_details: data.destination_details,
+//       return_details: data.return_details,
+
+//       invoice_number: data.invoice_number,
+//       invoice_date: data.invoice_date,
+//       reference_number: data.reference_number,
+//       customer_reference_number: data.customer_reference_number,
+//       cod_collection_mode: data.cod_collection_mode,
+//       cod_amount: data.cod_amount,
+//       commodity_id: data.commodity_id,
+//       eway_bill: data.eway_bill,
+//       is_risk_surcharge_applicable: data.is_risk_surcharge_applicable === "true",
+
+//       spareParts,
+//       brandId,
+//       brandName,
+//       serviceCenterId,
+//       serviceCenter,
+//     };
+
+//     // 🔗 Send to DTDC
+//     const dtdcResponse = await axios.post(DTDC_API_URL, payload, {
+//       headers: {
+//         "Content-Type": "application/json",
+//         "API-KEY": API_TOKEN,
+//         "X-Access-Token": Access_Token,
+//       },
+//     });
+
+//     const awbNumber = dtdcResponse.data?.data?.[0]?.reference_number || null;
+
+//     // 📦 Save Courier Order
+//     await CourierOrderModal.create({
+//       ...payload,
+//       awb_number: awbNumber,
+//       dtdc_response: dtdcResponse.data,
+//     });
+
+//     return res.status(200).json({
+//       message: "✅ Consignment created & order saved",
+//       dtdcResponse: dtdcResponse.data,
+//     });
+//   } catch (error) {
+//     console.error("❌ DTDC API Error:", error.response?.data || error.message);
+//     return res.status(500).json({
+//       message: "Error creating consignment",
+//       error: error.response?.data || error.message,
+//     });
+//   }
+// };
 
 
 
