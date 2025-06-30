@@ -273,6 +273,51 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 //   }
 // };
 
+
+ 
+ 
+
+ 
+
+
+cron.schedule(' 21 13 * * *', async () => {
+  console.log('🔍 Running QR Code check for service centers at 11:53 AM...');
+
+  try {
+    const statesToCheck = ["Uttar Pradesh", "Madhya Pradesh", "Bihar"];
+
+    const missingQRCodeCenters = await ServiceModel.find({
+      serviceCenterType: "Authorized",
+      state: { $in: statesToCheck },
+      $or: [
+        { qrCode: { $exists: false } },
+        { qrCode: null },
+        { qrCode: "" }
+      ]
+    });
+
+     if (missingQRCodeCenters.length > 0) {
+      console.log(`❌ Found ${missingQRCodeCenters.length} authorized service centers without QR codes:\n`);
+
+      statesToCheck.forEach((state) => {
+        const centersInState = missingQRCodeCenters.filter(center => center.state === state);
+        if (centersInState.length > 0) {
+          console.log(`📍 ${state}: ${centersInState.length} center(s) missing QR code\n`);
+          centersInState.forEach((center, index) => {
+            console.log(`  ${index + 1}. ${center.serviceCenterName} (City: ${center.city}) (Contact: ${center.contact})`);
+          });
+          console.log('\n');
+        }
+      });
+    } else {
+      console.log('✅ All authorized service centers have QR codes.');
+    }
+  } catch (error) {
+    console.error('⚠️ Error checking service centers:', error);
+  }
+});
+
+
 const createWalletTransactions = async () => {
   try {
     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();

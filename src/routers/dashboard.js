@@ -938,30 +938,31 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 });
 
  
+ 
 
-// router.post("/getStatewiseBrandData", async (req, res) => {
+
+// router.get("/getStatewiseBrandData", async (req, res) => {
 //   try {
-//     const { brand, state, city, startDate, endDate } = req.body;
-//     const matchStage = {};
+//     // Step 1: Get all ACTIVE brand names
+//     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("brandName").lean();
+//     const activeBrandNames = activeBrands.map(b => b.brandName);
 
-//     if (brand) matchStage.brand = brand;
-//     if (state) matchStage.state = state;
-//     if (city) matchStage.city = city;
-//     if (startDate && endDate) {
-//       matchStage.createdAt = {
-//         $gte: new Date(startDate),
-//         $lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
-//       };
-//     }
+//     // console.log("Active Brands:", activeBrands);
+//     // console.log("Active Brand Names:", activeBrandNames);
 
+//     // Step 2: Aggregate complaint data only for active brands
 //     const groupedData = await Complaints.aggregate([
-//       { $match: matchStage },
+//       {
+//         $match: {
+//           productBrand: { $in: activeBrandNames }
+//         }
+//       },
 //       {
 //         $group: {
 //           _id: {
 //             brandName: "$productBrand",
 //             state: "$state",
-//             district: "$district", // assuming `city` is used as district
+//             district: "$district",
 //             date: {
 //               $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
 //             }
@@ -982,69 +983,18 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 //       { $sort: { date: -1 } }
 //     ]);
 
-//     res.json({ chartData: groupedData });
+//     if (!groupedData.length) {
+//       console.warn("No complaints found for active brands.");
+//       return res.status(404).json({ message: "No complaints found for active brands." });
+//     }
+
+//     res.status(200).json({ chartData: groupedData });
+
 //   } catch (error) {
-//     console.error("Error generating chart data:", error);
+//     console.error("Error fetching data:", error);
 //     res.status(500).json({ error: "Internal Server Error" });
 //   }
 // });
-
-
-
-router.get("/getStatewiseBrandData", async (req, res) => {
-  try {
-    // Step 1: Get all ACTIVE brand names
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("brandName").lean();
-    const activeBrandNames = activeBrands.map(b => b.brandName);
-
-    // console.log("Active Brands:", activeBrands);
-    // console.log("Active Brand Names:", activeBrandNames);
-
-    // Step 2: Aggregate complaint data only for active brands
-    const groupedData = await Complaints.aggregate([
-      {
-        $match: {
-          productBrand: { $in: activeBrandNames }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            brandName: "$productBrand",
-            state: "$state",
-            district: "$district",
-            date: {
-              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
-            }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          brandName: "$_id.brandName",
-          state: "$_id.state",
-          district: "$_id.district",
-          date: "$_id.date",
-          count: 1
-        }
-      },
-      { $sort: { date: -1 } }
-    ]);
-
-    if (!groupedData.length) {
-      console.warn("No complaints found for active brands.");
-      return res.status(404).json({ message: "No complaints found for active brands." });
-    }
-
-    res.status(200).json({ chartData: groupedData });
-
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
 
 
 
@@ -1079,6 +1029,64 @@ router.get("/getStatewiseBrandData", async (req, res) => {
 //     res.status(500).json({ error: 'Error fetching district-wise pending complaints' });
 //   }
 // });
+
+
+router.get("/getStatewiseBrandData", async (req, res) => {
+  try {
+    // Step 1: Get all ACTIVE brand names
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("brandName").lean();
+    const activeBrandNames = activeBrands.map(b => b.brandName);
+
+    // Step 2: Aggregate complaint data only for active brands
+    const groupedData = await Complaints.aggregate([
+      {
+        $match: {
+          productBrand: { $in: activeBrandNames }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            brandName: "$productBrand",
+            state: "$state",
+            district: "$district",
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+            },
+            productName: "$productName",
+            detailedDescription: "$detailedDescription"
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          brandName: "$_id.brandName",
+          state: "$_id.state",
+          district: "$_id.district",
+          date: "$_id.date",
+          productName: "$_id.productName",
+          detailedDescription: "$_id.detailedDescription",
+          count: 1
+        }
+      },
+      { $sort: { date: -1 } }
+    ]);
+
+    if (!groupedData.length) {
+      console.warn("No complaints found for active brands.");
+      return res.status(404).json({ message: "No complaints found for active brands." });
+    }
+
+    res.status(200).json({ chartData: groupedData });
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 
 router.get('/getDistrictWisePendingComplaints', async (req, res) => {
   try {
