@@ -6,7 +6,8 @@ module.exports = {
     buildVars: ({ fullName, complaintId, issueType, serviceCenterName, visitTime, phoneNumber, otp, helpline }) => [
       fullName,              // {#var#} - Customer Name
       complaintId,           // {#var#} - Complaint Number
-      issueType,             // {#var#} - Complaint Description
+      issueType, 
+      serviceCenterName,            // {#var#} - Complaint Description
       visitTime,             // {#var#} - Visit Time
       phoneNumber,    // {#var#} - Mobile
       otp,                   // {#var#} - OTP

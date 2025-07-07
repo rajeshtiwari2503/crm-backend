@@ -61,7 +61,10 @@ async function sendBlessTemplateSms(to, templateId, smsVars) {
 // console.log("smsVars",smsVars);
 
   // Replace with EXACT DLT-approved template body
-  const templateText = `Dear {#var#}, Your complain #{#var#} regarding {#var#} has been registered with us. Service Center will visit your location at {#var#} Mobile : {#var#} If you are satisfied with his work, you can provide him/her OTP : {#var#} on Completion. Your Complain Number is {#var#}.@Lybley For any assistance give us a call on - {#var#}`;
+  // const templateText = `Dear {#var#}, Your complain #{#var#} regarding {#var#} has been registered with us. Service Center will visit your location at {#var#} Mobile : {#var#} If you are satisfied with his work, you can provide him/her OTP : {#var#} on Completion. Your Complain Number is {#var#}.@Lybley For any assistance give us a call on - {#var#}`;
+
+  
+       const templateText = `Dear {#var#}, Your complain #{#var#} regarding {#var#} has been registered with us. Please visit {#var#} at {#var#} Mobile : {#var#} If you are satisfied with his work, you can provide him/her OTP : {#var#} on Completion. Your Complain Number is {#var#}.@Lybley For any assistance give us a call on - {#var#}`;
 
   // Replace vars into template
   let filledText = templateText;
