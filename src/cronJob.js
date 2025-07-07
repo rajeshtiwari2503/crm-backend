@@ -692,7 +692,7 @@ const createWalletTransactions = async () => {
 //   }
 // };
 
-cron.schedule("29 11 7 7 *", () => {
+cron.schedule("23 13 7 7 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
 });
