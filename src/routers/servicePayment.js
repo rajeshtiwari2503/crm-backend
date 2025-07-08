@@ -306,6 +306,7 @@ router.get("/wallet-payment-summary", async (req, res) => {
         $group: {
           _id: "$serviceCenterId",
           name: { $first: "$serviceCenterName" },
+          contactNo: { $first: "$contactNo" },
           totalAmount: {
             $sum: {
               $convert: {
@@ -338,6 +339,7 @@ router.get("/wallet-payment-summary", async (req, res) => {
       const summary = payments.map(payment => ({
         _id: payment._id,
         name: payment.name,
+        contactNo: payment.contactNo,
         totalAmount: payment.totalAmount,
         unpaidCount: payment.unpaidCount,
         paidCount: payment.paidCount,
@@ -411,6 +413,8 @@ router.get("/wallet-payment-summary", async (req, res) => {
 
     // Step 6: Build summary merging payments and complaints info
     const summary = payments.map(payment => {
+      // console.log("payment",payment);
+      
       const scId = payment._id.toString();
       const comps = complaintsByServiceCenter[scId] || [];
       const complaintCount = comps.length;
@@ -418,6 +422,7 @@ router.get("/wallet-payment-summary", async (req, res) => {
       return {
         _id: payment._id,
         name: payment.name,
+         contactNo: payment.contactNo,
         totalAmount: payment.totalAmount,
         unpaidCount: payment.unpaidCount,
         paidCount: payment.paidCount,

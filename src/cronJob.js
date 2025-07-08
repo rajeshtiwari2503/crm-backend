@@ -477,10 +477,11 @@ const createWalletTransactions = async () => {
       });
 
       if (!serviceCenter) {
-        console.warn(`Skipping service center ${centerId} — not found or not Authorized`);
+console.warn(`❌ Skipping service center ${centerId}, name: ${serviceCenter?.serviceCenterName ?? 'N/A'} — not found or not Authorized`);
+
         continue;
       }
-
+console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCenterName}`);
       for (const data of centerComplaints) {
         if (!data.pincode || !serviceCenter.postalCode) continue;
 
@@ -692,7 +693,7 @@ const createWalletTransactions = async () => {
 //   }
 // };
 
-cron.schedule("23 13 7 7 *", () => {
+cron.schedule("20 14 8 7 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
 });
