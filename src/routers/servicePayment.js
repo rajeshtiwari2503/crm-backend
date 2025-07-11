@@ -229,6 +229,8 @@ router.get("/wallet-payment-summary", async (req, res) => {
           _id: "$serviceCenterId",
           name: { $first: "$serviceCenterName" },
           contactNo: { $first: "$contactNo" },
+          city: { $first: "$city" },
+          state: { $first: "$state" },
           totalAmount: {
             $sum: {
               $convert: {
@@ -370,6 +372,7 @@ router.get("/wallet-payment-summary", async (req, res) => {
               { $arrayElemAt: ["$duplicateComplaintInfo.duplicateComplaintDetails", 0] },
               [],
             ],
+            
           },
         },
       },
@@ -472,6 +475,9 @@ router.get("/wallet-payment-summary", async (req, res) => {
         nonComplaintAmount,
         duplicatePaymentsSum: duplicatePaymentsToSubtract,
         duplicateComplaintDetails: duplicateDetails,
+        city: payment.city,
+        state: payment.state,
+
       };
     });
 
