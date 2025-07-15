@@ -43,10 +43,11 @@ app.use(express.json());
 
  
 // app.use(cors());
- app.use(cors({
-  origin: 'https://crm.servsy.in',
-  credentials: true, // if you're using cookies or Authorization headers
+app.use(cors({
+  origin: ['https://crm.servsy.in', 'https://www.servsy.in'],
+  credentials: true,
 }));
+
 
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
