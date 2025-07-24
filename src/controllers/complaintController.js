@@ -1,6 +1,6 @@
 const ComplaintModal = require("../models/complaint")
 const NotificationModel = require("../models/notification")
-const { ServiceModel } = require("../models/registration")
+const { ServiceModel ,EmployeeModel} = require("../models/registration")
 const { UserModel, BrandRegistrationModel } = require("../models/registration")
 const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
@@ -8,6 +8,7 @@ const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
 const OrderModel = require("../models/order")
 const ServicePaymentModel = require("../models/servicePaymentModel")
+ 
 const moment = require('moment');
 
 
@@ -612,42 +613,115 @@ const getAllComplaint = async (req, res) => {
 
 
 
+// const getAllComplaintByRole = async (req, res) => {
+//    try {
+//       const page = parseInt(req.query.page) || 1;
+//       const limit = parseInt(req.query.limit) || 10;
+//       const skip = (page - 1) * limit;
+
+//       // Extract filters from query params
+//       const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+
+//       // Build the filter object
+//       let filterConditions = {};
+
+//       if (brandId) filterConditions.brandId = brandId;
+//       if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+//       if (technicianId) filterConditions.technicianId = technicianId;
+//       if (userId) filterConditions.userId = userId; // Assuming userId represents the customer
+//       if (dealerId) filterConditions.userId = dealerId; // Assuming userId represents the dealer
+
+//       // Get the total count of documents that match the filters
+//       const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+//       // Fetch the data with pagination and filters
+//       const data = await ComplaintModal.find(filterConditions)
+//          .sort({ _id: -1 }) // Sorting by newest complaints
+//          .skip(skip)
+//          .limit(limit);
+
+//       // Send response with filtered data and total count
+//       res.send({ data, totalComplaints });
+//    } catch (err) {
+//       console.error("Error fetching complaints:", err);
+//       res.status(500).send({ message: "Internal server error" });
+//    }
+// };
+
+
 const getAllComplaintByRole = async (req, res) => {
-   try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-      // Extract filters from query params
-      const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+    // Destructure filters and role info
+    const {
+      brandId,
+      serviceCenterId,
+      technicianId,
+      userId,
+      dealerId,
+      role,
+      employeeId // for EMPLOYEE role
+    } = req.query;
 
-      // Build the filter object
-      let filterConditions = {};
+    let filterConditions = {};
 
+    if (employeeId) {
+      if (!employeeId) {
+        return res.status(400).json({ message: "employeeId is required for EMPLOYEE role" });
+      }
+
+      // Fetch employee details
+      const employee = await EmployeeModel.findById(employeeId).lean();
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      // Extract brand IDs (handle array of {label, value} objects)
+      const brandIds = Array.isArray(employee.brand)
+        ? employee.brand.map(b => (typeof b === 'object' && b.value ? b.value : b))
+        : [];
+
+      // Extract stateZones (array of strings)
+      const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone.filter(Boolean) : [];
+
+      // Apply filters only if employee has those values
+      if (brandIds.length > 0) {
+        filterConditions.brandId = { $in: brandIds };
+      }
+
+      if (stateZones.length > 0) {
+        filterConditions.state = { $in: stateZones };
+      }
+
+    } else {
+      // Normal role filters
       if (brandId) filterConditions.brandId = brandId;
       if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
       if (technicianId) filterConditions.technicianId = technicianId;
-      if (userId) filterConditions.userId = userId; // Assuming userId represents the customer
-      if (dealerId) filterConditions.userId = dealerId; // Assuming userId represents the dealer
+      if (userId) filterConditions.userId = userId;
+      if (dealerId) filterConditions.userId = dealerId;
+    }
 
-      // Get the total count of documents that match the filters
-      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+    // Count total documents matching filter
+    const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
 
-      // Fetch the data with pagination and filters
-      const data = await ComplaintModal.find(filterConditions)
-         .sort({ _id: -1 }) // Sorting by newest complaints
-         .skip(skip)
-         .limit(limit);
+    // Fetch data with pagination
+    const data = await ComplaintModal.find(filterConditions)
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-      // Send response with filtered data and total count
-      res.send({ data, totalComplaints });
-   } catch (err) {
-      console.error("Error fetching complaints:", err);
-      res.status(500).send({ message: "Internal server error" });
-   }
+    res.status(200).json({ data, totalComplaints });
+
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
-
-
 
 
 const getComplaintById = async (req, res) => {
@@ -959,39 +1033,116 @@ const getComplaintsByComplete = async (req, res) => {
    }
 };
 
+// const getCompleteComplaintByRole = async (req, res) => {
+//    try {
+//       const page = parseInt(req.query.page) || 1;
+//       const limit = parseInt(req.query.limit) || 10;
+//       const skip = (page - 1) * limit;
+
+//       const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+
+//       // Always include only COMPLETED complaints
+//       let filterConditions = { status: "COMPLETED" };
+
+//       if (brandId) filterConditions.brandId = brandId;
+//       if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+//       if (technicianId) filterConditions.technicianId = technicianId;
+//       if (userId) filterConditions.userId = userId;
+//       if (dealerId) filterConditions.userId = dealerId; // This will override `userId` if both are present
+
+//       // Get count
+//       const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+//       // Get paginated data
+//       const data = await ComplaintModal.find(filterConditions)
+//          .sort({ _id: -1 })
+//          .skip(skip)
+//          .limit(limit)
+//          .lean(); // lean() for performance
+
+//       res.status(200).send({ data, totalComplaints });
+//    } catch (err) {
+//       console.error("Error fetching complaints:", err);
+//       res.status(500).send({ message: "Internal server error" });
+//    }
+// };
+
+
+
+
 const getCompleteComplaintByRole = async (req, res) => {
-   try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
+  try {
+    // Pagination params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-      const { brandId, serviceCenterId, technicianId, userId, dealerId } = req.query;
+    const {
+      brandId,
+      serviceCenterId,
+      technicianId,
+      userId,
+      dealerId,
+      role,
+      employeeId
+    } = req.query;
 
-      // Always include only COMPLETED complaints
-      let filterConditions = { status: "COMPLETED" };
+    let filterConditions = { status: "COMPLETED" };
 
+    if (employeeId) {
+      if (!employeeId) {
+        return res.status(400).json({ message: "employeeId required for EMPLOYEE role" });
+      }
+
+      // Fetch employee details
+      const employee = await EmployeeModel.findById(employeeId).lean();
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      // Extract brand IDs (array of brand _id strings)
+      const brandIds = Array.isArray(employee.brand)
+        ? employee.brand.map(b => b.value)
+        : [];
+
+      // Extract state zones
+      const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone : [];
+
+      // Apply brand filter if brands exist
+      if (brandIds.length > 0) {
+        filterConditions.brandId = { $in: brandIds };
+      }
+
+      // Apply state filter if states exist
+      if (stateZones.length > 0) {
+        filterConditions.state = { $in: stateZones };
+      }
+    } else {
+      // Other roles filtering
       if (brandId) filterConditions.brandId = brandId;
       if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
       if (technicianId) filterConditions.technicianId = technicianId;
       if (userId) filterConditions.userId = userId;
-      if (dealerId) filterConditions.userId = dealerId; // This will override `userId` if both are present
+      if (dealerId) filterConditions.userId = dealerId;
+    }
 
-      // Get count
-      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+    // Count total complaints
+    const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
 
-      // Get paginated data
-      const data = await ComplaintModal.find(filterConditions)
-         .sort({ _id: -1 })
-         .skip(skip)
-         .limit(limit)
-         .lean(); // lean() for performance
+    // Fetch complaints paginated
+    const data = await ComplaintModal.find(filterConditions)
+      .sort({ _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
-      res.status(200).send({ data, totalComplaints });
-   } catch (err) {
-      console.error("Error fetching complaints:", err);
-      res.status(500).send({ message: "Internal server error" });
-   }
+    res.status(200).json({ data, totalComplaints });
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
+
 
 
 const getComplaintsByCancel = async (req, res) => {
