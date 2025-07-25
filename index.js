@@ -44,7 +44,7 @@ app.use(express.json());
  
 // app.use(cors());
 app.use(cors({
-  // origin: ['https://crm.servsy.in', 'https://www.servsy.in' ],
+  // origin: ['https://crm.servsy.in', 'https://www.servsy.in','http://localhost:3000' ],
   origin: ['https://crm.servsy.in', 'https://www.servsy.in'],
   credentials: true,
 }));

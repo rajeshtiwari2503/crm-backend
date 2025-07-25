@@ -15,6 +15,8 @@ const userStockSchema = new mongoose.Schema({
           fresh:{type:Number },
           defective:{type:Number },
           title:{type:String },
+           price: { type: Number },
+ 
           createdAt: { type: Date, default: Date.now },
           updatedAt: { type: Date, default: Date.now },
         },
