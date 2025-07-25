@@ -25,12 +25,12 @@ router.get("/dashboardDetails", async (req, res) => {
     const { now, oneDayAgo, fiveDaysAgo, todayStart } = calculateDateRanges();
     const datetoday = new Date();
     datetoday.setHours(23, 59, 59, 999);
-  const fiveDaysComp = new Date(fiveDaysAgo);
+    const fiveDaysComp = new Date(fiveDaysAgo);
     fiveDaysComp.setHours(23, 59, 59, 999);
     // Step 1: Get active brand IDs
     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id");
     const activeBrandIds = activeBrands.map(brand => brand._id);
- 
+
     const [
       customerCount,
       orderCount,
@@ -82,17 +82,17 @@ router.get("/dashboardDetails", async (req, res) => {
       Complaints.countDocuments({ status: 'FINAL VERIFICATION', brandId: { $in: activeBrandIds } }),
 
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $gte: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' },{status:"SCHEDULE UPCOMMING"}],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $lt: fiveDaysComp },
         brandId: { $in: activeBrandIds }
       }),
@@ -937,8 +937,8 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
   }
 });
 
- 
- 
+
+
 
 
 // router.get("/getStatewiseBrandData", async (req, res) => {
@@ -2044,9 +2044,9 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
     // Categorize orders
     const order = orderData.filter(f => f.status === "ORDER");
     const approveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "APPROVED");
-      const notApproveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "DISAPPROVED");
+    const notApproveOrder = order.filter(f => f.brandApproval?.toUpperCase().trim() === "DISAPPROVED");
 
-      const cancelOrder = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDERCANCELED");
+    const cancelOrder = orderData.filter(f => f.status?.toUpperCase().trim() === "ORDERCANCELED");
 
     // 2. Get total deposit for the service center
     const depositAggregation = await ServiceCenterDepositModal.aggregate([
@@ -2062,10 +2062,26 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
     ]);
 
     const totalDeposit = depositAggregation[0]?.totalDeposit || 0;
+    const userStocks = await UserStockModel.find({ serviceCenterId }).lean();
+// console.log("userStocks",userStocks);
+
+    let totalStockPrice = 0;
+    // userStocks.forEach(stockItem => {
+    //   stockItem.stock?.forEach(entry => {
+    //     totalStockPrice += (entry.price || 0) * (entry.fresh || 0);
+    //   });
+    // });
+
+    userStocks.forEach(stockItem => {
+      stockItem.stock?.forEach(entry => {
+        totalStockPrice += (entry.price || 0);
+      });
+    });
 
     res.status(200).json({
       totalOrderPrice,
       totalDeposit,
+      totalStockPrice,
       orderCount: order.length,
       approvedOrderCount: approveOrder.length,
       notApprovedOrderCount: notApproveOrder.length,
@@ -2082,7 +2098,7 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
 
 
- 
+
 // router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) => {
 //   try {
 //     // Step 1: Get only service centers with type "Authorized" or "Franchise"
@@ -2170,6 +2186,7 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
 
 const mongoose = require('mongoose');
+const UserStockModel = require("../models/userStock");
 
 
 router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) => {
@@ -2183,7 +2200,7 @@ router.get('/getAllServiceCenterOrdersAndDepositsAnalytics', async (req, res) =>
 
     const summaries = await Promise.all(serviceCenters.map(async (center) => {
       const serviceCenterId = center._id;
-      
+
       const [orderData, depositAggregation] = await Promise.all([
         OrderModel.find({ serviceCenterId: new mongoose.Types.ObjectId(serviceCenterId) }).lean(),
         ServiceCenterDepositModal.aggregate([
