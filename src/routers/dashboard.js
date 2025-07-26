@@ -2063,20 +2063,20 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
     const totalDeposit = depositAggregation[0]?.totalDeposit || 0;
     const userStocks = await UserStockModel.find({ serviceCenterId }).lean();
-// console.log("userStocks",userStocks);
+    console.log("userStocks", userStocks);
 
     let totalStockPrice = 0;
-    // userStocks.forEach(stockItem => {
-    //   stockItem.stock?.forEach(entry => {
-    //     totalStockPrice += (entry.price || 0) * (entry.fresh || 0);
-    //   });
-    // });
 
     userStocks.forEach(stockItem => {
       stockItem.stock?.forEach(entry => {
-        totalStockPrice += (entry.price || 0);
+        const price = entry.price || 0;
+        totalStockPrice += price;
+
+        console.log("Adding entry price:", price);
+        console.log("Updated totalStockPrice:", totalStockPrice);
       });
     });
+
 
     res.status(200).json({
       totalOrderPrice,
@@ -2400,6 +2400,18 @@ router.get('/getAllServiceCenterOrdersAndDeposits', async (req, res) => {
         return sum + partsTotal;
       }, 0);
 
+      const userStocks = await UserStockModel.find({}).lean();
+
+      // Initialize total
+      let totalStockPrice = 0;
+
+      // Loop through and sum up price * quantity (fresh)
+      userStocks.forEach(stockItem => {
+        stockItem.stock?.forEach(entry => {
+          totalStockPrice += (entry.price || 0);
+        });
+      });
+
       const order = orderData.filter(f => f.status === "ORDER");
       const approveOrder = order.filter(f => f.brandApproval === "APPROVED");
       const notApproveOrder = order.filter(f => f.brandApproval === "DISAPPROVED");
@@ -2407,6 +2419,7 @@ router.get('/getAllServiceCenterOrdersAndDeposits', async (req, res) => {
 
       return {
         totalOrderPrice,
+        totalStockPrice,
         totalDeposit: depositAggregation[0]?.totalDeposit || 0,
         orderCount: order.length,
         approvedOrderCount: approveOrder.length,
@@ -2420,6 +2433,7 @@ router.get('/getAllServiceCenterOrdersAndDeposits', async (req, res) => {
     const totals = summaries.reduce(
       (acc, summary) => {
         acc.totalOrderPriceAll += summary.totalOrderPrice;
+        acc.totalStockPriceAll += summary.totalStockPrice;
         acc.totalDepositAll += summary.totalDeposit;
         acc.totalOrdersAll += summary.totalOrders;
         acc.orderCountAll += summary.orderCount;
@@ -2430,6 +2444,7 @@ router.get('/getAllServiceCenterOrdersAndDeposits', async (req, res) => {
       },
       {
         totalOrderPriceAll: 0,
+        totalStockPriceAll: 0,
         totalDepositAll: 0,
         totalOrdersAll: 0,
         orderCountAll: 0,
