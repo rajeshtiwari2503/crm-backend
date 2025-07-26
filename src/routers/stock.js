@@ -1,6 +1,6 @@
 const express = require("express")
 
-const {addStock,requestCenterStock,getAllStockRequests,getStockRequestByStockId,getAllUserStock,getStockByCenterId,getAllBrandStock,getStockById,editStock,editServiceCenterStock,deleteStock}=require("../controllers/stockController")
+const {addStock,requestCenterStock,getAllCenterStockRequests,getAllStockRequests,getStockRequestByStockId,getAllUserStock,getStockByCenterId,getAllBrandStock,getStockById,editStock,editServiceCenterStock,deleteStock}=require("../controllers/stockController")
 
 const router=express.Router()
 
@@ -10,6 +10,7 @@ router.get("/getAllStock",getAllBrandStock)
 router.get("/getAllUserStock",getAllUserStock)
 router.get("/getAllStockRequests",getAllStockRequests)
 
+router.get("/getAllCenterStockRequests/:id",getAllCenterStockRequests)
 router.get("/getStockById/:id",getStockById)
 router.get("/getStockByCenterId/:id",getStockByCenterId)
 router.get("/getStockRequestByStockId/:id",getStockRequestByStockId)

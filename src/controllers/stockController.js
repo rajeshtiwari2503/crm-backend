@@ -148,6 +148,38 @@ const getAllStockRequests = async (req, res) => {
       });
    }
 };
+const getAllCenterStockRequests = async (req, res) => {
+  try {
+    let _id = req.params.id; // serviceCenterId passed as URL param
+
+    const stockRequests = await StockRequestModel.find({ serviceCenterId: _id })
+      .populate("stockId")
+      .populate("serviceCenterId")
+      .populate("sparepartId")
+      .sort({ createdAt: -1 });
+
+    if (!stockRequests || stockRequests.length === 0) {
+      return res.status(404).json({
+        status: false,
+        msg: "No stock requests found for this service center",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      msg: "Stock requests fetched successfully",
+      data: stockRequests,
+    });
+  } catch (err) {
+    console.error("Get Stock Requests by Service Center Error:", err);
+    return res.status(500).json({
+      status: false,
+      msg: "Server error",
+      error: err.message,
+    });
+  }
+};
+
 
 
 const getStockRequestByStockId = async (req, res) => {
@@ -293,6 +325,7 @@ const editServiceCenterStock = async (req, res) => {
             fresh,
             defective,
             title,
+             price,
             createdAt: new Date(),
             updatedAt: new Date(),
          });
@@ -321,4 +354,4 @@ const deleteStock = async (req, res) => {
    }
 }
 
-module.exports = { addStock, requestCenterStock, getAllStockRequests,getStockRequestByStockId, getAllUserStock, getAllBrandStock, getStockById, getStockByCenterId, editStock, editServiceCenterStock, deleteStock };
+module.exports = { addStock, requestCenterStock,getAllCenterStockRequests, getAllStockRequests,getStockRequestByStockId, getAllUserStock, getAllBrandStock, getStockById, getStockByCenterId, editStock, editServiceCenterStock, deleteStock };
