@@ -2063,7 +2063,7 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
 
     const totalDeposit = depositAggregation[0]?.totalDeposit || 0;
     const userStocks = await UserStockModel.find({ serviceCenterId }).lean();
-    console.log("userStocks", userStocks);
+    // console.log("userStocks", userStocks);
 
     let totalStockPrice = 0;
 
@@ -2072,8 +2072,8 @@ router.get('/getOrderPriceAndDepositsByServiceCenter/:serviceCenterId', async (r
         const price = entry.price || 0;
         totalStockPrice += price;
 
-        console.log("Adding entry price:", price);
-        console.log("Updated totalStockPrice:", totalStockPrice);
+        // console.log("Adding entry price:", price);
+        // console.log("Updated totalStockPrice:", totalStockPrice);
       });
     });
 

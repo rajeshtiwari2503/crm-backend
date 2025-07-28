@@ -1945,6 +1945,7 @@ const updatePartPendingImage = async (req, res) => {
                brandName: body.brandName || data.productBrand,
                serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
                serviceCenter: body.serviceCenter || data.assignServiceCenter,
+               brandApproval:"APPROVED"
 
             });
             console.log("newOrder", newOrder);
