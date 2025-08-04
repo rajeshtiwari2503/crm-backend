@@ -286,6 +286,9 @@ const createWalletTransactions = async () => {
   try {
     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
     const endOfPrevMonth = moment().subtract(1, 'month').endOf('month').toDate();
+//     const startOfPrevMonth = moment().startOf('month').toDate();
+// const endOfPrevMonth = moment().endOf('month').toDate();
+
     console.log("startOfPrevMonth", startOfPrevMonth);
     console.log("endOfPrevMonth", endOfPrevMonth);
 
@@ -397,7 +400,7 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
           payment: paymentAmount.toString(),
           description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${timeDiffInHours} hours , charge, ₹${paymentAmount})`,
           contactNo: serviceCenter.contact,
-          month: moment(data.createdAt).format("MMMM YYYY"),
+          month: moment(data.complaintCloseTime).format("MMMM YYYY"),
           complaintId: data._id,
           city: serviceCenter.city,
           address: serviceCenter.streetAddress,
@@ -419,10 +422,63 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
 };
 
  
-cron.schedule("10 11 14 7 *", () => {
+cron.schedule("28 13 1 8 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
+   
 });
+
+ const deleteJuly31Transactions = async () => {
+  try {
+    const startOfDay = new Date("2025-07-31T00:00:00.000Z");
+    const endOfDay = new Date("2025-07-31T23:59:59.999Z");
+
+    console.log("🔍 Deleting wallet transactions created on 31 July 2025...");
+
+    // Step 1: Get all authorized service centers
+    const authorizedCenters = await ServiceModel.find(
+      { serviceCenterType: "Authorized" },
+      "_id serviceCenterName"
+    );
+
+    const authorizedCenterIds = authorizedCenters.map(c => c._id.toString());
+
+    // Step 2: Find wallet transactions created on 31 July 2025 for these centers
+    const transactions = await ServicePaymentModel.find({
+      serviceCenterId: { $in: authorizedCenterIds },
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (transactions.length === 0) {
+      console.log("✅ No wallet transactions found for deletion on 31 July 2025.");
+      return;
+    }
+
+    // Step 3: Log transaction details
+    console.log(`🧾 Found ${transactions.length} wallet transactions to delete:`);
+    // console.log(`🧾 Found ${transactions } wallet transactions to delete:`);
+    // transactions.forEach(txn => {
+    //   console.log({
+    //     _id: txn._id,
+    //     serviceCenterId: txn.serviceCenterId,
+    //     serviceCenterName: txn.serviceCenterName,
+    //     complaintId: txn.complaintId,
+    //     payment: txn.payment,
+    //     createdAt: txn.createdAt,
+    //     status: txn.status
+    //   });
+    // });
+
+    // Step 4: Delete transactions
+    const result = await ServicePaymentModel.deleteMany({
+      _id: { $in: transactions.map(t => t._id) }
+    });
+
+     console.log(`🗑️ Deleted ${result.deletedCount} wallet transactions created on 31 July 2025.`);
+  } catch (error) {
+    console.error("❌ Error deleting wallet transactions:", error);
+  }
+};
 
 
 

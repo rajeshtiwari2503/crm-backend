@@ -79,11 +79,49 @@ const getAllServicePayment = async (req, res) => {
     res.status(400).send(err);
   }
 }
+
+const getAllServicePaymentsWithPage = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Use lean() for faster read (returns plain JS objects instead of Mongoose documents)
+    const [total, data] = await Promise.all([
+      ServicePaymentModel.countDocuments(),
+      ServicePaymentModel.find()
+        .sort({ createdAt: -1 }) // optional sorting
+        .skip(skip)
+        .limit(limit)
+        .lean(), // ✅ lean for performance
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'Service payments fetched successfully',
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      data,
+    });
+  } catch (error) {
+    console.error('Error in getAllServicePaymentsWithPage:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch service payments',
+      error: error.message,
+    });
+  }
+};
+
+
+
 const getAllServicePaymentByCenterId = async (req, res) => {
   try {
-    const serviceCenterId= req.params.id; // Assuming serviceCenterId is passed in the URL params
+    const serviceCenterId = req.params.id; // Assuming serviceCenterId is passed in the URL params
     // console.log("req.params",req.params);
-    
+
     if (!serviceCenterId) {
       return res.status(400).send({ message: "Service Center ID is required" });
     }
@@ -96,6 +134,327 @@ const getAllServicePaymentByCenterId = async (req, res) => {
     res.status(500).send({ message: "Internal Server Error", error: err });
   }
 };
+const getAllServicePaymentByCenterIdWithPage = async (req, res) => {
+  try {
+    const serviceCenterId = req.params.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!serviceCenterId) {
+      return res.status(400).json({ success: false, message: 'Service Center ID is required' });
+    }
+
+    const total = await ServicePaymentModel.countDocuments({ serviceCenterId });
+
+    const data = await ServicePaymentModel.find({ serviceCenterId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      success: true,
+      message: 'Payments for service center fetched successfully',
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      data,
+    });
+  } catch (err) {
+    console.error('Error in getAllServicePaymentByCenterId:', err);
+    res.status(500).json({ success: false, message: 'Internal Server Error', error: err.message });
+  }
+};
+
+// const searchTransactions = async (req, res) => {
+//   try {
+//     const {
+//       searchTerm = '',
+//       filterStatus = 'all',
+//       filterServiceCenterType = 'allServiceCenters',
+//       startDate,
+//       endDate,
+//       page = 1,
+//       limit = 10,
+//     } = req.query;
+
+//     const filters = {};
+
+//     if (searchTerm) {
+//       const regex = new RegExp(searchTerm, 'i');
+//       filters.$or = [
+//         { serviceCenterName: regex },
+//         { city: regex },
+//         { complaintId: regex },
+//         { contactNo: regex },
+//       ];
+//     }
+
+//     if (filterStatus !== 'all') {
+//       filters.status = filterStatus;
+//     }
+
+//     if (filterServiceCenterType !== 'allServiceCenters') {
+//       filters.serviceCenterType = filterServiceCenterType;
+//     }
+
+//     if (startDate || endDate) {
+//       filters.updatedAt = {};
+//       if (startDate) filters.updatedAt.$gte = new Date(startDate);
+//       if (endDate) filters.updatedAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+//     }
+
+//     const pageNumber = parseInt(page, 10);
+//     const pageSize = parseInt(limit, 10);
+
+//     const totalDocs = await ServicePaymentModel.countDocuments(filters);
+
+//     const data = await ServicePaymentModel.find(filters)
+//       .skip((pageNumber - 1) * pageSize)
+//       .limit(pageSize)
+//       .sort({ updatedAt: -1 });
+
+//     return res.json({
+//       success: true,
+//       data,
+//       totalPages: Math.ceil(totalDocs / pageSize),
+//       currentPage: pageNumber,
+//       totalDocs,
+//     });
+//   } catch (error) {
+//     console.error('Search transactions error:', error);
+//     return res.status(500).json({ success: false, message: 'Server Error' });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+// const searchTransactions = async (req, res) => {
+//   try {
+//     const {
+//       searchTerm = '',
+//       filterStatus = 'all',
+//       filterServiceCenterType = 'allServiceCenters',
+//       startDate,
+//       endDate,
+//       page = 1,
+//       limit = 10,
+//     } = req.body;
+
+//     console.log("📩 Incoming request body:", req.body);
+
+//     // Base filter for ServicePaymentModel
+//     const filters = {};
+
+//     if (searchTerm.trim()) {
+//       const regex = new RegExp(searchTerm, 'i');
+//       filters.$or = [
+//         { serviceCenterName: regex },
+//         { city: regex },
+//         { complaintId: regex },
+//         { contactNo: regex },
+//       ];
+//     }
+
+//     if (filterStatus !== 'all') {
+//       filters.status = filterStatus;
+//     }
+
+//     if (startDate || endDate) {
+//       filters.updatedAt = {};
+//       if (startDate) filters.updatedAt.$gte = new Date(startDate);
+//       if (endDate) filters.updatedAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+//     }
+
+//     const pageNumber = Math.max(parseInt(page, 10), 1);
+//     const pageSize = Math.max(parseInt(limit, 10), 1);
+//     const skip = (pageNumber - 1) * pageSize;
+
+//     // Prepare service center type filter
+//     let serviceCenterTypesArray = [];
+//     if (
+//       filterServiceCenterType &&
+//       filterServiceCenterType !== 'allServiceCenters'
+//     ) {
+//       if (typeof filterServiceCenterType === 'string') {
+//         serviceCenterTypesArray = filterServiceCenterType.split(',').map(s => s.trim());
+//       } else if (Array.isArray(filterServiceCenterType)) {
+//         serviceCenterTypesArray = filterServiceCenterType;
+//       }
+//     }
+
+//     console.log('Filters for ServicePayment:', filters);
+//     console.log('Service Center Types to filter:', serviceCenterTypesArray);
+
+//     // First, find all matching service center IDs by serviceCenterType if filter is active
+//     let serviceCenterFilter = {};
+//     if (serviceCenterTypesArray.length > 0) {
+//       const matchingServiceCenters = await ServiceModel.find({
+//         serviceCenterType: { $in: serviceCenterTypesArray }
+//       }).select('_id');
+
+//       const serviceCenterIds = matchingServiceCenters.map(sc => sc._id);
+//       console.log('Matched ServiceCenter IDs:', serviceCenterIds);
+
+//       // Filter payments only for these service centers
+//       filters.serviceCenterId = { $in: serviceCenterIds };
+//     }
+
+//     // Get total count for pagination
+//     const totalDocs = await ServicePaymentModel.countDocuments(filters);
+
+//     // Query with pagination, sort by updatedAt descending
+//     const data = await ServicePaymentModel.find(filters)
+//       .populate('serviceCenterId') // assumes you have ref in schema
+//       .sort({ updatedAt: -1 })
+//       .skip(skip)
+//       .limit(pageSize)
+//       .exec();
+
+//     console.log(`✅ Retrieved data length: ${data.length}`);
+//     console.log(`📦 Total documents count: ${totalDocs}`);
+//       const allMatchingDocs = await ServicePaymentModel.find(filters).select('amount status').lean();
+// // console.log(`📦 allMatchingDocs: ${allMatchingDocs}`);
+//     let totalPaidAmount = 0;
+//     let totalUnpaidAmount = 0;
+
+//     for (const doc of allMatchingDocs) {
+//       if (doc.status === 'PAID') totalPaidAmount += doc.amount || 0;
+//       else if (doc.status === 'UNPAID') totalUnpaidAmount += doc.amount || 0;
+//     }
+
+//     return res.json({
+//       success: true,
+//       data,
+//       totalPages: Math.ceil(totalDocs / pageSize),
+//       currentPage: pageNumber,
+//       totalDocs,
+//        totalPaidAmount,
+//       totalUnpaidAmount,
+//     });
+//   } catch (error) {
+//     console.error('🔴 Search transactions error:', error);
+//     return res.status(500).json({ success: false, message: 'Server Error' });
+//   }
+// };
+
+const searchTransactions = async (req, res) => {
+  try {
+    const {
+      searchTerm = '',
+      filterStatus = 'all',
+      filterServiceCenterType = 'allServiceCenters',
+      startDate,
+      endDate,
+      page = 1,
+      limit = 10,
+    } = req.body;
+
+    const filters = {};
+
+    // Text search
+    if (searchTerm.trim()) {
+      const regex = new RegExp(searchTerm, 'i');
+      filters.$or = [
+        { serviceCenterName: regex },
+        { city: regex },
+        { complaintId: regex },
+        { contactNo: regex },
+      ];
+    }
+
+    // Status filter
+    if (filterStatus !== 'all') {
+      filters.status = filterStatus;
+    }
+
+    // Date filter
+    if (startDate || endDate) {
+      filters.updatedAt = {};
+      if (startDate) filters.updatedAt.$gte = new Date(startDate);
+      if (endDate) filters.updatedAt.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+    }
+
+    // Pagination setup
+    const pageNumber = Math.max(parseInt(page, 10), 1);
+    const pageSize = Math.max(parseInt(limit, 10), 1);
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Filter by serviceCenterType
+    let serviceCenterTypesArray = [];
+    if (filterServiceCenterType && filterServiceCenterType !== 'allServiceCenters') {
+      serviceCenterTypesArray = Array.isArray(filterServiceCenterType)
+        ? filterServiceCenterType
+        : filterServiceCenterType.split(',').map(s => s.trim());
+    }
+
+    if (serviceCenterTypesArray.length > 0) {
+      const matchingServiceCenters = await ServiceModel.find({
+        serviceCenterType: { $in: serviceCenterTypesArray }
+      }).select('_id');
+
+      const serviceCenterIds = matchingServiceCenters.map(sc => sc._id);
+      filters.serviceCenterId = { $in: serviceCenterIds };
+    }
+
+    // Count for pagination
+    const totalDocs = await ServicePaymentModel.countDocuments(filters);
+
+    // Paginated data
+    const data = await ServicePaymentModel.find(filters)
+      .populate('serviceCenterId')
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    // Total Paid and Unpaid calculation
+    const allMatchingDocs = await ServicePaymentModel.find(filters)
+      .select('payment status')
+      .lean();
+
+    let totalPaidAmount = 0;
+    let totalUnpaidAmount = 0;
+
+    allMatchingDocs.forEach(doc => {
+      const status = (doc.status || '').toLowerCase();
+      const payment = Number(doc.payment) || 0;
+
+      if (status === 'paid') {
+        totalPaidAmount += payment;
+      } else if (status === 'unpaid') {
+        totalUnpaidAmount += payment;
+      }
+    });
+
+    // Optional: Log output for verification
+    // console.log("✅ Total Paid Amount:", totalPaidAmount);
+    // console.log("✅ Total Unpaid Amount:", totalUnpaidAmount);
+
+    return res.json({
+      success: true,
+      data,
+      totalPages: Math.ceil(totalDocs / pageSize),
+      currentPage: pageNumber,
+      totalDocs,
+      totalPaidAmount: `₹${totalPaidAmount}`,
+      totalUnpaidAmount: `₹${totalUnpaidAmount}`,
+    });
+
+  } catch (error) {
+    console.error('🔴 Search transactions error:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+
+
 
 const getServicePaymentById = async (req, res) => {
   try {
@@ -340,7 +699,7 @@ const editServicePayment = async (req, res) => {
   }
 };
 
-const updateBulkPayments=async (req, res) => {
+const updateBulkPayments = async (req, res) => {
   const { ids } = req.body;
   try {
     await ServicePaymentModel.updateMany(
@@ -349,7 +708,8 @@ const updateBulkPayments=async (req, res) => {
     );
     res.status(200).json({
       status: true,
-      msg: "Payment status updated successfully, and totalAmount updated in Service Center."})
+      msg: "Payment status updated successfully, and totalAmount updated in Service Center."
+    })
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, error: 'Something went wrong' });
@@ -366,4 +726,4 @@ const deleteServicePayment = async (req, res) => {
   }
 }
 
-module.exports = { addServicePayment, getAllServicePayment,getAllServicePaymentByCenterId, getServicePaymentById, editServicePayment,updateBulkPayments, deleteServicePayment };
+module.exports = { addServicePayment, getAllServicePayment, getAllServicePaymentsWithPage, searchTransactions, getAllServicePaymentByCenterIdWithPage, getAllServicePaymentByCenterId, getServicePaymentById, editServicePayment, updateBulkPayments, deleteServicePayment };
