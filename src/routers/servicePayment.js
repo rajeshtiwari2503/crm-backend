@@ -5,12 +5,15 @@ const ServicePaymentModel = require("../models/servicePaymentModel")
 const { ServiceModel } = require('../models/registration');
 const ComplaintModal = require("../models/complaint");
 
-const { addServicePayment, getAllServicePayment, getAllServicePaymentByCenterId, getServicePaymentById, updateBulkPayments, editServicePayment, deleteServicePayment } = require("../controllers/servicePaymentController")
+const { addServicePayment,getAllServicePaymentsWithPage,searchTransactions,getAllServicePaymentByCenterIdWithPage, getAllServicePayment, getAllServicePaymentByCenterId, getServicePaymentById, updateBulkPayments, editServicePayment, deleteServicePayment } = require("../controllers/servicePaymentController")
 
 // router.post("/addServicePayment",addServicePayment );
 router.post("/addServicePayment", upload().single("qrCode"), addServicePayment);
 router.get("/getAllServicePayment", getAllServicePayment);
 router.get("/getAllServicePaymentByCenterId/:id", getAllServicePaymentByCenterId);
+router.get("/getAllServicePaymentsWithPage", getAllServicePaymentsWithPage);
+router.get("/getAllServicePaymentByCenterIdWithPage/:id", getAllServicePaymentByCenterIdWithPage);
+router.post("/searchTransactions", searchTransactions);
 router.get("/getServicePayment/:id", getServicePaymentById);
 // router.patch("/editServicePayment/:id",editServicePayment );
 router.patch("/editServicePayment/:id", upload().single("payScreenshot"), editServicePayment);
