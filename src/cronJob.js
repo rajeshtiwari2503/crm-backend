@@ -422,7 +422,7 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
 };
 
  
-cron.schedule("28 13 1 8 *", () => {
+cron.schedule("22 16 8 8 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
    
