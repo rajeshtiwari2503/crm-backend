@@ -1,7 +1,8 @@
 const BrandStockModel = require("../models/brandStock");
 const StockRequestModel = require("../models/stockRequestModel");
 const CenterStockModel = require("../models/userStock")
-
+const OrderModel = require("../models/order");
+const UserStockModel = require("../models/userStock");
 
 const addStock = async (req, res) => {
    try {
@@ -91,7 +92,7 @@ const getAllUserStock = async (req, res) => {
       res.status(400).send(err);
    }
 }
-const getStockById = async (req, res) => {
+const getStockById1 = async (req, res) => {
    try {
       let _id = req.params.id;
       let data = await BrandStockModel.findById(_id);
@@ -100,6 +101,89 @@ const getStockById = async (req, res) => {
       res.status(400).send(err);
    }
 }
+
+// const getStockById = async (req, res) => {
+//    try {
+//       const brandStockId = req.params.id;
+
+//       // 1️⃣ Find the brand stock by ID
+//       const brandStock = await BrandStockModel.findById(brandStockId).lean();
+//       if (!brandStock) {
+//          return res.status(404).json({ message: "Brand stock not found" });
+//       }
+
+//       const sparepartId = brandStock.sparepartId;
+
+//       // 2️⃣ Fetch all user stock documents for this sparepart
+//       const userStocks = await UserStockModel.find({ sparepartId }).lean();
+//       if (!userStocks || userStocks.length === 0) {
+//          return res.status(404).json({ message: "No user stocks found for this sparepart" });
+//       }
+
+//       // 3️⃣ Build the response
+//       const response = {
+//          _id: brandStock._id,
+//          brandId: brandStock.brandId,
+//          brandName: brandStock.brandName,
+//          sparepartId: brandStock.sparepartId,
+//          sparepartName: brandStock.sparepartName,
+//          totalStock: brandStock.totalStock || null, // or freshStock/defectiveStock if needed
+//          freshStock: brandStock.freshStock || 0,
+//          defectiveStock: brandStock.defectiveStock || 0,
+//          createdAt: brandStock.createdAt,
+//          updatedAt: brandStock.updatedAt,
+//          serviceCenters: userStocks.map(us => ({
+//             _id: us._id,
+//             serviceCenterId: us.serviceCenterId,
+//             serviceCenterName: us.serviceCenterName,
+//             freshStock: us.freshStock,
+//             defectiveStock: us.defectiveStock,
+//             stock: us.stock
+//          }))
+//       };
+
+//       res.json(response);
+//    } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: err.message });
+//    }
+// };
+
+const getStockById = async (req, res) => {
+  try {
+    const _id = req.params.id;
+
+    // 1️⃣ Find the brand stock by ID
+    const brandStock = await BrandStockModel.findById(_id).lean();
+    if (!brandStock) {
+      return res.status(404).json({ message: "Brand stock not found" });
+    }
+
+    // 2️⃣ Find all user stocks (service centers) for the same sparepart
+    const userStocks = await UserStockModel.find({ sparepartId: brandStock.sparepartId }).lean();
+
+    // 3️⃣ Merge all service center stocks into brandStock.stock array
+    const serviceCenterStocks = userStocks.map(us => ({
+      serviceCenterId: us.serviceCenterId,
+      serviceCenterName: us.serviceCenterName,
+      freshStock: us.freshStock,
+      defectiveStock: us.defectiveStock,
+      stock: us.stock
+    }));
+
+    // 4️⃣ Build final response
+    const response = {
+      ...brandStock,
+      serviceCenters: serviceCenterStocks
+    };
+
+    res.json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 const getStockByCenterId = async (req, res) => {
    try {
       let _id = req.params.id;
@@ -149,35 +233,35 @@ const getAllStockRequests = async (req, res) => {
    }
 };
 const getAllCenterStockRequests = async (req, res) => {
-  try {
-    let _id = req.params.id; // serviceCenterId passed as URL param
+   try {
+      let _id = req.params.id; // serviceCenterId passed as URL param
 
-    const stockRequests = await StockRequestModel.find({ serviceCenterId: _id })
-      .populate("stockId")
-      .populate("serviceCenterId")
-      .populate("sparepartId")
-      .sort({ createdAt: -1 });
+      const stockRequests = await StockRequestModel.find({ serviceCenterId: _id })
+         .populate("stockId")
+         .populate("serviceCenterId")
+         .populate("sparepartId")
+         .sort({ createdAt: -1 });
 
-    if (!stockRequests || stockRequests.length === 0) {
-      return res.status(404).json({
-        status: false,
-        msg: "No stock requests found for this service center",
+      if (!stockRequests || stockRequests.length === 0) {
+         return res.status(404).json({
+            status: false,
+            msg: "No stock requests found for this service center",
+         });
+      }
+
+      return res.status(200).json({
+         status: true,
+         msg: "Stock requests fetched successfully",
+         data: stockRequests,
       });
-    }
-
-    return res.status(200).json({
-      status: true,
-      msg: "Stock requests fetched successfully",
-      data: stockRequests,
-    });
-  } catch (err) {
-    console.error("Get Stock Requests by Service Center Error:", err);
-    return res.status(500).json({
-      status: false,
-      msg: "Server error",
-      error: err.message,
-    });
-  }
+   } catch (err) {
+      console.error("Get Stock Requests by Service Center Error:", err);
+      return res.status(500).json({
+         status: false,
+         msg: "Server error",
+         error: err.message,
+      });
+   }
 };
 
 
@@ -313,9 +397,9 @@ const editServiceCenterStock = async (req, res) => {
       let stock = await CenterStockModel.findOne({ serviceCenterId, sparepartId });
 
       if (!stock) {
-         return res.status(404).json({ status: false, msg: "Stock request not found" }); 
+         return res.status(404).json({ status: false, msg: "Stock request not found" });
       }
-      
+
       else {
          // If exists, update stock
          stock.freshStock = (parseInt(stock.freshStock) + parseInt(fresh)).toString();
@@ -325,7 +409,7 @@ const editServiceCenterStock = async (req, res) => {
             fresh,
             defective,
             title,
-             price,
+            price,
             createdAt: new Date(),
             updatedAt: new Date(),
          });
@@ -354,4 +438,4 @@ const deleteStock = async (req, res) => {
    }
 }
 
-module.exports = { addStock, requestCenterStock,getAllCenterStockRequests, getAllStockRequests,getStockRequestByStockId, getAllUserStock, getAllBrandStock, getStockById, getStockByCenterId, editStock, editServiceCenterStock, deleteStock };
+module.exports = { addStock, requestCenterStock, getAllCenterStockRequests, getAllStockRequests, getStockRequestByStockId, getAllUserStock, getAllBrandStock, getStockById, getStockByCenterId, editStock, editServiceCenterStock, deleteStock };

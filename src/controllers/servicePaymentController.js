@@ -642,31 +642,31 @@ const editServicePayment = async (req, res) => {
     }
 
     // Find the associated service center
-    let serviceCenter = await ServiceModel.findById(transaction.serviceCenterId);
-    if (!serviceCenter) {
-      return res.status(404).json({ status: false, msg: "Service center not found" });
-    }
+    // let serviceCenter = await ServiceModel.findById(transaction.serviceCenterId);
+    // if (!serviceCenter) {
+    //   return res.status(404).json({ status: false, msg: "Service center not found" });
+    // }
 
-    // Ensure `totalAmount` and `transaction.payment` are numbers
-    const totalAmount = Number(serviceCenter.totalAmount || 0);
-    const transactionPayment = Number(transaction.payment || 0);
+    // // Ensure `totalAmount` and `transaction.payment` are numbers
+    // const totalAmount = Number(serviceCenter.totalAmount || 0);
+    // const transactionPayment = Number(transaction.payment || 0);
 
-    if (isNaN(transactionPayment)) {
-      return res.status(400).json({ status: false, msg: "Invalid transaction payment amount" });
-    }
+    // if (isNaN(transactionPayment)) {
+    //   return res.status(400).json({ status: false, msg: "Invalid transaction payment amount" });
+    // }
 
-    const updatedAmount = totalAmount + transactionPayment;
+    // const updatedAmount = totalAmount + transactionPayment;
 
-    // Update service center total amount
-    let updatedServiceCenter = await ServiceModel.findByIdAndUpdate(
-      serviceCenter._id,
-      { totalAmount: updatedAmount },
-      { new: true }
-    );
+    // // Update service center total amount
+    // let updatedServiceCenter = await ServiceModel.findByIdAndUpdate(
+    //   serviceCenter._id,
+    //   { totalAmount: updatedAmount },
+    //   { new: true }
+    // );
 
-    if (!updatedServiceCenter) {
-      return res.status(500).json({ status: false, msg: "Failed to update total amount in Service Center" });
-    }
+    // if (!updatedServiceCenter) {
+    //   return res.status(500).json({ status: false, msg: "Failed to update total amount in Service Center" });
+    // }
 
     const updatedComplaint = await ComplaintModal.findByIdAndUpdate(
       transaction.complaintId,
