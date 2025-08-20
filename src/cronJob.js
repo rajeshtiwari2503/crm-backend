@@ -136,6 +136,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyC_L9VzjnWL4ent9VzCRAabM52RCcJJd2k";
 
 const ServicePaymentModel = require('./models/servicePaymentModel');
 const ProductWarrantyModal = require("./models/productWarranty");
+const ProductModel = require("./models/product");
 
 const getDistanceInKm = async (originPincode, destinationPincode) => {
   try {
@@ -482,14 +483,15 @@ cron.schedule("22 16 8 8 *", () => {
 
 
 
-// cron.schedule("39 11 21 7 *", async () => {
+// cron.schedule("7 15 20 8 *", async () => {
+//    console.log("⏰ Running 687b60524784729ee719776e...");
 //   const targetBrandId = "687b60524784729ee719776e";
 //   const newBrandName = "Master";
 
 //   try {
 //     const warranties = await ProductWarrantyModal.find({ brandId: targetBrandId });
 // console.log("warranties",warranties);
-
+ 
 //     for (const warranty of warranties) {
 //       // Update top-level brand name
 //       warranty.brandName = newBrandName;
@@ -504,9 +506,9 @@ cron.schedule("22 16 8 8 *", () => {
 //         }
 //         return record;
 //       });
-
+// console.log("warranties",warranties);
 //       // Save the updated document
-//       await warranty.save();
+//       // await warranty.save();
 //     }
 
 //     console.log(`[${new Date().toISOString()}] Brand name updated to "Master".`);
@@ -515,8 +517,30 @@ cron.schedule("22 16 8 8 *", () => {
 //   }
 // });
 
+// Cron job: runs at 14:56 on 20th August change product brand 
+// cron.schedule("15 15 20 8 *", async () => {
+//   console.log("⏰ Running brand update cron...");
+
+//   const targetBrandId = "687b60524784729ee719776e";
+//   const newBrandName = "Master";
+
+//   try {
+//     // Update all products with the target brandId
+//     const result = await ProductModel.updateMany(
+//       { brandId: targetBrandId }, // filter
+//       { $set: { productBrand: newBrandName } } // update
+//     );
+
+//     console.log(`[${new Date().toISOString()}] Updated ${result.modifiedCount} products to brandName: "${newBrandName}"`);
+//   } catch (err) {
+//     console.error("Cron Job Error:", err.message);
+//   }
+// });
 
 // This function fetches district and state from pincode
+
+
+
 const fetchLocationByPincode = async (pincode) => {
   try {
     const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);

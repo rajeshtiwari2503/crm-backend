@@ -149,40 +149,112 @@ const getStockById1 = async (req, res) => {
 //    }
 // };
 
+// const getStockById = async (req, res) => {
+//   try {
+//     const _id = req.params.id;
+
+//     // 1️⃣ Find the brand stock by ID
+//     const brandStock = await BrandStockModel.findById(_id).lean();
+//     if (!brandStock) {
+//       return res.status(404).json({ message: "Brand stock not found" });
+//     }
+
+//     // 2️⃣ Find all user stocks (service centers) for the same sparepart
+//     const userStocks = await UserStockModel.find({ sparepartId: brandStock.sparepartId }).lean();
+
+//     // 3️⃣ Merge all service center stocks into brandStock.stock array
+//     const serviceCenterStocks = userStocks.map(us => ({
+//       serviceCenterId: us.serviceCenterId,
+//       serviceCenterName: us.serviceCenterName,
+//       freshStock: us.freshStock,
+//       defectiveStock: us.defectiveStock,
+//       stock: us.stock
+//     }));
+
+//     // 4️⃣ Build final response
+//     const response = {
+//       ...brandStock,
+//       serviceCenters: serviceCenterStocks
+//     };
+
+//     res.json(response);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+
 const getStockById = async (req, res) => {
-  try {
-    const _id = req.params.id;
+   try {
+      const _id = req.params.id;
 
-    // 1️⃣ Find the brand stock by ID
-    const brandStock = await BrandStockModel.findById(_id).lean();
-    if (!brandStock) {
-      return res.status(404).json({ message: "Brand stock not found" });
-    }
+      // 1️⃣ Fetch brand stock
+      const brandStock = await BrandStockModel.findById(_id).lean();
+      if (!brandStock) return res.status(404).json({ message: "Brand stock not found" });
 
-    // 2️⃣ Find all user stocks (service centers) for the same sparepart
-    const userStocks = await UserStockModel.find({ sparepartId: brandStock.sparepartId }).lean();
+      // 2️⃣ Fetch service center stocks
+      const userStocks = await UserStockModel.find({ sparepartId: brandStock.sparepartId }).lean();
 
-    // 3️⃣ Merge all service center stocks into brandStock.stock array
-    const serviceCenterStocks = userStocks.map(us => ({
-      serviceCenterId: us.serviceCenterId,
-      serviceCenterName: us.serviceCenterName,
-      freshStock: us.freshStock,
-      defectiveStock: us.defectiveStock,
-      stock: us.stock
-    }));
+      // 3️⃣ Prepare brand transactions
+ const brandTransactions = (brandStock.stock || [])
+  .map(txn => ({ 
+    ...txn, 
+    fresh: txn.fresh,  // convert to positive
+    serviceCenterName: null 
+  }))
+  .filter(txn => txn.fresh > 0);
+// console.log("brandTransactions",brandTransactions);
 
-    // 4️⃣ Build final response
-    const response = {
-      ...brandStock,
-      serviceCenters: serviceCenterStocks
-    };
 
-    res.json(response);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+      // 4️⃣ Prepare service center transactions
+      const serviceCenterTransactions = userStocks.flatMap(us =>
+         (us.stock || []).map(txn => ({
+            ...txn,
+            serviceCenterName: us.serviceCenterName
+         }))
+      );
+
+      // 5️⃣ Merge all
+      const mergedStock = [...brandTransactions, ...serviceCenterTransactions].sort(
+         (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
+
+      // 6️⃣ Prepare serviceCenters array
+      const serviceCenters = userStocks.map(us => ({
+         serviceCenterId: us.serviceCenterId,
+         serviceCenterName: us.serviceCenterName,
+         freshStock: us.freshStock,
+         defectiveStock: us.defectiveStock,
+         stock: us.stock
+      }));
+
+      // 7️⃣ Build response
+      const response = {
+         _id: brandStock._id,
+         brandId: brandStock.brandId,
+         brandName: brandStock.brandName,
+         freshStock: brandStock.freshStock,
+         defectiveStock: brandStock.defectiveStock,
+         sparepartName: brandStock.sparepartName,
+         sparepartId: brandStock.sparepartId,
+         createdAt: brandStock.createdAt,
+         updatedAt: brandStock.updatedAt,
+         __v: brandStock.__v,
+         stock: mergedStock,     // contains both negative & positive brand entries
+         serviceCenters
+      };
+
+      res.json(response);
+   } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+   }
 };
+
+
+
+
 
 const getStockByCenterId = async (req, res) => {
    try {
