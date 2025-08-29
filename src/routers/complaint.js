@@ -5,7 +5,7 @@ const {
 } = require('../models/registration');
 const {addComplaint,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByHighPriorityPending,getComplaintsByPending,getComplaintsByFinalVerification, 
-    getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
+    getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updateMultiImageImage,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload, uploadAudio}  = require("../services/service");
  
 const uploadVideo = require("../googleConfig/uploadMiddleware");
@@ -53,6 +53,19 @@ router.get("/getComplaintByTechId/:id",getComplaintByTechId)
 router.patch("/editImage/:id", upload().single("issueImages"),editIssueImage );
 router.patch("/updateFinalVerification/:id", upload().single("partImage"),updateFinalVerification );
 router.patch("/updateComplaintWithImage/:id", upload().single("partPendingImage"),updatePartPendingImage );
+router.patch(
+  "/updateMultiImageImage/:id",
+  upload().fields([
+    { name: "goodsImage", maxCount: 1 },
+    { name: "defectivePartImage", maxCount: 1 }
+  ]),
+  updateMultiImageImage
+);
+// router.patch(
+//   "/updateMultiImageImage/:id",
+//   upload().any(),   // accepts any field names
+//   updatePartPendingImage
+// );
 
 router.patch("/updateComplaintWithVideo/:id", uploadVideo.single("partPendingVideo"), updateComplaintWithVideo);
 
