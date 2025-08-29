@@ -64,6 +64,8 @@ const complaintSchema = new mongoose.Schema({
   issueImages: { type: String },
   partImage: { type: String },
   partPendingImage: { type: String },
+  goodsImage: { type: String },
+  defectivePartImage: { type: String },
   partPendingVideo: { type: String },
   warrantyImage: { type: String },
   errorMessages: { type: String },

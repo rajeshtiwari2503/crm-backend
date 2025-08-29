@@ -1,6 +1,6 @@
 const ComplaintModal = require("../models/complaint")
 const NotificationModel = require("../models/notification")
-const { ServiceModel ,EmployeeModel} = require("../models/registration")
+const { ServiceModel, EmployeeModel } = require("../models/registration")
 const { UserModel, BrandRegistrationModel } = require("../models/registration")
 const SubCategoryModal = require("../models/subCategory")
 const BrandRechargeModel = require("../models/brandRecharge")
@@ -8,7 +8,7 @@ const WalletModel = require("../models/wallet")
 const ProductWarrantyModal = require("../models/productWarranty")
 const OrderModel = require("../models/order")
 const ServicePaymentModel = require("../models/servicePaymentModel")
- 
+
 const moment = require('moment');
 
 
@@ -170,33 +170,33 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
 
       console.log('Update result', result);
       console.timeEnd('Update Warranty');
- // Emit socket only if updated successfully
- 
-// const io = req.app.get('socketio');
+      // Emit socket only if updated successfully
 
-//     if (result.modifiedCount > 0 && io) {
-//       const payload = {
-        
-//           uniqueId,
-//           productName,
-//           productId,
-//           fullName,
-//           email,
-//           contact,
-//           address,
-//           district,
-//           state,
-//           pincode,
-//           activationDate: new Date(),
-        
-//         message: `Warranty activated for ${productName} by ${fullName}`
-//       };
+      // const io = req.app.get('socketio');
 
-//       // console.log("📢 Emitting warrantyUpdated:", payload);
-//       io.emit('warrantyActivated', payload);
-//     }
+      //     if (result.modifiedCount > 0 && io) {
+      //       const payload = {
 
-    
+      //           uniqueId,
+      //           productName,
+      //           productId,
+      //           fullName,
+      //           email,
+      //           contact,
+      //           address,
+      //           district,
+      //           state,
+      //           pincode,
+      //           activationDate: new Date(),
+
+      //         message: `Warranty activated for ${productName} by ${fullName}`
+      //       };
+
+      //       // console.log("📢 Emitting warrantyUpdated:", payload);
+      //       io.emit('warrantyActivated', payload);
+      //     }
+
+
       // Check if the update matched and modified a document
       return result.modifiedCount > 0;
    } catch (err) {
@@ -650,77 +650,77 @@ const getAllComplaint = async (req, res) => {
 
 
 const getAllComplaintByRole = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+   try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
 
-    // Destructure filters and role info
-    const {
-      brandId,
-      serviceCenterId,
-      technicianId,
-      userId,
-      dealerId,
-      role,
-      employeeId // for EMPLOYEE role
-    } = req.query;
+      // Destructure filters and role info
+      const {
+         brandId,
+         serviceCenterId,
+         technicianId,
+         userId,
+         dealerId,
+         role,
+         employeeId // for EMPLOYEE role
+      } = req.query;
 
-    let filterConditions = {};
+      let filterConditions = {};
 
-    if (employeeId) {
-      if (!employeeId) {
-        return res.status(400).json({ message: "employeeId is required for EMPLOYEE role" });
+      if (employeeId) {
+         if (!employeeId) {
+            return res.status(400).json({ message: "employeeId is required for EMPLOYEE role" });
+         }
+
+         // Fetch employee details
+         const employee = await EmployeeModel.findById(employeeId).lean();
+         if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+         }
+
+         // Extract brand IDs (handle array of {label, value} objects)
+         const brandIds = Array.isArray(employee.brand)
+            ? employee.brand.map(b => (typeof b === 'object' && b.value ? b.value : b))
+            : [];
+
+         // Extract stateZones (array of strings)
+         const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone.filter(Boolean) : [];
+
+         // Apply filters only if employee has those values
+         if (brandIds.length > 0) {
+            filterConditions.brandId = { $in: brandIds };
+         }
+
+         if (stateZones.length > 0) {
+            filterConditions.state = { $in: stateZones };
+         }
+
+      } else {
+         // Normal role filters
+         if (brandId) filterConditions.brandId = brandId;
+         if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+         if (technicianId) filterConditions.technicianId = technicianId;
+         if (userId) filterConditions.userId = userId;
+         if (dealerId) filterConditions.userId = dealerId;
       }
 
-      // Fetch employee details
-      const employee = await EmployeeModel.findById(employeeId).lean();
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
+      // Count total documents matching filter
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
 
-      // Extract brand IDs (handle array of {label, value} objects)
-      const brandIds = Array.isArray(employee.brand)
-        ? employee.brand.map(b => (typeof b === 'object' && b.value ? b.value : b))
-        : [];
+      // Fetch data with pagination
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit)
+         .lean();
 
-      // Extract stateZones (array of strings)
-      const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone.filter(Boolean) : [];
+      res.status(200).json({ data, totalComplaints });
 
-      // Apply filters only if employee has those values
-      if (brandIds.length > 0) {
-        filterConditions.brandId = { $in: brandIds };
-      }
-
-      if (stateZones.length > 0) {
-        filterConditions.state = { $in: stateZones };
-      }
-
-    } else {
-      // Normal role filters
-      if (brandId) filterConditions.brandId = brandId;
-      if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
-      if (technicianId) filterConditions.technicianId = technicianId;
-      if (userId) filterConditions.userId = userId;
-      if (dealerId) filterConditions.userId = dealerId;
-    }
-
-    // Count total documents matching filter
-    const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
-
-    // Fetch data with pagination
-    const data = await ComplaintModal.find(filterConditions)
-      .sort({ _id: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    res.status(200).json({ data, totalComplaints });
-
-  } catch (error) {
-    console.error("Error fetching complaints:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+   } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).json({ message: "Internal server error" });
+   }
 };
 
 
@@ -1071,76 +1071,76 @@ const getComplaintsByComplete = async (req, res) => {
 
 
 const getCompleteComplaintByRole = async (req, res) => {
-  try {
-    // Pagination params
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+   try {
+      // Pagination params
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
 
-    const {
-      brandId,
-      serviceCenterId,
-      technicianId,
-      userId,
-      dealerId,
-      role,
-      employeeId
-    } = req.query;
+      const {
+         brandId,
+         serviceCenterId,
+         technicianId,
+         userId,
+         dealerId,
+         role,
+         employeeId
+      } = req.query;
 
-    let filterConditions = { status: "COMPLETED" };
+      let filterConditions = { status: "COMPLETED" };
 
-    if (employeeId) {
-      if (!employeeId) {
-        return res.status(400).json({ message: "employeeId required for EMPLOYEE role" });
+      if (employeeId) {
+         if (!employeeId) {
+            return res.status(400).json({ message: "employeeId required for EMPLOYEE role" });
+         }
+
+         // Fetch employee details
+         const employee = await EmployeeModel.findById(employeeId).lean();
+         if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+         }
+
+         // Extract brand IDs (array of brand _id strings)
+         const brandIds = Array.isArray(employee.brand)
+            ? employee.brand.map(b => b.value)
+            : [];
+
+         // Extract state zones
+         const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone : [];
+
+         // Apply brand filter if brands exist
+         if (brandIds.length > 0) {
+            filterConditions.brandId = { $in: brandIds };
+         }
+
+         // Apply state filter if states exist
+         if (stateZones.length > 0) {
+            filterConditions.state = { $in: stateZones };
+         }
+      } else {
+         // Other roles filtering
+         if (brandId) filterConditions.brandId = brandId;
+         if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+         if (technicianId) filterConditions.technicianId = technicianId;
+         if (userId) filterConditions.userId = userId;
+         if (dealerId) filterConditions.userId = dealerId;
       }
 
-      // Fetch employee details
-      const employee = await EmployeeModel.findById(employeeId).lean();
-      if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
-      }
+      // Count total complaints
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
 
-      // Extract brand IDs (array of brand _id strings)
-      const brandIds = Array.isArray(employee.brand)
-        ? employee.brand.map(b => b.value)
-        : [];
+      // Fetch complaints paginated
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit)
+         .lean();
 
-      // Extract state zones
-      const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone : [];
-
-      // Apply brand filter if brands exist
-      if (brandIds.length > 0) {
-        filterConditions.brandId = { $in: brandIds };
-      }
-
-      // Apply state filter if states exist
-      if (stateZones.length > 0) {
-        filterConditions.state = { $in: stateZones };
-      }
-    } else {
-      // Other roles filtering
-      if (brandId) filterConditions.brandId = brandId;
-      if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
-      if (technicianId) filterConditions.technicianId = technicianId;
-      if (userId) filterConditions.userId = userId;
-      if (dealerId) filterConditions.userId = dealerId;
-    }
-
-    // Count total complaints
-    const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
-
-    // Fetch complaints paginated
-    const data = await ComplaintModal.find(filterConditions)
-      .sort({ _id: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    res.status(200).json({ data, totalComplaints });
-  } catch (error) {
-    console.error("Error fetching complaints:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
+      res.status(200).json({ data, totalComplaints });
+   } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).json({ message: "Internal server error" });
+   }
 };
 
 
@@ -1945,7 +1945,7 @@ const updatePartPendingImage = async (req, res) => {
                brandName: body.brandName || data.productBrand,
                serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
                serviceCenter: body.serviceCenter || data.assignServiceCenter,
-               brandApproval:"APPROVED"
+               brandApproval: "APPROVED"
 
             });
             console.log("newOrder", newOrder);
@@ -2001,6 +2001,213 @@ const updatePartPendingImage = async (req, res) => {
       res.status(500).json({ status: false, msg: "Server Error", error: err.message });
    }
 };
+
+const updateMultiImageImage = async (req, res) => {
+   try {
+      let _id = req.params.id;
+      let body = req.body;
+
+      // Handle multiple images
+      const goodsImage = req.files?.goodsImage
+         ? req.files.goodsImage[0].location || req.files.goodsImage[0].path
+         : null;
+
+      const defectivePartImage = req.files?.defectivePartImage
+         ? req.files.defectivePartImage[0].location || req.files.defectivePartImage[0].path
+         : null;
+
+      // console.log("Part Pending Image:", goodsImage);
+      // console.log("Defective Part Image:", defectivePartImage);
+      // console.log("Body:", body);
+
+      // Find complaint
+      let data = await ComplaintModal.findById(_id);
+      if (!data) {
+         return res.status(404).json({ status: false, msg: "Complaint not found" });
+      }
+
+      // Initialize history
+      data.updateHistory = data.updateHistory || [];
+
+      // Response time
+      if (!data.empResponseTime && body.empResponseTime) {
+         data.empResponseTime = new Date();
+      }
+
+      // Update images
+      if (goodsImage) data.goodsImage = goodsImage;
+      if (defectivePartImage) data.defectivePartImage = defectivePartImage;
+
+      // Sanitize body
+      const sanitizedChanges = { ...body };
+      if (Array.isArray(sanitizedChanges.serviceCenterId)) {
+         sanitizedChanges.serviceCenterId = sanitizedChanges.serviceCenterId[0];
+      }
+
+      // Push history
+      data.updateHistory.push({
+         updatedAt: new Date(),
+         changes: sanitizedChanges,
+      });
+
+      // Status handling
+      if (["PART PENDING", "CUSTOMER SIDE PENDING"].includes(body.status)) {
+         data.cspStatus = "YES";
+      }
+
+      if (["FINAL VERIFICATION", "COMPLETED"].includes(body.status)) {
+         data.complaintCloseTime = new Date();
+      }
+
+      if (!data.complaintCloseTime && body.complaintCloseTime) {
+         data.complaintCloseTime = new Date();
+      }
+
+      // Merge updates
+      Object.assign(data, body);
+      await data.save();
+
+      // Send notifications
+      if (body.assignServiceCenterId) {
+         await new NotificationModel({
+            complaintId: data._id,
+            compId: data.complaintId,
+            userId: data.userId,
+            technicianId: body.technicianId,
+            serviceCenterId: body.assignServiceCenterId,
+            brandId: data.brandId,
+            dealerId: data.dealerId,
+            userName: data.productBrand,
+            title: `Brand Assign Service Center`,
+            message: `Assign Service Center on Your Complaint!`,
+         }).save();
+      }
+
+      if (body.technicianId) {
+         await new NotificationModel({
+            complaintId: data._id,
+            compId: data.complaintId,
+            userId: data.userId,
+            technicianId: body.technicianId,
+            serviceCenterId: body.assignServiceCenterId,
+            brandId: data.brandId,
+            dealerId: data.dealerId,
+            userName: data.assignServiceCenter,
+            title: `Service Center Assign Technician`,
+            message: `Assign Technician on Your Complaint!`,
+         }).save();
+      }
+      if (body.status === "FINAL VERIFICATION") {
+         data.complaintCloseTime = new Date();
+
+         let spareParts = body.spareParts;
+
+         if (typeof spareParts === "string") {
+            try {
+               spareParts = JSON.parse(spareParts);
+            } catch (error) {
+               spareParts = []; // fallback to empty array
+            }
+         }
+
+         if (Array.isArray(spareParts) && spareParts.length > 0) {
+            const chalanImage = req.file ? req.file.location || req.file.path : null;
+
+            const newOrder = new OrderModel({
+               spareParts,
+               brandId: body.brandId || data.brandId,
+               brandName: body.brandName || data.productBrand,
+               serviceCenterId: body.serviceCenterId || data.assignServiceCenterId,
+               serviceCenter: body.serviceCenter || data.assignServiceCenter,
+               brandApproval: "APPROVED"
+
+            });
+            console.log("newOrder", newOrder);
+
+            await newOrder.save();
+         }
+
+         // Continue with the rest of your complaint update logic...
+      }
+
+
+      // Wallet & Payout handling
+      if (body.status === "COMPLETED") {
+         let subCatData = await SubCategoryModal.findOne({ categoryId: data.categoryId });
+
+         if (subCatData) {
+            await new BrandRechargeModel({
+               brandId: data.brandId,
+               brandName: data.productBrand,
+               amount: -body?.paymentBrand,
+               complaintId: data._id,
+               description: "Complaint Close Payout"
+            }).save();
+
+            const serviceCenterWallet = await WalletModel.findOne({ serviceCenterId: data.assignServiceCenterId });
+            if (serviceCenterWallet) {
+               serviceCenterWallet.totalCommission = (parseInt(serviceCenterWallet.totalCommission || 0) + parseInt(subCatData.payout));
+               serviceCenterWallet.dueAmount = (parseInt(serviceCenterWallet.dueAmount || 0) + parseInt(subCatData.payout));
+               // await serviceCenterWallet.save();
+            } else {
+               console.error('Wallet not found for service center:', data.assignServiceCenterId);
+               return res.json({ status: true, msg: "Complaint Updated" });
+            }
+
+            const dealerWallet = await WalletModel.findOne({ serviceCenterId: data.dealerId });
+            if (dealerWallet) {
+               const payout = parseInt(subCatData.payout);
+               const commissionToAdd = data.dealerId ? payout * 0.2 : payout;
+
+               dealerWallet.totalCommission = (parseInt(dealerWallet.totalCommission || 0) + commissionToAdd);
+               dealerWallet.dueAmount = (parseInt(dealerWallet.dueAmount || 0) + commissionToAdd);
+               await dealerWallet.save();
+            } else {
+               console.error('Wallet not found for dealer:', data.dealerId);
+               return res.json({ status: true, msg: "Complaint Updated" });
+            }
+         }
+      }
+
+      res.json({ status: true, msg: "Complaint Updated" });
+   } catch (err) {
+      console.error("Error updating complaint:", err);
+      res.status(500).json({ status: false, msg: "Server Error", error: err.message });
+   }
+};
+
+
+// const updateMultiImageImage = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const partPendingImage = req.files["partPendingImage"]
+//       ? req.files["partPendingImage"][0].location // if using S3
+//       : null;
+
+//     const defectivePartImage = req.files["defectivePartImage"]
+//       ? req.files["defectivePartImage"][0].location
+//       : null;
+
+//     // Now update your DB
+//     const updatedComplaint = await Complaint.findByIdAndUpdate(
+//       id,
+//       {
+//         ...(partPendingImage && { partPendingImage }),
+//         ...(defectivePartImage && { defectivePartImage }),
+//       },
+//       { new: true }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Complaint updated successfully",
+//       data: updatedComplaint,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
 
 
 const updateFinalVerification = async (req, res) => {
@@ -2265,5 +2472,5 @@ const updateComplaint = async (req, res) => {
 module.exports = {
    addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
-   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
+   getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updateMultiImageImage, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };

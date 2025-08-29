@@ -97,7 +97,7 @@ if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
 }
 
-cron.schedule("40 11 * * *", async () => {
+cron.schedule("50 15 * * *", async () => {
     console.log("⏰ Running Daily Pending Complaints Report Job...");
 
     try {
@@ -124,8 +124,8 @@ cron.schedule("40 11 * * *", async () => {
         pendingComplaints.forEach((c) => {
             const brand = brandMap[c.brandId?.toString()];
             const service = serviceMap[c.assignServiceCenterId?.toString()];
-            const email = service?.email || brand?.email;
-            // const email = "rajeshtiwari2503@gmail.com"; // test email
+            // const email = service?.email || brand?.email;
+            const email = "rajeshtiwari2503@gmail.com"; // test email
             if (!email) return;
 
             if (!groupedData[email]) groupedData[email] = [];
