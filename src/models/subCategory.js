@@ -11,6 +11,7 @@ const subCategorySchema=new mongoose.Schema({
       brandId:{type:String },
       brandName:{type:String },
       payout:{type:String },
+      stickerPrice:{type:String },
       status:{type:String ,default:"ACTIVE"}
 
 },{timestamps:true});

@@ -343,7 +343,7 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
           console.log("Payment already exists for complaint:", data._id);
           continue;
         }
-
+console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter.postalCode)
         const distance = await getDistanceInKm(data.pincode, serviceCenter.postalCode);
         if (distance === null || isNaN(distance)) {
           console.warn("Skipping complaint due to distance calculation failure:", data._id);
@@ -423,7 +423,7 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
 };
 
  
-cron.schedule("22 16 8 8 *", () => {
+cron.schedule("57 11 3 9 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
    
