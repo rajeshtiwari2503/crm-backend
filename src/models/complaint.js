@@ -62,6 +62,7 @@ const complaintSchema = new mongoose.Schema({
   issueType: { type: Array },
   detailedDescription: { type: String },
   issueImages: { type: String },
+  issueVideo: { type: String },
   partImage: { type: String },
   partPendingImage: { type: String },
   goodsImage: { type: String },

@@ -11,6 +11,9 @@ const ServicePaymentModel = require("../models/servicePaymentModel")
 
 const moment = require('moment');
 
+const stream = require("stream");
+const drive = require("../googleConfig/googleAuth");
+
 
 const { admin } = require('../firebase/index')
 const { sendBlessTemplateSms } = require("../services/smsService")
@@ -126,10 +129,175 @@ const addComplaint = async (req, res) => {
    }
 };
 
-// ===================== HELPERS ====================== //
+
+//   const complaintData = {
+//       ...req.body,
+//       issueImages,
+//       issueVideo: issueVideoUrl,
+//     };
+
+
+
+const createComplaintWithVideo = async (req, res) => {
+   try {
+
+
+      const body = req.body;
+      const {
+         city,
+         pincode,
+         emailAddress,
+         fullName,
+         phoneNumber,
+         serviceAddress,
+         brandId,
+         uniqueId,
+         district,
+         createEmpName,
+         state,
+      } = body;
+
+      const email = emailAddress;
+      const productName = body?.productName;
+      const productId = body?.productId;
+      const createEmpName1 = createEmpName || fullName;
+
+
+      //  console.log("Files received:", req.files);
+      //  console.log("req.files.issueImages?.[0]?.location", req.files.issueImages?.[0]?.location);
+
+      // ✅ S3 image
+      // const issueImages = req.file?.location ||req.files?.issueImages[0]?.s3Location || null;
+      const issueImages =
+         req.file?.location || // if single file (multer-s3 single)
+         (req.files?.issueImages && req.files.issueImages.length > 0
+            ? req.files.issueImages[0].s3Location
+            : null);
+
+
+      // ✅ Google Drive video
+      let issueVideoUrl = null;
+      const videoFile = req.files.issueVideo?.[0];
+      //  console.log("issueImages",issueImages);
+      //  console.log("req.files.issueImages?.[0]?.location",req.files.issueImages?.[0]?.location);
+      //  console.log("req.file?.location",req.file?.location);
+      //  console.log("videoFile",videoFile);
+
+      if (videoFile) {
+         const bufferStream = new stream.PassThrough();
+         bufferStream.end(videoFile.buffer);
+
+         const uploadResponse = await drive.files.create({
+            requestBody: {
+               name: videoFile.originalname,
+               mimeType: videoFile.mimetype,
+               parents: [process.env.GOOGLE_DRIVE_FOLDER_ID],
+            },
+            media: { mimeType: videoFile.mimetype, body: bufferStream },
+            fields: "id",
+         });
+
+         await drive.permissions.create({
+            fileId: uploadResponse.data.id,
+            requestBody: { role: "reader", type: "anyone" },
+         });
+
+         issueVideoUrl = `https://drive.google.com/uc?id=${uploadResponse.data.id}`;
+      }
+
+      const user = await findOrCreateUser(email, fullName, phoneNumber, serviceAddress);
+
+      // Handle warranty lookup and update
+      if (uniqueId) {
+         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode);
+         if (!success) {
+            return res.status(404).json({ status: false, msg: 'Warranty record not found' });
+         }
+      }
+
+      // Find service center
+      const serviceCenter = await findServiceCenter(pincode, brandId);
+      const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+      const otp = generateOtp();
+      // Prepare complaint object
+      const complaintData = {
+         ...body,
+         userId: user._id,
+         userName: user.name,
+         // issueImages: req.file?.location,
+         issueImages,
+         issueVideo: issueVideoUrl,
+         // assignServiceCenterId: serviceCenter?._id,
+         // assignServiceCenter: serviceCenter?.serviceCenterName,
+         // serviceCenterContact: serviceCenter?.contact,
+         // assignServiceCenterTime: new Date(),
+         // status: serviceCenter ? 'ASSIGN' : 'PENDING',
+         createEmpName: createEmpName1,
+         otp: otp
+      };
+
+      const complaint = new ComplaintModal(complaintData);
+      await complaint.save();
+
+      // Prepare and send SMS
+      const preferredDate = complaint.preferredServiceDate
+         ? moment(complaint.preferredServiceDate)
+         : moment().add(1, 'days'); // Tomorrow's date if not present
+
+      const preferredTime = complaint.preferredServiceTime || '09:00'; // Default time if not present
+
+      const visitTime = moment(
+         `${preferredDate.format('YYYY-MM-DD')}T${preferredTime}`
+      ).format('hh:mm A on MMMM D, YYYY');
+
+      const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
+         fullName,
+         complaintId: complaint.complaintId || complaint._id.toString(),
+         issueType: complaint?.detailedDescription,
+         serviceCenterName: 'Service Center visit your location',
+         visitTime: visitTime, // Dynamically set your visit time here
+         phoneNumber: phoneNumber,
+         otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
+         complaintId: complaint.complaintId || complaint._id.toString(),
+         helpline: '7777883885' // Change to your helpline
+      });
+
+
+
+      // 2. Log smsVars to confirm correctness
+      // console.log('smsVars:', smsVars);
+
+      // console.log("phoneNumber", phoneNumber);
+
+      await sendBlessTemplateSms(phoneNumber, smsTemplates.COMPLAINT_REGISTERED.id, smsVars);
+
+      // Create notification
+      const notification = new NotificationModel({
+         complaintId: complaint._id,
+         userId: user._id,
+         brandId: complaint.brandId,
+         serviceCenterId: serviceCenter?._id,
+         dealerId: complaint.dealerId,
+         userName: fullName,
+         title: 'Complaint',
+         message: `Registered Your Complaint, ${fullName}!`,
+      });
+      await notification.save();
+
+      return res.json({ status: true, msg: 'Complaint Added', user });
+
+
+
+   } catch (err) {
+      console.error(err);
+      res.status(500).json({ status: false, message: err.message });
+   }
+};
+
 
 const findOrCreateUser = async (email, name, contact, address) => {
-   let user = await UserModel.findOne({ email });
+   let user = await UserModel.findOne({ contact });
    if (!user) {
       user = new UserModel({
          email,
@@ -2470,7 +2638,7 @@ const updateComplaint = async (req, res) => {
 }
 
 module.exports = {
-   addComplaint, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
+   addComplaint, createComplaintWithVideo, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updateMultiImageImage, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };

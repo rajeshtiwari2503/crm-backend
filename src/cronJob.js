@@ -429,6 +429,38 @@ cron.schedule("57 11 3 9 *", () => {
    
 });
 
+
+async function cleanProductRecords() {
+  try {
+    const targetBrandId = "68a2fec108ab22c128f63b9f";
+
+    // Count documents that match the brandId
+    const count = await ProductWarrantyModal.countDocuments({ brandId: targetBrandId });
+    console.log(`Found ${count} documents with brandId ${targetBrandId}`);
+
+    if (count > 0) {
+      // Remove productName and productId from all records
+      const result = await ProductWarrantyModal.updateMany(
+        { brandId: targetBrandId },
+        {
+          $unset: {
+            "records.$[].productName": "",
+            "records.$[].productId": ""
+          }
+        }
+      );
+
+      console.log(`Updated ${result.modifiedCount} documents.`);
+    } else {
+      console.log('No documents found to update.');
+    }
+  } catch (error) {
+    console.error('Error cleaning product records:', error);
+  }
+}
+// cleanProductRecords();
+
+
  const deleteJuly31Transactions = async () => {
   try {
     const startOfDay = new Date("2025-07-31T00:00:00.000Z");
