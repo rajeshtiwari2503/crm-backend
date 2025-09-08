@@ -3,13 +3,15 @@ const ComplaintModal = require("../models/complaint")
 const {
   BrandRegistrationModel
 } = require('../models/registration');
-const {addComplaint,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
+
+const {addComplaint,createComplaintWithVideo,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartPending,getComplaintsByHighPriorityPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updateMultiImageImage,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload, uploadAudio}  = require("../services/service");
  
 const uploadVideo = require("../googleConfig/uploadMiddleware");
 const { updateComplaintWithVideo } = require("../googleConfig/complaintVideoController");
+const { handleUploads } = require("../googleConfig/complaintWithImageAndVideo");
 
 const { admin } = require('../firebase/index')
 
@@ -17,6 +19,11 @@ const moment = require("moment");
 const router=express.Router()
 
 router.post("/createComplaint",upload().single("issueImages")  , addComplaint);
+// router.post("/createComplaintWithVideo",upload().single("issueImages"),uploadVideo.single("issueVideo") ,  createComplaintWithVideo);
+ 
+ 
+router.post("/createComplaintWithVideo", handleUploads, createComplaintWithVideo);
+
 // router.post("/createAppComplaint",upload().single("issueImages")  , addAPPComplaint);
 
 router.post("/createAppComplaint" , addAPPComplaint);
@@ -106,6 +113,7 @@ router.post("/upload-audio", uploadAudio.single("audio"), async (req, res) => {
 });
 
 const mongoose = require("mongoose");
+ 
 
 
 
