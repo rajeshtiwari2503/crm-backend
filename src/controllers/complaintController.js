@@ -137,7 +137,14 @@ const addComplaint = async (req, res) => {
 //     };
 
 
+const AWS = require("aws-sdk");
+ 
 
+const s3 = new AWS.S3({
+  region: process.env.AWS_BUCKET_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_V,
+  secretAccessKey: process.env.AWS_SECRET_KEY_V,
+});
 const createComplaintWithVideo = async (req, res) => {
    try {
 
@@ -168,13 +175,24 @@ const createComplaintWithVideo = async (req, res) => {
 
       // ✅ S3 image
       // const issueImages = req.file?.location ||req.files?.issueImages[0]?.s3Location || null;
-      const issueImages =
-         req.file?.location || // if single file (multer-s3 single)
-         (req.files?.issueImages && req.files.issueImages.length > 0
-            ? req.files.issueImages[0].s3Location
-            : null);
+      // const issueImages =
+      //    req.file?.location || // if single file (multer-s3 single)
+      //    (req.files?.issueImages && req.files.issueImages.length > 0
+      //       ? req.files.issueImages[0].s3Location
+      //       : null);
 
-
+   let imageUrl = null;
+    const img = req.files?.issueImages?.[0];
+    if (img) {
+      const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: `${Date.now()}-${img.originalname}`,
+        Body: img.buffer,
+        ContentType: img.mimetype,
+      };
+      const { Location } = await s3.upload(params).promise();
+      imageUrl = Location;
+    }
       // ✅ Google Drive video
       let issueVideoUrl = null;
       const videoFile = req.files.issueVideo?.[0];
@@ -226,7 +244,7 @@ const createComplaintWithVideo = async (req, res) => {
          userId: user._id,
          userName: user.name,
          // issueImages: req.file?.location,
-         issueImages,
+         issueImages:imageUrl,
          issueVideo: issueVideoUrl,
          // assignServiceCenterId: serviceCenter?._id,
          // assignServiceCenter: serviceCenter?.serviceCenterName,
