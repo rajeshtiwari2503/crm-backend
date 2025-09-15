@@ -719,6 +719,7 @@ const getAllActivationWarrantyWithPage = async (req, res) => {
           contact: "$records.contact",
           address: "$records.address",
           status: "$records.status",
+          warrantyImage: "$records.warrantyImage",
           lat: "$records.lat",
           long: "$records.long",
           pincode: "$records.pincode",
