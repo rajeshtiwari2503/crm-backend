@@ -55,7 +55,14 @@ const productWarrantySchema = new mongoose.Schema({
     district: String,
     state: String,
     complaintId: String,
-
+    warrantyImage: { type: String },
+    status: {
+      type: String,
+      enum: ["INITIATE", "APPROVE", "DISAPPROVE", "PENDING"],
+      default: "INITIATE",
+    },
+    reviewedBy: { type: String, default: "" }, // admin name as string
+    reviewedAt: { type: Date, default: null },
     termsCondtions: { type: Boolean, default: false },
     isActivated: { type: Boolean, default: false },
     activationDate: Date,

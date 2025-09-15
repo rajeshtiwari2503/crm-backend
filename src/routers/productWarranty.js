@@ -2,11 +2,13 @@
 
 const express = require("express");
 const router = express.Router();
+const {upload}  = require("../services/service");
 const ProductWarrantyModal = require("../models/productWarranty")
-const { addProductWarranty, activateWarranty, getAllActivationWarrantyWithPage, getActivationWarrantySearch, getAllProductWarranty, getAllProductWarrantyByBrandStickers, editActivationWarranty, getActivationWarrantyByUserId, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantyById, getAllActivationWarranty, getProductWarrantyByUniqueId, getProductWarrantyById, editProductWarranty, deleteProductWarranty } = require("../controllers/productWarrantyController")
+const { addProductWarranty, activateWarranty, getAllActivationWarrantyWithPage, getActivationWarrantySearch, getAllProductWarranty, getAllProductWarrantyByBrandStickers, editActivationWarranty, getActivationWarrantyByUserId, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantyById, getAllActivationWarranty, getProductWarrantyByUniqueId, getProductWarrantyById, editProductWarranty, deleteProductWarranty, activateWarrantyWithImage, updateWarrantyStatus } = require("../controllers/productWarrantyController")
 
 router.post("/addProductWarranty", addProductWarranty);
 router.post("/activateWarranty", activateWarranty);
+router.post("/activateWarrantyWithImage",  upload().single("warrantyImage"), activateWarrantyWithImage);
 router.get("/getAllProductWarranty", getAllProductWarranty);
 router.get("/getAllProductWarrantyByBrandStickers", getAllProductWarrantyByBrandStickers);
 router.get("/getAllProductWarrantyWithPage", getAllProductWarrantyWithPage);
@@ -22,6 +24,8 @@ router.get("/getProductWarranty/:id", getProductWarrantyById);
 router.get("/getProductWarrantyByUniqueId/:id", getProductWarrantyByUniqueId);
 router.patch("/editProductWarranty/:id", editProductWarranty);
 router.patch("/editActivationWarranty/", editActivationWarranty);
+router.put("/warranty/:uniqueId/status", updateWarrantyStatus);
+
 router.patch("/deleteProductWarranty/:id", deleteProductWarranty);
 
 router.get('/warranty-analytics', async (req, res) => {

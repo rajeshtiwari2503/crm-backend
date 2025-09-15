@@ -355,7 +355,93 @@ const activateWarranty = async (req, res) => {
 
 };
 
+const activateWarrantyWithImage = async (req, res) => {
+  try {
+    const { name, contact, email, address, lat, long, pincode, district, state, password, uniqueId, } = req.body;
+    const productId = req.body.productId
+    // console.log("");
 
+    // if (!name || !contact || !address || !uniqueId) {
+    //   return res.status(400).json({ status: false, msg: 'Missing required fields' });
+    // }
+
+    // Check if the user already exists
+    let user = await UserModel.findOne({ contact });
+    if (!user) {
+      // Hash the password and create a new user
+     
+
+      user = new UserModel({
+
+        name,
+        contact,
+        email,
+        address,
+        password,
+        lat, long, pincode
+      });
+      await user.save();
+    }
+
+     const warrantyImage = req.file ? req.file?.location : null;
+
+    // Find the warranty record based on the unique ID
+    const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
+    if (!warranty) {
+      return res.status(404).json({ status: false, msg: 'Warranty not found' });
+    }
+
+    // Find the specific record with the matching uniqueId
+    const record = warranty.records.find(record => record.uniqueId === uniqueId);
+    if (!record) {
+      return res.status(404).json({ status: false, msg: 'Warranty record not found' });
+    }
+
+    // Check if the warranty has already been activated
+    if (record.isActivated) {
+      return res.status(400).json({ status: false, msg: 'This warranty has already been activated' });
+    }
+    lat, long, pincode,
+      // Activate the warranty
+      record.isActivated = true;
+    record.userName = user.name;
+    record.userId = user._id;
+    record.email = email;
+    record.contact = contact;
+    record.address = address;
+    record.lat = lat;
+    record.long = long;
+    record.district = district;
+    record.state = state;
+    record.pincode = pincode;
+    record.termsCondtions = req.body.termsCondtions;
+    record.status = "PENDING";
+    record.activationDate = new Date();
+    if (warrantyImage) {
+      record.warrantyImage = warrantyImage; // e.g., local path or S3 URL
+    }
+    if (productId) {
+      record.productName = req.body.productName;
+      record.productId = productId;
+      record.categoryName = req.body.categoryName;
+      record.categoryId = req.body.categoryId;
+      record.year = req.body.year;
+    }
+    // Save the updated warranty
+    await warranty.save();
+
+    res.status(200).json({
+      status: true,
+       msg: "Warranty activated successfully and will be approved after verification.",
+      data: record, // Return only the activated record
+    });
+  } catch (error) {
+    res.status(500).json({ status: false, msg: error.message });
+  }
+
+
+
+};
 
 
 const getAllProductWarranty = async (req, res) => {
@@ -632,6 +718,7 @@ const getAllActivationWarrantyWithPage = async (req, res) => {
           email: "$records.email",
           contact: "$records.contact",
           address: "$records.address",
+          status: "$records.status",
           lat: "$records.lat",
           long: "$records.long",
           pincode: "$records.pincode",
@@ -1039,7 +1126,7 @@ const editActivationWarranty = async (req, res) => {
 
   // Ensure both uniqueId and updates are present
   if (!uniqueId || !updates) {
-    return res.status(400).json({ error: 'UniqueId and updates are required.' });
+    return res.status(400).json({ status:false,error: 'UniqueId and updates are required.' });
   }
 
   try {
@@ -1072,13 +1159,53 @@ const editActivationWarranty = async (req, res) => {
     }
 
     // Return success response with updated document
-    res.status(200).json({ message: 'Record updated successfully.', data: updatedDoc });
+    res.status(200).json({ status: true,msg: 'Record updated successfully.', data: updatedDoc });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while updating the record.' });
+    res.status(500).json({ status:false, msg:"An error occurred while updating the record."  ,error: 'An error occurred while updating the record.' });
   }
 };
 
+  const updateWarrantyStatus = async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    const { status, adminName } = req.body; // now adminName is string
+
+    if (!["APPROVE", "DISAPPROVE"].includes(status)) {
+      return res.status(400).json({ success: false, msg: "Invalid status value" });
+    }
+
+    const warranty = await ProductWarrantyModal.findOne({ "records.uniqueId": uniqueId });
+    if (!warranty) {
+      return res.status(404).json({ success: false, msg: "Warranty not found" });
+    }
+
+    const record = warranty.records.find(r => r.uniqueId === uniqueId);
+    if (!record) {
+      return res.status(404).json({ status: false, msg: "Warranty record not found" });
+    }
+
+    // if (record.status !== "PENDING") {
+    //   return res.status(400).json({ success: false, msg: `Already ${record.status}` });
+    // }
+
+    record.status = status;
+    record.reviewedBy = adminName;  // store admin name
+    record.reviewedAt = new Date();
+
+    await warranty.save();
+
+    res.status(200).json({
+      success: true,
+      status: true,
+      msg: `Warranty has been ${status.toLowerCase()} successfully`,
+      data: record
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, msg: error.message });
+  }
+};
 
 
 const deleteProductWarranty = async (req, res) => {
@@ -1107,4 +1234,4 @@ const deleteProductWarranty = async (req, res) => {
 
 
 
-module.exports = { addProductWarranty, activateWarranty, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
+module.exports = { addProductWarranty,updateWarrantyStatus, activateWarranty,activateWarrantyWithImage, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };

@@ -459,7 +459,45 @@ async function cleanProductRecords() {
   }
 }
 // cleanProductRecords();
+ 
 
+async function updateProductUserIdToBrandId() {
+  try {
+    console.log("Running cron job to update product brand info...");
+
+    const userId = "68c3c1f4d023664bd6e384f9";
+    const brandId = "68c400b70aef840d9660a58c";
+    const productBrand = "Kilig";
+
+    // Count products for this userId
+    const productCount = await ProductModel.countDocuments({ userId });
+    console.log(`Total products found for userId ${userId}: ${productCount}`);
+
+    if (productCount === 0) {
+      console.log("No products to update.");
+      return;
+    }
+
+    // Update products for this userId
+    const updateResult = await ProductModel.updateMany(
+      { userId },
+      {
+        $set: {
+          userId:brandId,
+          brandId: brandId,
+          productBrand: productBrand,
+        },
+      }
+    );
+
+    console.log(
+      `Products updated: ${updateResult.modifiedCount} / ${productCount} for userId ${userId}`
+    );
+  } catch (error) {
+    console.error("Cron job failed:", error);
+  }
+};
+// updateProductUserIdToBrandId()
 
  const deleteJuly31Transactions = async () => {
   try {
