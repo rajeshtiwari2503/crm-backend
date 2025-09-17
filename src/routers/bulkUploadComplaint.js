@@ -49,7 +49,7 @@ const generateComplaintId = async (complaint) => {
   return newComplaintId;
 };
 
- 
+
 
 router.post('/bulkServiceRequests', upload.single('file'), async (req, res) => {
   if (!req.file) {
@@ -60,14 +60,14 @@ router.post('/bulkServiceRequests', upload.single('file'), async (req, res) => {
 
   try {
     const { brandId, productBrand } = req.body; // Get brandId & productBrand from request body
-  
-  
+
+
     //   close create service
-  //   if(brandId==="67ab1ec2bfe41718e6ddfb6e"){
-  //     console.log("brandId",brandId);
-      
-  //     return res.status(404).json({ status: false, msg: 'Complaint not added' });
-  //  }
+    //   if(brandId==="67ab1ec2bfe41718e6ddfb6e"){
+    //     console.log("brandId",brandId);
+
+    //     return res.status(404).json({ status: false, msg: 'Complaint not added' });
+    //  }
 
 
     if (!brandId || !productBrand) {
@@ -102,14 +102,37 @@ router.post('/bulkServiceRequests', upload.single('file'), async (req, res) => {
 
     // Process data rows (Skipping header row)
     // const mappedResults = results.slice(1).map(row => {
-      const mappedResults = await Promise.all(results.slice(1).map(async (row) => {
+    const mappedResults = await Promise.all(results.slice(1).map(async (row) => {
       let rowData = {};
-      expectedHeaders.forEach((header, index) => {
-        let cellValue = row[index] ? row[index].toString().trim() : null; // Trim unnecessary spaces
+      // expectedHeaders.forEach((header, index) => {
+      //   let cellValue = row[index] ? row[index].toString().trim() : null; // Trim unnecessary spaces
 
-        // Handle Date Formatting
+      //   // Handle Date Formatting
+      //   if (["purchaseDate", "preferredServiceDate"].includes(header)) {
+      //     cellValue = cellValue ? moment(cellValue, ["MM-DD-YYYY", "YYYY-MM-DD", "DD-MM-YYYY"]).toDate() : null;
+      //   }
+
+      //   rowData[header] = cellValue;
+      // });
+      expectedHeaders.forEach((header, index) => {
+        let cellValue = row[index] ? row[index].toString().trim() : null;
+
         if (["purchaseDate", "preferredServiceDate"].includes(header)) {
           cellValue = cellValue ? moment(cellValue, ["MM-DD-YYYY", "YYYY-MM-DD", "DD-MM-YYYY"]).toDate() : null;
+        }
+
+        // ✅ Fix warrantyStatus casting
+        if (header === "warrantyStatus") {
+          if (cellValue) {
+            const normalized = cellValue.toLowerCase();
+            if (["yes", "true", "1", "in warranty"].includes(normalized)) {
+              cellValue = true;
+            } else if (["no", "false", "0", "out of warranty"].includes(normalized)) {
+              cellValue = false;
+            } else {
+              cellValue = null;
+            }
+          }
         }
 
         rowData[header] = cellValue;
@@ -118,7 +141,7 @@ router.post('/bulkServiceRequests', upload.single('file'), async (req, res) => {
       // Ensure brandId and productBrand are always set
       rowData.brandId = brandId;
       rowData.productBrand = productBrand;
- // Generate and assign a unique complaintId
+      // Generate and assign a unique complaintId
       rowData.complaintId = await generateComplaintId(rowData);
       return rowData;
     }));
@@ -275,4 +298,3 @@ router.post('/bulkServiceRequests', upload.single('file'), async (req, res) => {
 module.exports = router;
 
 
- 

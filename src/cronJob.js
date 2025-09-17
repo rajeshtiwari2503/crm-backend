@@ -498,6 +498,32 @@ async function updateProductUserIdToBrandId() {
   }
 };
 // updateProductUserIdToBrandId()
+  async function deleteComplaintNullData()   {
+  try {
+    console.log("Running cron job to check complaints...");
+
+    const filter = {
+      productBrand: "Reeco",
+      status:"PENDING",
+      // productName: { $in: [null, ""] },
+      contact: { $in: [null, ""] },
+      pincode: { $in: [null, ""] },
+      district: { $in: [null, ""] },
+      
+    };
+
+    const count = await ComplaintModal.countDocuments(filter);
+    console.log(`Total complaints to delete: ${count}`);
+
+    // if (count > 0) {
+    //   const result = await ComplaintModal.deleteMany(filter);
+    //   console.log(`Deleted ${result.deletedCount} complaints.`);
+    // }
+  } catch (error) {
+    console.error("Error while checking/deleting complaints:", error);
+  }
+};
+// deleteComplaintNullData()
 
  const deleteJuly31Transactions = async () => {
   try {
