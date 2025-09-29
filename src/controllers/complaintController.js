@@ -337,8 +337,8 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
          { 'records.uniqueId': uniqueId },
          {
             $set: {
-               productName: productName,
-               productId: productId,
+               // productName: productName,
+               // productId: productId,
                'records.$.productName': productName,
                'records.$.productId': productId,
                'records.$.isActivated': true,

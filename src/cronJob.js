@@ -465,9 +465,9 @@ async function updateProductUserIdToBrandId() {
   try {
     console.log("Running cron job to update product brand info...");
 
-    const userId = "68c3c1f4d023664bd6e384f9";
-    const brandId = "68c400b70aef840d9660a58c";
-    const productBrand = "Kilig";
+    const userId = "68ca7ac8d16407d35cc6a528";
+    const brandId = "68ca7ac8d16407d35cc6a528";
+    const productBrand = "Activa";
 
     // Count products for this userId
     const productCount = await ProductModel.countDocuments({ userId });
