@@ -5,7 +5,7 @@ const ComplaintModal = require("./models/complaint");
 const { ServiceModel } = require("./models/registration");
 const mongoose = require("mongoose");
 const axios = require('axios');
- 
+
 console.log("✅ Cron job scheduler initialized...");
 const { admin } = require('../src/firebase/index')
 // Run every 60 minutes
@@ -156,7 +156,7 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
   }
 };
 
- 
+
 // const createWalletTransactions = async () => {
 //   try {
 //     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
@@ -172,7 +172,7 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 //       createdAt: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
 //       status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
 //       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
-      
+
 //     });
 
 
@@ -276,35 +276,205 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 // };
 
 
- 
- 
 
- 
- 
 
+
+
+
+
+
+// const createWalletTransactions = async () => {
+//   try {
+//     const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
+//     const endOfPrevMonth = moment().subtract(1, 'month').endOf('month').toDate();
+// //     const startOfPrevMonth = moment().startOf('month').toDate();
+// // const endOfPrevMonth = moment().endOf('month').toDate();
+
+//     console.log("startOfPrevMonth", startOfPrevMonth);
+//     console.log("endOfPrevMonth", endOfPrevMonth);
+
+//     const paidComplaintIds = await ServicePaymentModel.distinct("complaintId");
+
+//     const complaints = await ComplaintModal.find({
+//       complaintCloseTime: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+//       status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+//       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
+//       _id: { $nin: paidComplaintIds },
+//     });
+
+//     console.log("Complaints eligible for wallet transaction:", complaints.length);
+
+//     // 🟡 Group by assignServiceCenterId
+//     const groupedByCenter = {};
+//     for (const complaint of complaints) {
+//       const centerId = complaint.assignServiceCenterId.toString();
+//       if (!groupedByCenter[centerId]) {
+//         groupedByCenter[centerId] = [];
+//       }
+//       groupedByCenter[centerId].push(complaint);
+//     }
+
+//     let createdCount = 0;
+
+//     // 🟢 Loop through each service center
+//     for (const [centerId, centerComplaints] of Object.entries(groupedByCenter)) {
+//       console.log(`\n🔧 Processing Service Center ID: ${centerId}, Complaints: ${centerComplaints.length}`);
+
+//       const serviceCenter = await ServiceModel.findOne({
+//         _id: centerId,
+//         serviceCenterType: 'Authorized',
+//       });
+
+//       if (!serviceCenter) {
+// console.warn(`❌ Skipping service center ${centerId}, name: ${serviceCenter?.serviceCenterName ?? 'N/A'} — not found or not Authorized`);
+
+//         continue;
+//       }
+// console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCenterName}`);
+//       for (const data of centerComplaints) {
+//         if (!data.pincode || !serviceCenter.postalCode) continue;
+
+//         const existingPayment = await ServicePaymentModel.findOne({
+//           serviceCenterId: centerId,
+//           complaintId: data._id,
+//         });
+
+//         if (existingPayment) {
+//           console.log("Payment already exists for complaint:", data._id);
+//           continue;
+//         }
+// console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter.postalCode)
+//         const distance = await getDistanceInKm(data.pincode, serviceCenter.postalCode);
+//         if (distance === null || isNaN(distance)) {
+//           console.warn("Skipping complaint due to distance calculation failure:", data._id);
+//           continue;
+//         }
+
+//         const isCSP = data.cspStatus === "YES";
+//         const isInCity = distance <= 30;
+//         let paymentAmount = 0;
+//         let timeDiffInHours = 0;
+
+//         if (isCSP) {
+//           paymentAmount = isInCity ? 250 : 350;
+//         } else {
+//           // const assignTime = moment(data.assignServiceCenterTime);
+//           // const closeTime = moment(data.complaintCloseTime);
+
+//           // // ⏱️ Calculate hours difference excluding Sundays
+//           // let current = assignTime.clone();
+//           // while (current.isBefore(closeTime)) {
+//           //   if (current.day() !== 0) {
+//           //     const nextHour = current.clone().add(1, 'hour');
+//           //     if (nextHour.isAfter(closeTime)) break;
+//           //     timeDiffInHours++;
+//           //   }
+//           //   current.add(1, 'hour');
+
+//           // }
+// const assignTime = moment(data.assignServiceCenterTime);
+// const closeTime = moment(data.complaintCloseTime);
+// if (!assignTime.isValid() || !closeTime.isValid()) {
+//   throw new Error("Invalid assignTime or closeTime provided");
+// }
+
+//  let timeDiffInHours = 0;
+// let sundayCount = 0;
+// let current = assignTime.clone().startOf("day");
+
+// while (current.isSameOrBefore(closeTime, "day")) {
+//   if (current.day() !== 0) {
+//     const dayStart = moment.max(current.clone().startOf("day"), assignTime);
+//     const dayEnd = moment.min(current.clone().endOf("day"), closeTime);
+
+//     // Defensive check
+//     if (dayStart.isValid() && dayEnd.isValid() && dayEnd.isAfter(dayStart)) {
+//       timeDiffInHours += dayEnd.diff(dayStart, "hours");
+//     }
+//   } else {
+//     sundayCount++;
+//   }
+
+//   current.add(1, "day");
+// }
+
+
+// console.log("⏱️ Hours excluding Sundays:", timeDiffInHours);
+// console.log("📅 Number of Sundays:", sundayCount);
+
+//           if (isInCity) {
+//             if (timeDiffInHours <= 24) {
+//               paymentAmount = 250;
+//             } else if (timeDiffInHours <= 48) {
+//               paymentAmount = 180;
+//             } else if (timeDiffInHours <= 72) {
+//               paymentAmount = 130;
+//             } else {
+//               paymentAmount = 80;
+//             }
+//           } else {
+//             if (timeDiffInHours <= 48) {
+//               paymentAmount = 350;
+//             } else if (timeDiffInHours <= 72) {
+//               paymentAmount = 300;
+//             } else if (timeDiffInHours <= 90) {
+//               paymentAmount = 250;
+//             } else {
+//               paymentAmount = 200;
+//             }
+//           }
+//         }
+
+//         const paymentData = {
+//           serviceCenterId: centerId,
+//           serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
+//           payment: paymentAmount.toString(),
+//           description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${timeDiffInHours} hours , charge, ₹${paymentAmount})`,
+//           contactNo: serviceCenter.contact,
+//           month: moment(data.complaintCloseTime).format("MMMM YYYY"),
+//           complaintId: data._id,
+//           city: serviceCenter.city,
+//           address: serviceCenter.streetAddress,
+//           status: "UNPAID",
+//           ...(serviceCenter.qrCode ? { qrCode: serviceCenter.qrCode } : {}),
+//           ...(serviceCenter.UPIid ? { UPIid: serviceCenter.UPIid } : {})
+//         };
+
+//         console.log("Creating service center payment:", paymentData);
+//         // await ServicePaymentModel.create(paymentData);
+//         createdCount++;
+//       }
+//     }
+
+//     console.log(`✅ Wallet transactions generated successfully. Total created: ${createdCount}`);
+//   } catch (error) {
+//     console.error("❌ Error creating wallet transactions:", error);
+//   }
+// };
 
 const createWalletTransactions = async () => {
   try {
-    const startOfPrevMonth = moment().subtract(1, 'month').startOf('month').toDate();
-    const endOfPrevMonth = moment().subtract(1, 'month').endOf('month').toDate();
-//     const startOfPrevMonth = moment().startOf('month').toDate();
-// const endOfPrevMonth = moment().endOf('month').toDate();
+    // 📅 Get previous month range
+    const startOfPrevMonth = moment().subtract(1, "month").startOf("month").toDate();
+    const endOfPrevMonth = moment().subtract(1, "month").endOf("month").toDate();
 
     console.log("startOfPrevMonth", startOfPrevMonth);
     console.log("endOfPrevMonth", endOfPrevMonth);
 
+    // ✅ Already paid complaint IDs
     const paidComplaintIds = await ServicePaymentModel.distinct("complaintId");
 
+    // 🔍 Complaints eligible for payments
     const complaints = await ComplaintModal.find({
       complaintCloseTime: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
-      status: { $in: ['COMPLETED', 'FINAL VERIFICATION'] },
+      status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
       _id: { $nin: paidComplaintIds },
     });
 
     console.log("Complaints eligible for wallet transaction:", complaints.length);
 
-    // 🟡 Group by assignServiceCenterId
+    // 🟡 Group complaints by service center
     const groupedByCenter = {};
     for (const complaint of complaints) {
       const centerId = complaint.assignServiceCenterId.toString();
@@ -322,18 +492,20 @@ const createWalletTransactions = async () => {
 
       const serviceCenter = await ServiceModel.findOne({
         _id: centerId,
-        serviceCenterType: 'Authorized',
+        serviceCenterType: "Authorized",
       });
 
       if (!serviceCenter) {
-console.warn(`❌ Skipping service center ${centerId}, name: ${serviceCenter?.serviceCenterName ?? 'N/A'} — not found or not Authorized`);
-
+        console.warn(`❌ Skipping service center ${centerId} — not found or not Authorized`);
         continue;
       }
-console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCenterName}`);
+
+      console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCenterName}`);
+
       for (const data of centerComplaints) {
         if (!data.pincode || !serviceCenter.postalCode) continue;
 
+        // ✅ Skip if payment already exists
         const existingPayment = await ServicePaymentModel.findOne({
           serviceCenterId: centerId,
           complaintId: data._id,
@@ -343,8 +515,9 @@ console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCent
           console.log("Payment already exists for complaint:", data._id);
           continue;
         }
-console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter.postalCode)
-        const distance = await getDistanceInKm(data.pincode, serviceCenter.postalCode);
+
+        // ✅ Distance check (cast to string to avoid mismatch issues)
+        const distance = await getDistanceInKm(String(data.pincode), String(serviceCenter.postalCode));
         if (distance === null || isNaN(distance)) {
           console.warn("Skipping complaint due to distance calculation failure:", data._id);
           continue;
@@ -361,17 +534,34 @@ console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter
           const assignTime = moment(data.assignServiceCenterTime);
           const closeTime = moment(data.complaintCloseTime);
 
-          // ⏱️ Calculate hours difference excluding Sundays
-          let current = assignTime.clone();
-          while (current.isBefore(closeTime)) {
-            if (current.day() !== 0) {
-              const nextHour = current.clone().add(1, 'hour');
-              if (nextHour.isAfter(closeTime)) break;
-              timeDiffInHours++;
-            }
-            current.add(1, 'hour');
+          if (!assignTime.isValid() || !closeTime.isValid()) {
+            console.warn("Invalid assignTime or closeTime:", data._id);
+            continue;
           }
 
+          // ✅ Safe calculation (hour-by-hour, skipping Sundays)
+        
+          let sundayCount = 0;
+
+          let currentHour = assignTime.clone();
+
+          while (currentHour.isBefore(closeTime)) {
+            if (currentHour.day() !== 0) {
+              // Count only non-Sunday hours
+              timeDiffInHours++;
+            } else {
+              // Track Sunday hours
+              sundayCount++;
+            }
+            currentHour.add(1, "hour");
+          }
+
+          console.log("⏱️ Hours excluding Sundays:", timeDiffInHours);
+          console.log("📅 Hours on Sundays (excluded):", sundayCount);
+          console.log("📆 Total hours (raw diff):", assignTime.diff(closeTime, "hours") * -1);
+
+
+          // ✅ Payment slab calculation
           if (isInCity) {
             if (timeDiffInHours <= 24) {
               paymentAmount = 250;
@@ -395,11 +585,16 @@ console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter
           }
         }
 
+        // ✅ Build payment object
         const paymentData = {
           serviceCenterId: centerId,
           serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
           payment: paymentAmount.toString(),
-          description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : ""}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${timeDiffInHours} hours , charge, ₹${paymentAmount})`,
+          description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : "CSP: NO,"
+            }${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${
+            // isCSP ? "N/A" : timeDiffInHours + " hours"
+            timeDiffInHours + " hours"
+            } , charge, ₹${paymentAmount})`,
           contactNo: serviceCenter.contact,
           month: moment(data.complaintCloseTime).format("MMMM YYYY"),
           complaintId: data._id,
@@ -407,7 +602,7 @@ console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter
           address: serviceCenter.streetAddress,
           status: "UNPAID",
           ...(serviceCenter.qrCode ? { qrCode: serviceCenter.qrCode } : {}),
-          ...(serviceCenter.UPIid ? { UPIid: serviceCenter.UPIid } : {})
+          ...(serviceCenter.UPIid ? { UPIid: serviceCenter.UPIid } : {}),
         };
 
         console.log("Creating service center payment:", paymentData);
@@ -422,11 +617,10 @@ console.log("data.pincode, serviceCenter.postalCode",data.pincode, serviceCenter
   }
 };
 
- 
-cron.schedule("57 11 3 9 *", () => {
+cron.schedule("52 10 3 10 *", () => {
   console.log("⏰ Running wallet transaction job on July 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
-   
+
 });
 
 
@@ -459,7 +653,7 @@ async function cleanProductRecords() {
   }
 }
 // cleanProductRecords();
- 
+
 
 async function updateProductUserIdToBrandId() {
   try {
@@ -483,7 +677,7 @@ async function updateProductUserIdToBrandId() {
       { userId },
       {
         $set: {
-          userId:brandId,
+          userId: brandId,
           brandId: brandId,
           productBrand: productBrand,
         },
@@ -498,18 +692,18 @@ async function updateProductUserIdToBrandId() {
   }
 };
 // updateProductUserIdToBrandId()
-  async function deleteComplaintNullData()   {
+async function deleteComplaintNullData() {
   try {
     console.log("Running cron job to check complaints...");
 
     const filter = {
       productBrand: "Reeco",
-      status:"PENDING",
+      status: "PENDING",
       // productName: { $in: [null, ""] },
       contact: { $in: [null, ""] },
       pincode: { $in: [null, ""] },
       district: { $in: [null, ""] },
-      
+
     };
 
     const count = await ComplaintModal.countDocuments(filter);
@@ -525,7 +719,7 @@ async function updateProductUserIdToBrandId() {
 };
 // deleteComplaintNullData()
 
- const deleteJuly31Transactions = async () => {
+const deleteJuly31Transactions = async () => {
   try {
     const startOfDay = new Date("2025-07-31T00:00:00.000Z");
     const endOfDay = new Date("2025-07-31T23:59:59.999Z");
@@ -571,7 +765,7 @@ async function updateProductUserIdToBrandId() {
       _id: { $in: transactions.map(t => t._id) }
     });
 
-     console.log(`🗑️ Deleted ${result.deletedCount} wallet transactions created on 31 July 2025.`);
+    console.log(`🗑️ Deleted ${result.deletedCount} wallet transactions created on 31 July 2025.`);
   } catch (error) {
     console.error("❌ Error deleting wallet transactions:", error);
   }
@@ -587,7 +781,7 @@ async function updateProductUserIdToBrandId() {
 //   try {
 //     const warranties = await ProductWarrantyModal.find({ brandId: targetBrandId });
 // console.log("warranties",warranties);
- 
+
 //     for (const warranty of warranties) {
 //       // Update top-level brand name
 //       warranty.brandName = newBrandName;
@@ -737,4 +931,3 @@ const BRAND_ID = "677262f28b89ee789f62b03e"; // Replace with actual brand ID
 //   updateCancelledComplaintsForBrand();
 // });
 
- 
