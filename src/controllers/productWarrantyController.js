@@ -576,25 +576,54 @@ const getAllProductWarrantyByIdWithPage = async (req, res) => {
   }
 };
 
-const getAllProductWarrantyByBrandStickers = async (req, res) => {
+// const getAllProductWarrantyByBrandStickers = async (req, res) => {
+//   try {
+//     const stickersByBrand = await ProductWarrantyModal.aggregate([
+//       {
+//         $group: {
+//           _id: { brandId: "$brandId", brandName: "$brandName" }, // Group by brandId & brandName
+//           totalStickers: { $sum: 1 }, // Count total stickers per brand
+//           totalnumberOfGenerate: { $sum: "$numberOfGenerate" } // Sum the actual field
+//         }
+//       },
+//       {
+//         $project: {
+//           _id: 0,
+//           brandId: "$_id.brandId",
+//           brandName: "$_id.brandName",
+//           totalStickers: 1,
+//           totalnumberOfGenerate: 1
+//         }
+//       }
+//     ]);
+
+//     res.status(200).json({ success: true, data: stickersByBrand });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+
+
+ const getAllProductWarrantyByBrandStickers = async (req, res) => {
   try {
     const stickersByBrand = await ProductWarrantyModal.aggregate([
       {
         $group: {
-          _id: { brandId: "$brandId", brandName: "$brandName" }, // Group by brandId & brandName
-          totalStickers: { $sum: 1 }, // Count total stickers per brand
-          totalnumberOfGenerate: { $sum: "$numberOfGenerate" } // Sum the actual field
-        }
+          _id: "$brandId",
+          brandName: { $first: "$brandName" }, // ✅ take brandName from one doc in the group
+          totalStickers: { $sum: 1 },
+          totalnumberOfGenerate: { $sum: "$numberOfGenerate" },
+        },
       },
       {
         $project: {
           _id: 0,
-          brandId: "$_id.brandId",
-          brandName: "$_id.brandName",
+          brandId: "$_id",
+          brandName: 1,
           totalStickers: 1,
-          totalnumberOfGenerate: 1
-        }
-      }
+          totalnumberOfGenerate: 1,
+        },
+      },
     ]);
 
     res.status(200).json({ success: true, data: stickersByBrand });
@@ -602,6 +631,8 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
 
 
 const getAllProductWarrantyById = async (req, res) => {
