@@ -1225,59 +1225,90 @@ const getActivationWarrantyById = async (req, res) => {
 
 
 
-const getProductWarrantyById = async (req, res) => {
-  try {
-    let _id = req.params.id;
-    let data = await ProductWarrantyModal.findById(_id);
-    res.send(data);
-  } catch (err) {
-    res.status(400).send(err);
-  }
-}
-
-//  const getProductWarrantyById = async (req, res) => {
+// const getProductWarrantyById = async (req, res) => {
 //   try {
-//     const _id = req.params.id;
-
-//     const doc = await ProductWarrantyModal.findById(_id, { records: 1 }).lean();
-
-//     if (!doc) {
-//       return res.status(404).json({ success: false, message: "Product warranty not found" });
-//     }
-
-//     const recordCount = doc.records?.length || 0;
-//     let data;
-
-//     if (recordCount > 2000) {
-//       data = await ProductWarrantyModal.findById(_id, {
-//         _id: 1,
-//         productName: 1,
-//         brandId: 1,
-//         modelNumber: 1,
-//         records: { $slice: -2000 },
-//       }).lean();
-//     } else {
-//       data = await ProductWarrantyModal.findById(_id).lean();
-//     }
-
-//     res.status(200).json({
-//       success: true,
-//       totalRecords: recordCount,
-//       message:
-//         recordCount > 2000
-//           ? `Showing last 2000 of ${recordCount} records`
-//           : "Showing full warranty data",
-//       data,
-//     });
+//     let _id = req.params.id;
+//     let data = await ProductWarrantyModal.findById(_id);
+//     res.send(data);
 //   } catch (err) {
-//     console.error("Error fetching warranty data:", err);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal Server Error",
-//       error: err.message,
-//     });
+//     res.status(400).send(err);
 //   }
-// };
+// }
+
+ 
+ const getProductWarrantyById = async (req, res) => {
+  try {
+    const _id = new mongoose.Types.ObjectId(req.params.id);
+    const page = parseInt(req.query.page) || 1;
+    const limit = 1000; // number of records per page
+    const skip = (page - 1) * limit;
+
+    console.log(`📄 Page: ${page} ➡️ Skip: ${skip} Limit: ${limit}`);
+    console.log(`🔍 Product ID: ${_id}`);
+
+    // Step 1: Get total count of records without fetching all
+    const countDoc = await ProductWarrantyModal.aggregate([
+      { $match: { _id } },
+      { $project: { totalRecords: { $size: "$records" } } },
+    ]);
+
+    if (!countDoc.length) {
+      console.log("❌ Document not found");
+      return res.status(404).json({ success: false, message: "Warranty not found" });
+    }
+
+    const totalRecords = countDoc[0].totalRecords;
+    const totalPages = Math.ceil(totalRecords / limit);
+    console.log(`📦 Total Records: ${totalRecords} | Total Pages: ${totalPages}`);
+
+    // Step 2: Fetch document with limited records + all parent fields
+    const result = await ProductWarrantyModal.aggregate([
+      { $match: { _id } },
+      {
+        $project: {
+          brandName: 1,
+          brandId: 1,
+          productName: 1,
+          numberOfGenerate: 1,
+          warrantyInDays: 1,
+          year: 1,
+          isDeleted: 1,
+          id: 1,
+          // Only slice records here
+          records: { $slice: ["$records", skip, limit] },
+        },
+      },
+    ]);
+
+    if (!result.length) {
+      return res.status(404).json({ success: false, message: "No data found" });
+    }
+
+    const data = result[0];
+
+    console.log(`✅ Fetched ${data.records.length} / ${totalRecords} records`);
+
+    res.status(200).json({
+      success: true,
+      totalRecords,
+      currentPage: page,
+      totalPages,
+      count: data.records.length,
+      ...data, // includes brandName, productName, etc.
+    });
+  } catch (error) {
+    console.error("🔥 Error fetching warranty data:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+
 
 
 const getProductWarrantyByUniqueId = async (req, res) => {
