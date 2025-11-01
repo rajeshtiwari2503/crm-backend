@@ -654,6 +654,35 @@ async function cleanProductRecords() {
 }
 // cleanProductRecords();
 
+async function deleteProductWarranties() {
+  try {
+    const targetBrandId = "687b60524784729ee719776e    _w";
+    const targetNumberOfGenerate = 5000;
+
+    // Count documents that match the criteria
+    const count = await ProductWarrantyModal.countDocuments({
+      brandId: targetBrandId,
+      numberOfGenerate: targetNumberOfGenerate
+    });
+
+    console.log(`Found ${count} documents with brandId ${targetBrandId} and numberOfGenerate ${targetNumberOfGenerate}`);
+
+    if (count > 0) {
+      // Delete the matching documents
+      const result = await ProductWarrantyModal.deleteMany({
+        brandId: targetBrandId,
+        numberOfGenerate: targetNumberOfGenerate
+      });
+
+      console.log(`Deleted ${result.deletedCount} documents.`);
+    } else {
+      console.log('No documents found to delete.');
+    }
+  } catch (error) {
+    console.error('Error deleting product warranties:', error);
+  }
+}
+// deleteProductWarranties()
 
 async function updateProductUserIdToBrandId() {
   try {

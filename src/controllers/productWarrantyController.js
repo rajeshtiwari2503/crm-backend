@@ -7,8 +7,6 @@ const mongoose = require('mongoose');
 
 
 
-// Helper function to generate a unique record with retry logic
-
 // const addProductWarranty = async (req, res) => {
 //   try {
 //     const {
@@ -24,230 +22,373 @@ const mongoose = require('mongoose');
 //       brandId
 //     } = req.body;
 
+//     // ✅ Validate required fields
 //     if (!brandName || !brandId || !numberOfGenerate || !warrantyInDays) {
 //       return res.status(400).json({ status: false, msg: 'Missing required fields' });
 //     }
 
-//     const numberOfRecords = Number(numberOfGenerate);
+//     // ✅ Ensure numberOfGenerate is a valid positive integer
+//     const numberOfRecords = parseInt(numberOfGenerate, 10);
 //     if (isNaN(numberOfRecords) || numberOfRecords <= 0) {
 //       return res.status(400).json({ status: false, msg: 'Invalid numberOfGenerate' });
 //     }
 
-//     console.log("numberOfRecords", numberOfRecords);
-//     console.log("req.body", req.body);
+//     console.log(`🔹 Total records to generate: ${numberOfRecords}`);
 
-//     const promises = [];
-//     for (let i = 0; i < numberOfRecords; i++) {
-//       promises.push(generateUniqueRecord(i, req.body));
+//     const batchSize = 100; // ✅ Adjust batch size as needed
+//     let generatedRecords = [];
+//     let failedRecords = 0;
+
+//     for (let i = 0; i < numberOfRecords; i += batchSize) {
+//       const batchPromises = [];
+
+//       for (let j = 0; j < Math.min(batchSize, numberOfRecords - i); j++) {
+//         batchPromises.push(generateUniqueRecord(i + j, req.body));
+//       }
+
+//       const batchResults = await Promise.allSettled(batchPromises);
+
+//       batchResults.forEach((result, index) => {
+//         if (result.status === "fulfilled") {
+//           generatedRecords.push(result.value);
+//         } else {
+//           console.error(`⚠️ Failed record #${i + index + 1}:`, result.reason);
+//           failedRecords++;
+//         }
+//       });
+
+//       console.log(`✅ Processed batch ${i / batchSize + 1}, total records so far: ${generatedRecords.length}`);
+
+//       // ✅ Small delay to prevent MongoDB from being overwhelmed
+//       await new Promise(resolve => setTimeout(resolve, 100));
 //     }
-
-//     const generatedRecords = await Promise.all(promises);
-//     console.log("generatedRecords", generatedRecords);
 
 //     if (generatedRecords.length === 0) {
 //       return res.status(500).json({ status: false, msg: 'No records were created due to errors' });
 //     }
 
-//     const metadata = new ProductWarrantyModal({
-//       brandName,
-//       brandId,
-//       productName,
-//       numberOfGenerate,
-//       warrantyInDays,
-//       year,
-//       id: new mongoose.Types.ObjectId(),
-//       records: generatedRecords,
-//     });
-
-//     const savedMetadata = await metadata.save();
-//     console.log("savedMetadata", savedMetadata);
-
-//     res.status(201).json({
-//       status: true,
-//       msg: 'Warranty Created',
-//       data: {
+//     // ✅ Save all records at once using insertMany() for better performance
+//     try {
+//       const savedMetadata = await ProductWarrantyModal.create({
 //         brandName,
 //         brandId,
 //         productName,
 //         numberOfGenerate,
 //         warrantyInDays,
 //         year,
-//         id: savedMetadata.id,
-//         records: savedMetadata.records,
-//       },
-//     });
+//         id: new mongoose.Types.ObjectId(),
+//         records: generatedRecords,
+//       });
+
+//       console.log(`✅ Warranty Created Successfully: ${generatedRecords.length} records saved`);
+
+//       res.status(201).json({
+//         status: true,
+//         msg: `Warranty Created Successfully with ${generatedRecords.length} records`,
+//         failedRecords,
+//         data: savedMetadata,
+//       });
+//     } catch (dbError) {
+//       console.error("❌ MongoDB Insert Error:", dbError);
+//       return res.status(500).json({ status: false, msg: 'Error saving records to database', error: dbError.message });
+//     }
+
 //   } catch (error) {
-//     console.error("Error in addProductWarranty:", error);
+//     console.error("❌ Error in addProductWarranty:", error);
+
 //     if (error.code === 11000) {
 //       return res.status(409).json({ status: false, msg: 'Duplicate uniqueId found' });
 //     }
-//     res.status(500).json({ status: false, msg: error.message });
+
+//     res.status(500).json({ status: false, msg: 'Internal Server Error', error: error.message });
 //   }
 // };
 
+
+
+// const generateUniqueRecord = async (index, data) => {
+//   let uniqueId;
+//   let qrCodeUrl;
+
+//   // Retry logic to handle duplicate key errors
+//   for (let retry = 0; retry < 5; retry++) {
+//     try {
+//       uniqueId = await generateUniqueId();
+
+//       // Check once more before using this uniqueId if it already exists in the database
+//       const existingRecord = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
+//       if (existingRecord) {
+//         console.log(`Duplicate uniqueId detected: ${uniqueId}, retrying...`);
+//         continue; // Retry if this uniqueId already exists
+//       }
+
+//       const qrCodeUrl1 = `https://crm.servsy.in/warrantyActivation?uniqueId=${uniqueId}`;
+//       qrCodeUrl = await QRCode.toDataURL(qrCodeUrl1);
+//       break; // Exit loop if successful
+//     } catch (error) {
+//       if (error.code === 11000 && retry < 4) {
+//         console.log(`Duplicate uniqueId during insert: ${uniqueId}, retrying...`);
+//         continue;
+//       }
+//       throw error; // Rethrow error if it's not a duplicate key error or retries exceeded
+//     }
+//   }
+
+//   return {
+//     productName: data.productName,
+//     productId: data.productId,
+//     categoryId: data.categoryId,
+//     brandId: data.brandId,
+//     brandName: data.brandName,
+//     categoryName: data.categoryName,
+//     subCategoryId: data.subCategoryId,
+//     subCategoryName: data.subCategoryName,
+//     uniqueId,
+//     year: data.year,
+//     batchNo: data.batchNo,
+//     warrantyInDays: data.warrantyInDays,
+//     qrCodes: [{ qrCodeUrl, index: index + 1 }],
+//   };
+// };
+
+// Generates a uniqueId and checks database for uniqueness
+// const generateUniqueId = async () => {
+//   let uniqueId;
+//   let isUnique = false;
+
+//   while (!isUnique) {
+//     // uniqueId = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit number
+//     uniqueId = Math.floor(1000000 + Math.random() * 9000000).toString(); // ✅ 7-digit unique ID
+
+//     // Check if this uniqueId already exists in the database
+//     const existingRecord = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
+//     if (!existingRecord) {
+//       isUnique = true;
+//     }
+//   }
+
+//   return uniqueId;
+// };
+
+
+
+
+/**
+ * ✅ Generate a large batch of unique IDs safely:
+ * 1. Generate in-memory (fast)
+ * 2. Single DB query to remove existing IDs (safe)
+ */
+
+/**
+ * ✅ Retry helper for Mongo insert operations
+ */
+
+/**
+ * ✅ Generate unique IDs safely (your code)
+ */
+const generateSafeUniqueIds = async (count) => {
+  const uniqueIds = new Set();
+
+  // Step 1: Generate random IDs
+  while (uniqueIds.size < count) {
+    uniqueIds.add(Math.floor(1000000 + Math.random() * 9000000).toString());
+  }
+
+  // Step 2: Check existing IDs in DB
+  const existing = await ProductWarrantyModal.find(
+    { "records.uniqueId": { $in: Array.from(uniqueIds) } },
+    { "records.uniqueId": 1, _id: 0 }
+  );
+
+  const existingIds = new Set(
+    existing.flatMap((r) => r.records.map((rr) => rr.uniqueId))
+  );
+
+  // Step 3: Remove duplicates and refill
+  for (const id of existingIds) uniqueIds.delete(id);
+
+  while (uniqueIds.size < count) {
+    const newId = Math.floor(1000000 + Math.random() * 9000000).toString();
+    if (!existingIds.has(newId)) uniqueIds.add(newId);
+  }
+
+  console.log(
+    `✅ Generated ${uniqueIds.size} unique IDs (removed ${existingIds.size} duplicates)`
+  );
+
+  return Array.from(uniqueIds);
+};
+
+/**
+ * ✅ Helper: Retry insert on Mongo network timeout
+ */
+const retryInsert = async (data) => {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      await ProductWarrantyModal.insertMany(data, { ordered: false });
+      return;
+    } catch (err) {
+      if (err.name === "MongoNetworkTimeoutError" && retries > 0) {
+        retries--;
+        console.warn(`Retrying insert... (${3 - retries}/3)`);
+      } else {
+        throw err;
+      }
+    }
+  }
+};
+
+/**
+ * ✅ Concurrency controller for QR code generation
+ */
+const runWithConcurrency = async (items, limit, fn) => {
+  const results = [];
+  let index = 0;
+
+  const worker = async () => {
+    while (index < items.length) {
+      const current = index++;
+      try {
+        results[current] = await fn(items[current], current);
+      } catch (err) {
+        results[current] = { error: err };
+      }
+    }
+  };
+
+  const workers = Array.from({ length: limit }, worker);
+  await Promise.all(workers);
+  return results;
+};
+
+/**
+ * ✅ Main API to generate Product Warranty with QR codes
+ */
 const addProductWarranty = async (req, res) => {
   try {
     const {
-      productName = '',
-      productId = '',
-      categoryId = '',
-      categoryName = '',
+      productName = "",
+      productId = "",
+      categoryId = "",
+      categoryName = "",
+      subCategoryId = "",
+      subCategoryName = "",
       year = new Date().getFullYear(),
       numberOfGenerate,
       batchNo,
       warrantyInDays,
       brandName,
-      brandId
+      brandId,
     } = req.body;
 
-    // ✅ Validate required fields
+    // Validate input
     if (!brandName || !brandId || !numberOfGenerate || !warrantyInDays) {
-      return res.status(400).json({ status: false, msg: 'Missing required fields' });
+      return res
+        .status(400)
+        .json({ status: false, msg: "Missing required fields" });
     }
 
-    // ✅ Ensure numberOfGenerate is a valid positive integer
     const numberOfRecords = parseInt(numberOfGenerate, 10);
     if (isNaN(numberOfRecords) || numberOfRecords <= 0) {
-      return res.status(400).json({ status: false, msg: 'Invalid numberOfGenerate' });
+      return res
+        .status(400)
+        .json({ status: false, msg: "Invalid numberOfGenerate" });
     }
 
-    console.log(`🔹 Total records to generate: ${numberOfRecords}`);
+    console.time("Warranty Generation");
+    console.log(`🔹 Generating ${numberOfRecords} warranty stickers...`);
 
-    const batchSize = 100; // ✅ Adjust batch size as needed
-    let generatedRecords = [];
-    let failedRecords = 0;
+    // 1️⃣ Generate unique IDs
+    const uniqueIds = await generateSafeUniqueIds(numberOfRecords);
 
-    for (let i = 0; i < numberOfRecords; i += batchSize) {
-      const batchPromises = [];
+    // 2️⃣ Generate QR codes concurrently (limit 20)
+    const records = await runWithConcurrency(
+      uniqueIds,
+      20,
+      async (uniqueId, index) => {
+        const qrCodeUrl1 = `https://crm.servsy.in/warrantyActivation?uniqueId=${uniqueId}`;
+        const qrCodeUrl = await QRCode.toDataURL(qrCodeUrl1);
 
-      for (let j = 0; j < Math.min(batchSize, numberOfRecords - i); j++) {
-        batchPromises.push(generateUniqueRecord(i + j, req.body));
+        return {
+          brandName,
+          brandId,
+          productName,
+          productId,
+          categoryId,
+          categoryName,
+          subCategoryId,
+          subCategoryName,
+          uniqueId,
+          year: new Date().toISOString(),
+          batchNo,
+          warrantyInDays,
+          qrCodes: [
+            {
+              qrCodeUrl,
+              index: index + 1,
+              _id: new mongoose.Types.ObjectId(),
+            },
+          ],
+          status: "INITIATE",
+          reviewedBy: "",
+          reviewedAt: null,
+          termsCondtions: false,
+          isActivated: false,
+          _id: new mongoose.Types.ObjectId(),
+        };
       }
+    );
 
-      const batchResults = await Promise.allSettled(batchPromises);
+    const validRecords = records.filter((r) => !r.error);
+    const failedRecords = records.length - validRecords.length;
 
-      batchResults.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          generatedRecords.push(result.value);
-        } else {
-          console.error(`⚠️ Failed record #${i + index + 1}:`, result.reason);
-          failedRecords++;
-        }
-      });
-
-      console.log(`✅ Processed batch ${i / batchSize + 1}, total records so far: ${generatedRecords.length}`);
-
-      // ✅ Small delay to prevent MongoDB from being overwhelmed
-      await new Promise(resolve => setTimeout(resolve, 100));
+    if (validRecords.length === 0) {
+      return res
+        .status(500)
+        .json({ status: false, msg: "No records were created due to errors" });
     }
 
-    if (generatedRecords.length === 0) {
-      return res.status(500).json({ status: false, msg: 'No records were created due to errors' });
-    }
-
-    // ✅ Save all records at once using insertMany() for better performance
-    try {
-      const savedMetadata = await ProductWarrantyModal.create({
+    // 3️⃣ Save all records in one document
+    await retryInsert([
+      {
+        id: new mongoose.Types.ObjectId(),
         brandName,
         brandId,
         productName,
+        productId,
+        categoryId,
+        categoryName,
+        subCategoryId,
+        subCategoryName,
         numberOfGenerate,
         warrantyInDays,
+        batchNo,
         year,
-        id: new mongoose.Types.ObjectId(),
-        records: generatedRecords,
-      });
+        isDeleted: false,
+        records: validRecords,
+      },
+    ]);
 
-      console.log(`✅ Warranty Created Successfully: ${generatedRecords.length} records saved`);
+    console.timeEnd("Warranty Generation");
+    console.log(
+      `✅ Warranty Created Successfully: ${validRecords.length} records saved`
+    );
 
-      res.status(201).json({
-        status: true,
-        msg: `Warranty Created Successfully with ${generatedRecords.length} records`,
-        failedRecords,
-        data: savedMetadata,
-      });
-    } catch (dbError) {
-      console.error("❌ MongoDB Insert Error:", dbError);
-      return res.status(500).json({ status: false, msg: 'Error saving records to database', error: dbError.message });
-    }
-
+    res.status(201).json({
+      status: true,
+      msg: `Warranty Created Successfully with ${validRecords.length} records`,
+      failedRecords,
+    });
   } catch (error) {
     console.error("❌ Error in addProductWarranty:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({ status: false, msg: 'Duplicate uniqueId found' });
-    }
-
-    res.status(500).json({ status: false, msg: 'Internal Server Error', error: error.message });
+    res.status(500).json({
+      status: false,
+      msg: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
-
-
-
-const generateUniqueRecord = async (index, data) => {
-  let uniqueId;
-  let qrCodeUrl;
-
-  // Retry logic to handle duplicate key errors
-  for (let retry = 0; retry < 5; retry++) {
-    try {
-      uniqueId = await generateUniqueId();
-
-      // Check once more before using this uniqueId if it already exists in the database
-      const existingRecord = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
-      if (existingRecord) {
-        console.log(`Duplicate uniqueId detected: ${uniqueId}, retrying...`);
-        continue; // Retry if this uniqueId already exists
-      }
-
-      const qrCodeUrl1 = `https://crm.servsy.in/warrantyActivation?uniqueId=${uniqueId}`;
-      qrCodeUrl = await QRCode.toDataURL(qrCodeUrl1);
-      break; // Exit loop if successful
-    } catch (error) {
-      if (error.code === 11000 && retry < 4) {
-        console.log(`Duplicate uniqueId during insert: ${uniqueId}, retrying...`);
-        continue;
-      }
-      throw error; // Rethrow error if it's not a duplicate key error or retries exceeded
-    }
-  }
-
-  return {
-    productName: data.productName,
-    productId: data.productId,
-    categoryId: data.categoryId,
-    brandId: data.brandId,
-    brandName: data.brandName,
-    categoryName: data.categoryName,
-    subCategoryId: data.subCategoryId,
-    subCategoryName: data.subCategoryName,
-    uniqueId,
-    year: data.year,
-    batchNo: data.batchNo,
-    warrantyInDays: data.warrantyInDays,
-    qrCodes: [{ qrCodeUrl, index: index + 1 }],
-  };
-};
-
-// Generates a uniqueId and checks database for uniqueness
-const generateUniqueId = async () => {
-  let uniqueId;
-  let isUnique = false;
-
-  while (!isUnique) {
-    // uniqueId = Math.floor(100000 + Math.random() * 900000).toString(); // Generate a 6-digit number
-    uniqueId = Math.floor(1000000 + Math.random() * 9000000).toString(); // ✅ 7-digit unique ID
-
-    // Check if this uniqueId already exists in the database
-    const existingRecord = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
-    if (!existingRecord) {
-      isUnique = true;
-    }
-  }
-
-  return uniqueId;
-};
-
 
 
 
@@ -369,7 +510,7 @@ const activateWarrantyWithImage = async (req, res) => {
     let user = await UserModel.findOne({ contact });
     if (!user) {
       // Hash the password and create a new user
-     
+
 
       user = new UserModel({
 
@@ -383,7 +524,7 @@ const activateWarrantyWithImage = async (req, res) => {
       await user.save();
     }
 
-     const warrantyImage = req.file ? req.file?.location : null;
+    const warrantyImage = req.file ? req.file?.location : null;
 
     // Find the warranty record based on the unique ID
     const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
@@ -432,7 +573,7 @@ const activateWarrantyWithImage = async (req, res) => {
 
     res.status(200).json({
       status: true,
-       msg: "Warranty activated successfully and will be approved after verification.",
+      msg: "Warranty activated successfully and will be approved after verification.",
       data: record, // Return only the activated record
     });
   } catch (error) {
@@ -604,7 +745,7 @@ const getAllProductWarrantyByIdWithPage = async (req, res) => {
 // };
 
 
- const getAllProductWarrantyByBrandStickers = async (req, res) => {
+const getAllProductWarrantyByBrandStickers = async (req, res) => {
   try {
     const stickersByBrand = await ProductWarrantyModal.aggregate([
       {
@@ -1094,27 +1235,50 @@ const getProductWarrantyById = async (req, res) => {
   }
 }
 
-//old before 22/03/2025
-// const getProductWarrantyByUniqueId = async (req, res) => {
+//  const getProductWarrantyById = async (req, res) => {
 //   try {
-//     const uniqueId = req.params.id;
-//     // console.log("Searching for uniqueId:", uniqueId);
+//     const _id = req.params.id;
 
-//     // Search for a document where the `uniqueId` exists in the `records` array
-//     const data = await ProductWarrantyModal.findOne({
-//       'records.uniqueId': uniqueId
-//     });
+//     const doc = await ProductWarrantyModal.findById(_id, { records: 1 }).lean();
 
-//     if (!data) {
-//       return res.status(404).send({ message: "Product warranty not found" });
+//     if (!doc) {
+//       return res.status(404).json({ success: false, message: "Product warranty not found" });
 //     }
 
-//     res.send(data);
+//     const recordCount = doc.records?.length || 0;
+//     let data;
+
+//     if (recordCount > 2000) {
+//       data = await ProductWarrantyModal.findById(_id, {
+//         _id: 1,
+//         productName: 1,
+//         brandId: 1,
+//         modelNumber: 1,
+//         records: { $slice: -2000 },
+//       }).lean();
+//     } else {
+//       data = await ProductWarrantyModal.findById(_id).lean();
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       totalRecords: recordCount,
+//       message:
+//         recordCount > 2000
+//           ? `Showing last 2000 of ${recordCount} records`
+//           : "Showing full warranty data",
+//       data,
+//     });
 //   } catch (err) {
-//     console.error("Error:", err);
-//     res.status(400).send({ error: err.message });
+//     console.error("Error fetching warranty data:", err);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error",
+//       error: err.message,
+//     });
 //   }
 // };
+
 
 const getProductWarrantyByUniqueId = async (req, res) => {
   try {
@@ -1158,7 +1322,7 @@ const editActivationWarranty = async (req, res) => {
 
   // Ensure both uniqueId and updates are present
   if (!uniqueId || !updates) {
-    return res.status(400).json({ status:false,error: 'UniqueId and updates are required.' });
+    return res.status(400).json({ status: false, error: 'UniqueId and updates are required.' });
   }
 
   try {
@@ -1191,14 +1355,14 @@ const editActivationWarranty = async (req, res) => {
     }
 
     // Return success response with updated document
-    res.status(200).json({ status: true,msg: 'Record updated successfully.', data: updatedDoc });
+    res.status(200).json({ status: true, msg: 'Record updated successfully.', data: updatedDoc });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status:false, msg:"An error occurred while updating the record."  ,error: 'An error occurred while updating the record.' });
+    res.status(500).json({ status: false, msg: "An error occurred while updating the record.", error: 'An error occurred while updating the record.' });
   }
 };
 
-  const updateWarrantyStatus = async (req, res) => {
+const updateWarrantyStatus = async (req, res) => {
   try {
     const { uniqueId } = req.params;
     const { status, adminName } = req.body; // now adminName is string
@@ -1266,4 +1430,4 @@ const deleteProductWarranty = async (req, res) => {
 
 
 
-module.exports = { addProductWarranty,updateWarrantyStatus, activateWarranty,activateWarrantyWithImage, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
+module.exports = { addProductWarranty, updateWarrantyStatus, activateWarranty, activateWarrantyWithImage, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
