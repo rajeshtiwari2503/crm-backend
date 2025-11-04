@@ -800,7 +800,38 @@ const deleteJuly31Transactions = async () => {
   }
 };
 
+const updateTransactions = async () => {
+  try {
+    // Step 1: Find all unpaid wallet transactions (no service center filter)
+    const transactions = await ServicePaymentModel.find({
+      status: "UNPAID"
+    });
 
+    if (transactions.length === 0) {
+      console.log("✅ No unpaid wallet transactions found.");
+      return;
+    }
+
+    console.log(`🧾 Found ${transactions.length} unpaid wallet transactions to update.`);
+
+    // Step 2: Update all unpaid transactions to paid
+    const result = await ServicePaymentModel.updateMany(
+      { status: "UNPAID" },
+      {
+        $set: {
+          status: "PAID",
+          paidAt: new Date() // optional timestamp for payment
+        }
+      }
+    );
+
+    console.log(`💰 Updated ${result.modifiedCount} transactions to "paid".`);
+  } catch (error) {
+    console.error("❌ Error updating wallet transactions:", error);
+  }
+};
+
+// updateTransactions()
 
 // cron.schedule("7 15 20 8 *", async () => {
 //    console.log("⏰ Running 687b60524784729ee719776e...");
