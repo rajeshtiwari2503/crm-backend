@@ -496,95 +496,222 @@ const activateWarranty = async (req, res) => {
 
 };
 
-const activateWarrantyWithImage = async (req, res) => {
+// const activateWarrantyWithImage = async (req, res) => {
+//   try {
+//     const { name, contact, email, address, lat, long, pincode, district, state, password, uniqueId, } = req.body;
+//     const productId = req.body.productId
+//     // console.log("");
+
+//     // if (!name || !contact || !address || !uniqueId) {
+//     //   return res.status(400).json({ status: false, msg: 'Missing required fields' });
+//     // }
+
+//     // Check if the user already exists
+//     let user = await UserModel.findOne({ contact });
+//     if (!user) {
+//       // Hash the password and create a new user
+
+
+//       user = new UserModel({
+
+//         name,
+//         contact,
+//         email,
+//         address,
+//         password,
+//         lat, long, pincode
+//       });
+//       await user.save();
+//     }
+
+//     const warrantyImage = req.file ? req.file?.location : null;
+
+//     // Find the warranty record based on the unique ID
+//     // const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
+//     const warranty=await ProductWarrantyModal.findOne(
+//       { "records.uniqueId": uniqueId },
+//       { "records.$": 1 } // include only matching record, exclude qrCodes
+//     ).lean();
+//     if (!warranty) {
+//       return res.status(404).json({ status: false, msg: 'Warranty not found' });
+//     }
+// console.log("warranty",warranty);
+
+//     // Find the specific record with the matching uniqueId
+//     const record = warranty.records.find(record => record.uniqueId === uniqueId);
+//     if (!record) {
+//       return res.status(404).json({ status: false, msg: 'Warranty record not found' });
+//     }
+// console.log("record",record);
+//     // Check if the warranty has already been activated
+//     if (record.isActivated) {
+//       return res.status(400).json({ status: false, msg: 'This warranty has already been activated' });
+//     }
+//     lat, long, pincode,
+//       // Activate the warranty
+//       record.isActivated = true;
+//     record.userName = user.name;
+//     record.userId = user._id;
+//     record.email = email;
+//     record.contact = contact;
+//     record.address = address;
+//     record.lat = lat;
+//     record.long = long;
+//     record.district = district;
+//     record.state = state;
+//     record.pincode = pincode;
+//     record.termsCondtions = req.body.termsCondtions;
+//     record.status = "PENDING";
+//     record.activationDate = new Date();
+//     if (warrantyImage) {
+//       record.warrantyImage = warrantyImage; // e.g., local path or S3 URL
+//     }
+//     if (productId) {
+//       record.productName = req.body.productName;
+//       record.productId = productId;
+//       record.categoryName = req.body.categoryName;
+//       record.categoryId = req.body.categoryId;
+//       record.year = req.body.year;
+//     }
+//     // Save the updated warranty
+//     await warranty.save();
+
+//     res.status(200).json({
+//       status: true,
+//       msg: "Warranty activated successfully and will be approved after verification.",
+//       data: record, // Return only the activated record
+//     });
+//   } catch (error) {
+//     res.status(500).json({ status: false, msg: error.message });
+//   }
+
+
+
+// };
+
+ const activateWarrantyWithImage = async (req, res) => {
   try {
-    const { name, contact, email, address, lat, long, pincode, district, state, password, uniqueId, } = req.body;
-    const productId = req.body.productId
-    // console.log("");
+    const {
+      name,
+      contact,
+      email,
+      address,
+      lat,
+      long,
+      pincode,
+      district,
+      state,
+      password,
+      uniqueId,
+      termsCondtions,
+      productId,
+      productName,
+      categoryName,
+      categoryId,
+      year,
+    } = req.body;
 
-    // if (!name || !contact || !address || !uniqueId) {
-    //   return res.status(400).json({ status: false, msg: 'Missing required fields' });
-    // }
+    if (!uniqueId || !contact) {
+      return res.status(400).json({ status: false, msg: "uniqueId and contact are required" });
+    }
 
-    // Check if the user already exists
-    let user = await UserModel.findOne({ contact });
+    // 🔹 Step 1: Find or create user
+    let user = await UserModel.findOne({ contact }).lean();
     if (!user) {
-      // Hash the password and create a new user
-
-
-      user = new UserModel({
-
+      const newUser = new UserModel({
         name,
         contact,
         email,
         address,
         password,
-        lat, long, pincode
+        lat,
+        long,
+        pincode,
       });
-      await user.save();
+      user = await newUser.save();
     }
 
-    const warrantyImage = req.file ? req.file?.location : null;
+    const warrantyImage = req.file?.location || null;
 
-    // Find the warranty record based on the unique ID
-    const warranty = await ProductWarrantyModal.findOne({ 'records.uniqueId': uniqueId });
-    if (!warranty) {
-      return res.status(404).json({ status: false, msg: 'Warranty not found' });
+    // 🔹 Step 2: Check if warranty record exists and not activated
+    const existing = await ProductWarrantyModal.findOne(
+      { "records.uniqueId": uniqueId },
+      { "records.$": 1 }
+    ).lean();
+
+    if (!existing || !existing.records || !existing.records.length) {
+      return res.status(404).json({ status: false, msg: "Warranty record not found" });
     }
 
-    // Find the specific record with the matching uniqueId
-    const record = warranty.records.find(record => record.uniqueId === uniqueId);
-    if (!record) {
-      return res.status(404).json({ status: false, msg: 'Warranty record not found' });
-    }
-
-    // Check if the warranty has already been activated
+    const record = existing.records[0];
     if (record.isActivated) {
-      return res.status(400).json({ status: false, msg: 'This warranty has already been activated' });
+      return res.status(400).json({ status: false, msg: "This warranty has already been activated" });
     }
-    lat, long, pincode,
-      // Activate the warranty
-      record.isActivated = true;
-    record.userName = user.name;
-    record.userId = user._id;
-    record.email = email;
-    record.contact = contact;
-    record.address = address;
-    record.lat = lat;
-    record.long = long;
-    record.district = district;
-    record.state = state;
-    record.pincode = pincode;
-    record.termsCondtions = req.body.termsCondtions;
-    record.status = "PENDING";
-    record.activationDate = new Date();
-    if (warrantyImage) {
-      record.warrantyImage = warrantyImage; // e.g., local path or S3 URL
-    }
-    if (productId) {
-      record.productName = req.body.productName;
-      record.productId = productId;
-      record.categoryName = req.body.categoryName;
-      record.categoryId = req.body.categoryId;
-      record.year = req.body.year;
-    }
-    // Save the updated warranty
-    await warranty.save();
 
+    // 🔹 Step 3: Prepare update payload
+    const updateFields = {
+      "records.$.isActivated": true,
+      "records.$.userName": user.name,
+      "records.$.userId": user._id,
+      "records.$.email": email,
+      "records.$.contact": contact,
+      "records.$.address": address,
+      "records.$.lat": lat,
+      "records.$.long": long,
+      "records.$.district": district,
+      "records.$.state": state,
+      "records.$.pincode": pincode,
+      "records.$.termsCondtions": !!termsCondtions,
+      "records.$.status": "PENDING",
+      "records.$.activationDate": new Date(),
+    };
+
+    if (warrantyImage) updateFields["records.$.warrantyImage"] = warrantyImage;
+    if (productId) {
+      updateFields["records.$.productId"] = productId;
+      updateFields["records.$.productName"] = productName;
+      updateFields["records.$.categoryId"] = categoryId;
+      updateFields["records.$.categoryName"] = categoryName;
+      updateFields["records.$.year"] = year;
+    }
+
+    // 🔹 Step 4: Update the record atomically (fast, safe)
+    const updateResult = await ProductWarrantyModal.updateOne(
+      { "records.uniqueId": uniqueId },
+      { $set: updateFields }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      return res.status(400).json({ status: false, msg: "No record updated" });
+    }
+
+    // 🔹 Step 5: Fetch updated record in a second query
+    const updatedDoc = await ProductWarrantyModal.findOne(
+      { "records.uniqueId": uniqueId },
+      { "records.$": 1 }
+    ).lean();
+
+    const updatedRecord = updatedDoc?.records?.[0];
+    if (!updatedRecord) {
+      return res.status(500).json({ status: false, msg: "Failed to retrieve updated record" });
+    }
+
+    if (updatedRecord.qrCodes) delete updatedRecord.qrCodes; // cleanup heavy field if needed
+
+    // ✅ Done
     res.status(200).json({
       status: true,
       msg: "Warranty activated successfully and will be approved after verification.",
-      data: record, // Return only the activated record
+      data: updatedRecord,
     });
   } catch (error) {
+    console.error("Error activating warranty:", error);
     res.status(500).json({ status: false, msg: error.message });
   }
-
-
-
 };
 
 
+ 
 const getAllProductWarranty = async (req, res) => {
   try {
     let data = await ProductWarrantyModal.find({}).sort({ _id: -1 });
@@ -1235,8 +1362,8 @@ const getActivationWarrantyById = async (req, res) => {
 //   }
 // }
 
- 
- const getProductWarrantyById = async (req, res) => {
+
+const getProductWarrantyById = async (req, res) => {
   try {
     const _id = new mongoose.Types.ObjectId(req.params.id);
     const page = parseInt(req.query.page) || 1;
