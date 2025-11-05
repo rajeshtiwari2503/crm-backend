@@ -589,7 +589,7 @@ const activateWarranty = async (req, res) => {
 
 // };
 
- const activateWarrantyWithImage = async (req, res) => {
+const activateWarrantyWithImage = async (req, res) => {
   try {
     const {
       name,
@@ -711,7 +711,7 @@ const activateWarranty = async (req, res) => {
 };
 
 
- 
+
 const getAllProductWarranty = async (req, res) => {
   try {
     let data = await ProductWarrantyModal.find({}).sort({ _id: -1 });
@@ -1400,6 +1400,8 @@ const getProductWarrantyById = async (req, res) => {
           warrantyInDays: 1,
           year: 1,
           isDeleted: 1,
+          createdAt: 1,
+          updatedAt: 1,
           id: 1,
           // Only slice records here
           records: { $slice: ["$records", skip, limit] },
