@@ -76,7 +76,7 @@ async function sendBlessTemplateSms(to, templateId, smsVars) {
   // console.log('\n📨 Final message being sent:\n', filledText, '\n');
 
   const params = {
-    user: 'Lybley@gmail.com',
+    user: 'Lybley@gmail.comNOOO',
     password: 'Lay@5875',
     senderid: 'LYBLEY',
     number: mobile,
@@ -97,7 +97,7 @@ async function sendBlessTemplateSms(to, templateId, smsVars) {
 
   try {
     const response = await axios.get(url);
-    // console.log('✅ SMS sent:', response.data);
+    console.log('✅ SMS sent:', response.data);
     return response.data;
   } catch (error) {
     console.error('❌ Error sending SMS:', error.message);
