@@ -447,6 +447,18 @@ const editServiceCenter = async (req, res) => {
         res.status(500).send(err);
     }
 }
+
+const editServiceCenterStatusUpdate = async (req, res) => {
+    try {
+        let _id = req.params.id;
+        let body = req.body;
+        let data = await ServiceModel.findByIdAndUpdate(_id, body);
+        
+        res.json({ status: true, msg: "ServiceCenter Updated" });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+}
 const deleteServiceCenter = async (req, res) => {
     try {
         let _id = req.params.id;
@@ -926,7 +938,7 @@ const forgetPassword = async (req, res) => {
 
 module.exports = {
     getProfileById, getUserServerById, adminLoginController, dashboardLoginController, brandRegistration, serviceRegistration, empolyeeRegistration, dealerRegistration, adminRegistration, userRegistration,
-    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand,getAllServiceCenterAction, getAllServiceCenter, getServiceCenterById, editServiceCenter, deleteServiceCenter,
+    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand,getAllServiceCenterAction, getAllServiceCenter, getServiceCenterById,editServiceCenterStatusUpdate, editServiceCenter, deleteServiceCenter,
     getAllEmployee, getEmployeeById, editEmployee, deleteEmployee, getAllUser, getUserById, editUser, deleteUser,
     brandEmpolyeeRegistration, getAllBrandEmployee, getBrandEmployeeById, editBrandEmployee, deleteBrandEmployee,
     getAllDealer, getDealerById, editDealer, deleteDealer, otpVerification, otpVerificationSending, mobileEmailVerification, forgetPassword, otpSending
