@@ -7,7 +7,8 @@ const {getProfileById,adminLoginController,dashboardLoginController,brandRegistr
   getAllBrand,getBrandById,getUserServerById,editBrand,updateBrandTerms,deleteBrand,getAllServiceCenterAction,getAllServiceCenter,getServiceCenterById,editServiceCenter,deleteServiceCenter,
 getAllEmployee,getEmployeeById,editEmployee,deleteEmployee ,getAllDealer,getDealerById,editDealer,deleteDealer,getAllUser,
 getUserById,editUser,deleteUser,otpVerification,otpVerificationSending,forgetPassword,mobileEmailVerification,
-otpSending}=require("../controllers/registrationController")
+otpSending,
+editServiceCenterStatusUpdate}=require("../controllers/registrationController")
 const RegistrationModel=require("../models/registration");
 const {BrandRegistrationModel}=require("../models/registration");
 const {ServiceModel}=require("../models/registration");
@@ -45,6 +46,7 @@ router.get("/getUserServerById/:id",getUserServerById )
 router.get("/getAllService",getAllServiceCenter )
 router.get("/getAllServiceCenterAction",getAllServiceCenterAction )
 router.get("/getServiceBy/:id",getServiceCenterById )
+router.patch("/editServiceCenterStatusUpdate/:id",editServiceCenterStatusUpdate )
 router.patch("/editService/:id",editServiceCenter )
 router.delete("/deleteService/:id",deleteServiceCenter )
 
