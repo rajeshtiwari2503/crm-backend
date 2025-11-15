@@ -1172,6 +1172,61 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
 
 
 
+//  router.get("/getStatewiseBrandData", async (req, res) => {
+//   try {
+//     // Step 1: Fetch active brands
+//     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+//       .select("_id brandName")
+//       .lean();
+
+//     if (!activeBrands.length) return res.status(404).json({ message: "No active brands found" });
+
+//     const activeBrandIds = activeBrands.map(b => String(b._id));
+
+//     // Step 2: Fetch complaints matching active brandIds
+//     const complaints = await Complaints.find({ brandId: { $in: activeBrandIds } }).lean();
+
+//     if (!complaints.length) return res.status(404).json({ message: "No complaints found for active brands." });
+
+//     // Step 3: Build brandId -> brandName map
+//     const brandMap = {};
+//     activeBrands.forEach(b => { brandMap[String(b._id)] = b.brandName; });
+
+//     // Step 4: Add brandName to complaints
+//     const complaintsWithBrandName = complaints.map(c => ({
+//       ...c,
+//       brandName: brandMap[c.brandId] || null
+//     }));
+
+//     // Step 5: Group data (simple JS group)
+//     const groupedData = complaintsWithBrandName.reduce((acc, curr) => {
+//       const key = `${curr.brandName}|${curr.state}|${curr.district}|${curr.productName}|${curr.detailedDescription}|${curr.createdAt.toISOString().slice(0,10)}`;
+//       if (!acc[key]) {
+//         acc[key] = {
+//           brandName: curr.brandName,
+//           state: curr.state,
+//           district: curr.district,
+//           date: curr.createdAt.toISOString().slice(0,10),
+//           productName: curr.productName,
+//           detailedDescription: curr.detailedDescription,
+//           count: 0
+//         };
+//       }
+//       acc[key].count += 1;
+//       return acc;
+//     }, {});
+
+//     res.status(200).json({ chartData: Object.values(groupedData) });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
+
+
+ 
+ 
  router.get("/getStatewiseBrandData", async (req, res) => {
   try {
     // Step 1: Fetch active brands
@@ -1179,50 +1234,64 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       .select("_id brandName")
       .lean();
 
-    if (!activeBrands.length) return res.status(404).json({ message: "No active brands found" });
+    if (!activeBrands.length)
+      return res.status(404).json({ message: "No active brands found" });
 
     const activeBrandIds = activeBrands.map(b => String(b._id));
-
-    // Step 2: Fetch complaints matching active brandIds
-    const complaints = await Complaints.find({ brandId: { $in: activeBrandIds } }).lean();
-
-    if (!complaints.length) return res.status(404).json({ message: "No complaints found for active brands." });
-
-    // Step 3: Build brandId -> brandName map
     const brandMap = {};
     activeBrands.forEach(b => { brandMap[String(b._id)] = b.brandName; });
 
-    // Step 4: Add brandName to complaints
-    const complaintsWithBrandName = complaints.map(c => ({
-      ...c,
-      brandName: brandMap[c.brandId] || null
+    // Step 2: Aggregation in MongoDB
+    const chartData = await Complaints.aggregate([
+      { $match: { brandId: { $in: activeBrandIds } } },
+
+      {
+        $group: {
+          _id: {
+            brandId: "$brandId",
+            state: "$state",
+            district: "$district",
+            productName: "$productName",
+            detailedDescription: "$detailedDescription",
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+
+      {
+        $project: {
+          _id: 0,
+          brandName: { $toString: "$_id.brandId" }, // temporary, we’ll map later
+          state: "$_id.state",
+          district: "$_id.district",
+          productName: "$_id.productName",
+          detailedDescription: "$_id.detailedDescription",
+          date: "$_id.date",
+          count: 1
+        }
+      },
+
+      { $sort: { date: -1 } }
+    ]);
+
+    // Step 3: Map brandId to brandName
+    const finalData = chartData.map(d => ({
+      ...d,
+      brandName: brandMap[d.brandName] || d.brandName
     }));
 
-    // Step 5: Group data (simple JS group)
-    const groupedData = complaintsWithBrandName.reduce((acc, curr) => {
-      const key = `${curr.brandName}|${curr.state}|${curr.district}|${curr.productName}|${curr.detailedDescription}|${curr.createdAt.toISOString().slice(0,10)}`;
-      if (!acc[key]) {
-        acc[key] = {
-          brandName: curr.brandName,
-          state: curr.state,
-          district: curr.district,
-          date: curr.createdAt.toISOString().slice(0,10),
-          productName: curr.productName,
-          detailedDescription: curr.detailedDescription,
-          count: 0
-        };
-      }
-      acc[key].count += 1;
-      return acc;
-    }, {});
-
-    res.status(200).json({ chartData: Object.values(groupedData) });
+    res.json({ chartData: finalData });
 
   } catch (err) {
-    console.error(err);
+    console.error("🔥 Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
+
+
 
 
 
