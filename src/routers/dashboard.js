@@ -910,32 +910,32 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
 
 
 
-router.get('/getStatewisePendingComplaints', async (req, res) => {
-  try {
-    // Aggregation pipeline to get count of pending complaints by state
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
-    const activeBrandIds = activeBrands.map(b => b._id.toString());
+// router.get('/getStatewisePendingComplaints', async (req, res) => {
+//   try {
+//     // Aggregation pipeline to get count of pending complaints by state
+//     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id").lean();
+//     const activeBrandIds = activeBrands.map(b => b._id.toString());
 
 
 
-    // Step 2: Aggregate complaints with desired statuses and active brands
-    const complaints = await ComplaintModal.aggregate([
-      {
-        $match: {
-          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
-          brandId: { $in: activeBrandIds }
-        }
-      },  // Filter to include only pending complaints
-      { $group: { _id: "$state", count: { $sum: 1 } } }, // Group by state and count
-      { $sort: { count: -1 } }
-    ]);
+//     // Step 2: Aggregate complaints with desired statuses and active brands
+//     const complaints = await ComplaintModal.aggregate([
+//       {
+//         $match: {
+//           status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+//           brandId: { $in: activeBrandIds }
+//         }
+//       },  // Filter to include only pending complaints
+//       { $group: { _id: "$state", count: { $sum: 1 } } }, // Group by state and count
+//       { $sort: { count: -1 } }
+//     ]);
 
-    res.status(200).json(complaints);  // Send response with aggregated data
-  } catch (error) {
-    console.error('Error fetching state-wide pending complaints:', error);
-    res.status(500).json({ error: 'Error fetching state-wide pending complaints' });
-  }
-});
+//     res.status(200).json(complaints);  // Send response with aggregated data
+//   } catch (error) {
+//     console.error('Error fetching state-wide pending complaints:', error);
+//     res.status(500).json({ error: 'Error fetching state-wide pending complaints' });
+//   }
+// });
 
 
 
@@ -1088,6 +1088,90 @@ router.get('/getStatewisePendingComplaints', async (req, res) => {
 // });
 
  
+  
+
+ router.get('/getStatewisePendingComplaints', async (req, res) => {
+  try {
+    // 1️⃣ Fetch active brands
+    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+      .select("_id brandName")
+      .lean();
+
+    const activeBrandIds = activeBrands.map(b => b._id);
+    if (!activeBrandIds.length) return res.status(200).json({});
+
+    // 2️⃣ Fetch complaints for active brands with relevant statuses
+    const complaints = await ComplaintModal.find({
+      status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+      brandId: { $in: activeBrandIds.map(String) } // assuming brandId is stored as string
+    }).lean();
+
+    if (!complaints.length) return res.status(200).json({});
+
+    // 3️⃣ Map brandId to brandName
+    const brandMap = {};
+    activeBrands.forEach(b => { brandMap[String(b._id)] = b.brandName; });
+
+    // 4️⃣ Format complaints by state → brand → district
+    const formatted = {};
+    const stateTotals = {};
+
+    complaints.forEach(c => {
+      const state = c.state || "Unknown";
+      const brand = brandMap[c.brandId] || "Unknown";
+      const district = c.district || "Unknown";
+      const status = c.status;
+      const complaintId = c.complaintId; // Added complaintId
+      const createdAt = c.createdAt;
+
+      // Calculate hours since creation
+      const hoursOpen = Math.floor((new Date() - new Date(createdAt)) / (1000 * 60 * 60));
+
+      if (!formatted[state]) formatted[state] = {};
+      if (!formatted[state][brand]) formatted[state][brand] = {};
+      if (!formatted[state][brand][district]) formatted[state][brand][district] = { count: 0, complaints: [] };
+
+      formatted[state][brand][district].count += 1;
+      formatted[state][brand][district].complaints.push({
+        complaintId,  // include complaintId
+        status,
+        hoursOpen,
+        createdAt,
+        color: hoursOpen < 48 ? "green" : "red" // Assign color based on hoursOpen
+      });
+
+      stateTotals[state] = (stateTotals[state] || 0) + 1;
+    });
+
+    // 5️⃣ Sort states by total complaints descending
+    const sortedStates = Object.entries(stateTotals)
+      .sort(([, aCount], [, bCount]) => bCount - aCount)
+      .map(([stateName]) => stateName);
+
+    const sortedFormatted = {};
+    sortedStates.forEach(state => {
+      sortedFormatted[state] = formatted[state];
+    });
+
+    // 6️⃣ Send response
+    res.status(200).json(sortedFormatted);
+
+  } catch (error) {
+    console.error("🔥 Error:", error);
+    res.status(500).json({ error: "Error fetching pending complaints" });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
  router.get("/getStatewiseBrandData", async (req, res) => {
   try {
     // Step 1: Fetch active brands
