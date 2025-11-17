@@ -46,6 +46,7 @@ router.get("/dashboardDetails", async (req, res) => {
       complaintCompleteCount,
       complaintCancelCount,
       complaintPartPendingCount,
+      complaintPartDeliveredCount,
       complaintCustomerSidePendingCount,
       complaintFinalVerificationCount,
       complaints0To1Days,
@@ -78,21 +79,22 @@ router.get("/dashboardDetails", async (req, res) => {
       Complaints.countDocuments({ status: 'COMPLETED', brandId: { $in: activeBrandIds } }),
       Complaints.countDocuments({ status: 'CANCELED', brandId: { $in: activeBrandIds } }),
       Complaints.countDocuments({ status: 'PART PENDING', brandId: { $in: activeBrandIds } }),
+      Complaints.countDocuments({ status: 'PARTS DELIVERED', brandId: { $in: activeBrandIds } }),
       Complaints.countDocuments({ status: 'CUSTOMER SIDE PENDING', brandId: { $in: activeBrandIds } }),
       Complaints.countDocuments({ status: 'FINAL VERIFICATION', brandId: { $in: activeBrandIds } }),
 
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' },{ status: 'PARTS DELIVERED' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $gte: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }  ,{ status: 'PARTS DELIVERED' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo },
         brandId: { $in: activeBrandIds }
       }),
       Complaints.countDocuments({
-        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
+        $or: [{ status: 'PENDING' }, { status: 'IN PROGRESS' }, { status: 'ASSIGN' } ,{ status: 'PARTS DELIVERED' }, { status: 'PART PENDING' }, { status: 'CUSTOMER SIDE PENDING' }, { status: "SCHEDULE UPCOMMING" }],
         createdAt: { $lt: fiveDaysComp },
         brandId: { $in: activeBrandIds }
       }),
@@ -154,6 +156,7 @@ router.get("/dashboardDetails", async (req, res) => {
         pending: complaintPendingCount,
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
+         partDelivered: complaintPartDeliveredCount,
         partPending: complaintPartPendingCount,
         customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
@@ -260,6 +263,7 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
       pending: { status: "PENDING" },
       complete: { status: "COMPLETED" },
       cancel: { status: "CANCELED" },
+      partDelivered: { status: "PARTS DELIVERED" },
       partPending: { status: "PART PENDING" },
       customerSidePending: { status: "CUSTOMER SIDE PENDING" },
       finalVerification: { status: "FINAL VERIFICATION" },
@@ -272,15 +276,15 @@ router.post("/dashboardDetailsByEmployeeStateZone", async (req, res) => {
         ]
       },
       zeroToOneDays: {
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: new Date(oneDayAgo) },
       },
       twoToFiveDays: {
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PARTS DELIVERED","PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: new Date(fiveDaysAgo), $lt: new Date(oneDayAgo) },
       },
       moreThanFiveDays: {
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $lt: new Date(fiveDaysAgo) },
       },
       completedToday: {
@@ -426,6 +430,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       complaintPendingCount,
       complaintCompleteCount,
       complaintCancelCount,
+      complaintPartDeliveredCount,
       complaintPartPendingCount,
       complaintCustomerSidePendingCount,
       complaints0To1Days,
@@ -443,6 +448,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       lastMonthPendingCount,
       lastMonthCompleteCount,
       lastMonthCancelCount,
+      lastMonthPartDeliveredCount,
       lastMonthPartPendingCount,
       allWeekComplaintCount,
 
@@ -451,6 +457,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       lastWeekPendingCount,
       lastWeekCompleteCount,
       lastWeekCancelCount,
+      lastWeekPartDeliveredCount,
       lastWeekPartPendingCount,
       allDailyComplaintCount,
       dailyNewCount,
@@ -458,6 +465,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       dailyPendingCount,
       dailyCompleteCount,
       dailyCancelCount,
+       dailyPartDeliveredCount,
       dailyPartPendingCount,
       complaintFinalVerificationCount,
 
@@ -469,14 +477,15 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'PENDING' }),
       Complaints.countDocuments({ ...query, status: 'COMPLETED' }),
       Complaints.countDocuments({ ...query, status: 'CANCELED' }),
+      Complaints.countDocuments({ ...query, status: 'PARTS DELIVERED' }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING' }),
       Complaints.countDocuments({ ...query, status: "CUSTOMER SIDE PENDING" }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
       // Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $lt: fiveDaysAgo } }),
-      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $gte: oneDayAgo } }),
-      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
-      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $lt: fiveDaysAgo } }),
+      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS", 'PARTS DELIVERED',"PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $gte: oneDayAgo } }),
+      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS",'PARTS DELIVERED', "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
+      Complaints.countDocuments({ ...query, status: { $in: ["PENDING", "IN PROGRESS", 'PARTS DELIVERED',"PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] }, createdAt: { $lt: fiveDaysAgo } }),
 
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: oneDayAgo } }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
@@ -501,6 +510,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
       Complaints.countDocuments({ ...query, status: 'COMPLETED', createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
       Complaints.countDocuments({ ...query, status: 'CANCELED', createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
+      Complaints.countDocuments({ ...query, status: 'PARTS DELIVERED', createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: startOfLastMonth, $lt: startOfMonth } }),
 
       // Last Week counts
@@ -510,6 +520,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: startOfLastWeek, $lt: endOfLastWeek } }),
       Complaints.countDocuments({ ...query, status: 'COMPLETED', createdAt: { $gte: startOfLastWeek, $lt: endOfLastWeek } }),
       Complaints.countDocuments({ ...query, status: 'CANCELED', createdAt: { $gte: startOfLastWeek, $lt: endOfLastWeek } }),
+      Complaints.countDocuments({ ...query, status: 'PARTS DELIVERED', createdAt: { $gte: startOfLastWeek, $lt: endOfLastWeek } }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: startOfLastWeek, $lt: endOfLastWeek } }),
 
 
@@ -520,6 +531,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'PENDING', createdAt: { $gte: startOfDay } }),
       Complaints.countDocuments({ ...query, status: 'COMPLETED', createdAt: { $gte: startOfDay } }),
       Complaints.countDocuments({ ...query, status: 'CANCELED', createdAt: { $gte: startOfDay } }),
+      Complaints.countDocuments({ ...query, status: 'PARTS DELIVERED', createdAt: { $gte: startOfDay } }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING', createdAt: { $gte: startOfDay } }),
       Complaints.countDocuments({ ...query, status: 'FINAL VERIFICATION' }),
 
@@ -537,6 +549,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
         pending: complaintPendingCount,
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
+        partDelivered: complaintPartDeliveredCount,
         partPending: complaintPartPendingCount,
         customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
@@ -556,6 +569,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
           pending: lastMonthPendingCount,
           complete: lastMonthCompleteCount,
           cancel: lastMonthCancelCount,
+          partDelivered: lastMonthPartDeliveredCount,
           partPending: lastMonthPartPendingCount,
           zeroToOneDays: complaints0To1Days,
           twoToFiveDays: complaints2To5Days,
@@ -568,6 +582,8 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
           pending: lastWeekPendingCount,
           complete: lastWeekCompleteCount,
           cancel: lastWeekCancelCount,
+          partDelivered: lastWeekPartDeliveredCount,
+
           partPending: lastWeekPartPendingCount
         },
         daily: {
@@ -577,6 +593,7 @@ router.get("/dashboardDetailsBySeviceCenterId/:id", async (req, res) => {
           pending: dailyPendingCount,
           complete: dailyCompleteCount,
           cancel: dailyCancelCount,
+          partDelivered: dailyPartDeliveredCount,
           partPending: dailyPartPendingCount,
         }
       },
@@ -707,6 +724,7 @@ router.get("/dashboardDetailsByUserId/:id", async (req, res) => {
       complaintPendingCount,
       complaintCompleteCount,
       complaintCancelCount,
+      complaintPartDeliveredCount,
       complaintPartPendingCount,
       complaints0To1Days,
       complaints2To5Days,
@@ -718,6 +736,7 @@ router.get("/dashboardDetailsByUserId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: 'PENDING' }),
       Complaints.countDocuments({ ...query, status: 'COMPLETED' }),
       Complaints.countDocuments({ ...query, status: 'CANCELED' }),
+      Complaints.countDocuments({ ...query, status: 'PARTS DELIVERED' }),
       Complaints.countDocuments({ ...query, status: 'PART PENDING' }),
       Complaints.countDocuments({ ...query, createdAt: { $gte: oneDayAgo } }),
       Complaints.countDocuments({ ...query, createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo } }),
@@ -732,6 +751,7 @@ router.get("/dashboardDetailsByUserId/:id", async (req, res) => {
         pending: complaintPendingCount,
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
+        partDelivered: complaintPartDeliveredCount,
         partPending: complaintPartPendingCount,
         zeroToOneDays: complaints0To1Days,
         twoToFiveDays: complaints2To5Days,
@@ -793,6 +813,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       complaintPendingCount,
       complaintCompleteCount,
       complaintCancelCount,
+      complaintPartDeliveredCount,
       complaintPartPendingCount,
       complaintCustomerSidePendingCount,
       complaintFinalVerificationCount,
@@ -813,6 +834,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       Complaints.countDocuments({ ...query, status: "PENDING" }),
       Complaints.countDocuments({ ...query, status: "COMPLETED" }),
       Complaints.countDocuments({ ...query, status: "CANCELED" }),
+      Complaints.countDocuments({ ...query, status: "PARTS DELIVERED" }),
       Complaints.countDocuments({ ...query, status: "PART PENDING" }),
       Complaints.countDocuments({ ...query, status: "CUSTOMER SIDE PENDING" }),
       Complaints.countDocuments({ ...query, status: "FINAL VERIFICATION" }),
@@ -820,21 +842,21 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
       // Complaints in 0-1 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: oneDayAgo }
       }),
 
       // Complaints in 2-5 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $gte: fiveDaysAgo, $lt: oneDayAgo }
       }),
 
       // Complaints older than 5 days
       Complaints.countDocuments({
         ...query,
-        status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+        status: { $in: ["PENDING", "IN PROGRESS", "PARTS DELIVERED","PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
         createdAt: { $lt: fiveDaysAgoEnd }
       }),
       Complaints.countDocuments({ ...query, $or: [{ status: 'FINAL VERIFICATION' }, { status: 'COMPLETED' }], updatedAt: { $gte: todayStart } }),
@@ -885,6 +907,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
         complete: complaintCompleteCount,
         cancel: complaintCancelCount,
         partPending: complaintPartPendingCount,
+        partDelivered: complaintPartDeliveredCount,
         customerSidePending: complaintCustomerSidePendingCount,
         finalVerification: complaintFinalVerificationCount,
         zeroToOneDays: complaints0To1Days,
@@ -1102,7 +1125,7 @@ router.get("/dashboardDetailsByBrandId/:id", async (req, res) => {
 
     // 2️⃣ Fetch complaints for active brands with relevant statuses
     const complaints = await ComplaintModal.find({
-      status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+      status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
       brandId: { $in: activeBrandIds.map(String) } // assuming brandId is stored as string
     }).lean();
 
@@ -1312,7 +1335,7 @@ router.get('/getDistrictWisePendingComplaints', async (req, res) => {
     const complaints = await ComplaintModal.aggregate([
       {
         $match: {
-          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+          status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
           brandId: { $in: activeBrandIds }
         }
       },
@@ -1353,7 +1376,7 @@ router.get('/getServiceCenterWisePendingComplaints', async (req, res) => {
     const complaints = await ComplaintModal.aggregate([
       {
         $match: {
-          status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
+          status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING", "ASSIGN", "CUSTOMER SIDE PENDING"] },
           assignServiceCenter: { $ne: null },
           brandId: { $in: activeBrandIds }
         }
@@ -1608,7 +1631,7 @@ router.get('/getAllUnAssignComplaint', async (req, res) => {
         { assignServiceCenterId: null },
         { assignServiceCenterId: { $exists: false } }
       ],
-      status: { $in: ["PENDING", "IN PROGRESS", "PART PENDING"] },// Filtering based on status
+      status: { $in: ["PENDING", "IN PROGRESS","PARTS DELIVERED", "PART PENDING"] },// Filtering based on status
       brandId: { $in: activeBrandIds }
     });
 
@@ -1698,6 +1721,15 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
               ]
             }
           },
+            PART_DELIVERED: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PARTS DELIVERED"] },
+                1,
+                0
+              ]
+            }
+          },
           PART_PENDING: {
             $sum: {
               $cond: [
@@ -1757,7 +1789,7 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
       {
         $addFields: {
           ACTIVE_COUNT: {
-            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN", "$CUSTOMER_SIDE_PENDING"]
+            $add: ["$PENDING", "$INPROGRESS","$PART_DELIVERED", "$PART_PENDING", "$ASSIGN", "$CUSTOMER_SIDE_PENDING"]
           }
         }
       },
@@ -1766,6 +1798,7 @@ router.get('/getComplaintCountByCityState', async (req, res) => {
           ACTIVE_COUNT: -1,
           PENDING: -1,
           INPROGRESS: -1,
+          PART_DELIVERED: -1,
           PART_PENDING: -1,
           CUSTOMER_SIDE_PENDING: -1,
           ASSIGN: -1
@@ -1800,6 +1833,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           TOTAL: { $sum: 1 },
           PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PENDING"] }, 1, 0] } },
           INPROGRESS: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "IN PROGRESS"] }, 1, 0] } },
+          PART_DELIVERED: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PARTS DELIVERED"] }, 1, 0] } },
           PART_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "PART PENDING"] }, 1, 0] } },
           CUSTOMER_SIDE_PENDING: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "CUSTOMER SIDE PENDING"] }, 1, 0] } },
           ASSIGN: { $sum: { $cond: [{ $eq: [{ $toUpper: "$status" }, "ASSIGN"] }, 1, 0] } },
@@ -1812,7 +1846,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
       {
         $addFields: {
           ACTIVE_COUNT: {
-            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN", "$CUSTOMER_SIDE_PENDING"]
+            $add: ["$PENDING", "$INPROGRESS","$PART_DELIVERED", "$PART_PENDING", "$ASSIGN", "$CUSTOMER_SIDE_PENDING"]
           }
         }
       },
@@ -1822,6 +1856,7 @@ router.get("/getComplaintCountByServiceCenter", async (req, res) => {
           PENDING: -1,
           INPROGRESS: -1,
           PART_PENDING: -1,
+          PART_DELIVERED: -1,
           CUSTOMER_SIDE_PENDING: -1,
           ASSIGN: -1
         } // Sort by PENDING complaints in descending order
@@ -1908,7 +1943,16 @@ router.get('/getComplaintCountByBrand', async (req, res) => {
               ]
             }
           },
-          PART_PENDING: {
+          PART_DELIVERED: {
+            $sum: {
+              $cond: [
+                { $eq: [{ $toUpper: "$status" }, "PARTS DELIVERED"] },
+                1,
+                0
+              ]
+            }
+          },
+           PART_PENDING: {
             $sum: {
               $cond: [
                 { $eq: [{ $toUpper: "$status" }, "PART PENDING"] },
@@ -1967,7 +2011,7 @@ router.get('/getComplaintCountByBrand', async (req, res) => {
       {
         $addFields: {
           ACTIVE_COUNT: {
-            $add: ["$PENDING", "$INPROGRESS", "$PART_PENDING", "$ASSIGN"]
+            $add: ["$PENDING", "$INPROGRESS","$PART_DELIVERED","$CUSTOMER_SIDE_PENDING" ,"$PART_PENDING", "$ASSIGN"]
           }
         }
       },

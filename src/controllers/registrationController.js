@@ -91,14 +91,14 @@ const adminLoginController = async (req, res) => {
         };
 
         // Check each model sequentially
-        if (await checkModel(AdminModel, "ADMIN")) return res.status(200).json({ status: true, msg: "ADMIN login successful", user, role });
-        if (await checkModel(BrandRegistrationModel, "BRAND")) return res.status(200).json({ status: true, msg: "BRAND login successful", user, role });
-        if (await checkModel(EmployeeModel, "EMPLOYEE")) return res.status(200).json({ status: true, msg: "EMPLOYEE login successful", user, role });
-        if (await checkModel(BrandEmployeeModel, "BRAND EMPLOYEE")) return res.status(200).json({ status: true, msg: "BRAND EMPLOYEE login successful", user, role });
+        if (await checkModel(AdminModel, "ADMIN")) return res.status(200).json({ status: true, msg: "ADMIN login successfully !", user, role });
+        if (await checkModel(BrandRegistrationModel, "BRAND")) return res.status(200).json({ status: true, msg: "BRAND login successfully !", user, role });
+        if (await checkModel(EmployeeModel, "EMPLOYEE")) return res.status(200).json({ status: true, msg: "EMPLOYEE login successfully !", user, role });
+        if (await checkModel(BrandEmployeeModel, "BRAND EMPLOYEE")) return res.status(200).json({ status: true, msg: "BRAND EMPLOYEE login successfully !", user, role });
         if (await checkModel(ServiceModel, "SERVICE")) return res.status(200).json({ status: true, msg: "SERVICE login successful", user, role });
-        if (await checkModel(TechnicianModal, "TECHNICIAN")) return res.status(200).json({ status: true, msg: "TECHNICIAN login successful", user, role });
+        if (await checkModel(TechnicianModal, "TECHNICIAN")) return res.status(200).json({ status: true, msg: "TECHNICIAN login successfully !", user, role });
         if (await checkModel(UserModel, "USER")) return res.status(200).json({ status: true, msg: "USER login successful", user, role });
-        if (await checkModel(DealerModel, "DEALER")) return res.status(200).json({ status: true, msg: "DEALER login successful", user, role });
+        if (await checkModel(DealerModel, "DEALER")) return res.status(200).json({ status: true, msg: "DEALER login successfully !", user, role });
 
         // If no user is found
         return res.status(401).json({ status: false, msg: "Incorrect username or password" });
