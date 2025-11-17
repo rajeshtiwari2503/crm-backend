@@ -1423,6 +1423,34 @@ const getComplaintsByFinalVerification = async (req, res) => {
       res.status(400).send(err);
    }
 };
+
+
+const getComplaintsByPartDelivered = async (req, res) => {
+   try {
+      // let data = await ComplaintModal.find({ status: "PART PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
+
+      const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" })
+         .select("_id")
+         .lean();
+      const activeBrandIds = activeBrands.map(b => b._id.toString()); // toString() for safe comparison
+
+      // Step 2: Fetch all complaints
+      const complaints = await ComplaintModal.find({ status: "PARTS DELIVERED" }).sort({ _id: -1 });
+
+      // Step 3: Filter complaints with active brandId
+      const filteredComplaints = complaints.filter(c =>
+         activeBrandIds.includes(c.brandId?.toString())
+      );
+      let data = filteredComplaints;
+      if (data.length === 0) {
+         return res.status(404).send({ status: false, msg: "No pending complaints found." });
+      }
+      res.send(data);
+   } catch (err) {
+      res.status(400).send(err);
+   }
+};
+
 const getComplaintsByPartPending = async (req, res) => {
    try {
       // let data = await ComplaintModal.find({ status: "PART PENDING" }).sort({ _id: -1 }); // Find all complaints with status "PENDING"
@@ -2657,6 +2685,6 @@ const updateComplaint = async (req, res) => {
 
 module.exports = {
    addComplaint, createComplaintWithVideo, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
-   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
+   , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending,getComplaintsByPartDelivered, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updateMultiImageImage, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };
