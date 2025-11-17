@@ -1549,75 +1549,221 @@ router.get('/getNoServiceableAreaComplaints', async (req, res) => {
 //   }
 // });
 
- 
-router.get('/getComplaintInsights', async (req, res) => {
+
+ router.get("/getComplaintInsights", async (req, res) => {
   try {
-    // 1️⃣ Fetch all active brands
-    const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id brandName").lean();
-    const brandMap = {};
-    activeBrands.forEach(b => {
-      brandMap[b._id.toString()] = b.brandName;
-    });
+    // 1️⃣ Get Active Brands
+    const activeBrands = await BrandRegistrationModel.find(
+      { status: "ACTIVE" },
+      { _id: 1 }
+    );
 
-    const activeBrandIds = Object.keys(brandMap);
+    const activeBrandIds = activeBrands.map((b) => b._id.toString());
 
-    // 2️⃣ Fetch all complaints for active brands
-    const complaints = await Complaints.find({ brandId: { $in: activeBrandIds } }).lean();
+    if (!activeBrandIds.length) {
+      return res.status(200).json({
+        complaintsByBrand: [],
+        complaintsByLocationAndProduct: [],
+        commonFaults: [],
+        pendingComplaintsByBrand: [],
+        complaintsByStateAndDistrict: [],
+      });
+    }
 
-    // 3️⃣ Complaints by Brand
-    const complaintsByBrandMap = {};
-    complaints.forEach(c => {
-      const brandName = brandMap[c.brandId];
-      if (!brandName) return;
-      complaintsByBrandMap[brandName] = (complaintsByBrandMap[brandName] || 0) + 1;
-    });
-    const complaintsByBrand = Object.entries(complaintsByBrandMap).map(([brand, count]) => ({ _id: brand, count }));
+    // 2️⃣ Run All Aggregations in Parallel
+    const [
+      complaintsByBrand,
+      complaintsByLocationAndProduct,
+      commonFaults,
+      pendingComplaintsByBrand,
+      complaintsByStateAndDistrict,
+    ] = await Promise.all([
+      // 🔸 1. Complaints by Brand
+      Complaints.aggregate([
+        { $match: { brandId: { $in: activeBrandIds } } },
+        { $group: { _id: "$productBrand", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
 
-    // 4️⃣ Complaints by Location and Product
-    const complaintsByLocationAndProductMap = {};
-    complaints.forEach(c => {
-      const brandName = brandMap[c.brandId];
-      if (!brandName) return;
-      const key = JSON.stringify({ product: c.productName, productBrand: brandName });
-      complaintsByLocationAndProductMap[key] = (complaintsByLocationAndProductMap[key] || 0) + 1;
-    });
-    const complaintsByLocationAndProduct = Object.entries(complaintsByLocationAndProductMap)
-      .map(([key, count]) => ({ _id: JSON.parse(key), count }));
+      // 🔸 2. Complaints by Product + ProductBrand
+      Complaints.aggregate([
+        { $match: { brandId: { $in: activeBrandIds } } },
+        {
+          $group: {
+            _id: { product: "$productName", productBrand: "$productBrand" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
 
-    // 5️⃣ Common Faults (issue + productBrand)
-    const commonFaultsMap = {};
-    complaints.forEach(c => {
-      const brandName = brandMap[c.brandId];
-      if (!brandName) return;
-      const issue = Array.isArray(c.issueType) && c.issueType.length ? c.issueType[0] : c.detailedDescription;
-      const key = JSON.stringify({ _id: issue, productBrand: brandName });
-      commonFaultsMap[key] = (commonFaultsMap[key] || 0) + 1;
-    });
-    const commonFaults = Object.entries(commonFaultsMap).map(([key, count]) => ({ ...JSON.parse(key), count }));
+      // 🔸 3. Common Faults with issueType / detailedDescription
+      Complaints.aggregate([
+        { $match: { brandId: { $in: activeBrandIds } } },
+        {
+          $addFields: {
+            issue: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $isArray: "$issueType" },
+                    { $gt: [{ $size: "$issueType" }, 0] },
+                  ],
+                },
+                then: { $arrayElemAt: ["$issueType", 0] },
+                else: "$detailedDescription",
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: "$issue",
+            productBrand: { $first: "$productBrand" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
 
-    // 6️⃣ Pending Complaints by Brand
-    const pendingComplaintsByBrandMap = {};
-    complaints.forEach(c => {
-      if (c.status !== "PENDING") return;
-      const brandName = brandMap[c.brandId];
-      if (!brandName) return;
-      pendingComplaintsByBrandMap[brandName] = (pendingComplaintsByBrandMap[brandName] || 0) + 1;
-    });
-    const pendingComplaintsByBrand = Object.entries(pendingComplaintsByBrandMap)
-      .map(([brand, count]) => ({ _id: brand, count }));
+      // 🔸 4. Pending Complaints by Brand
+      Complaints.aggregate([
+        {
+          $match: {
+            // status: "PENDING",
+            status: { $nin: ["CANCELED", "FINAL VERIFICATION", "COMPLETED"] },
+            brandId: { $in: activeBrandIds },
+          },
+        },
+        { $group: { _id: "$productBrand", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
 
+      // 🔸 5. Complaints by State + District (+ issue/product)
+      Complaints.aggregate([
+        { $match: { brandId: { $in: activeBrandIds } } },
+        {
+          $addFields: {
+            issue: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $isArray: "$issueType" },
+                    { $gt: [{ $size: "$issueType" }, 0] },
+                  ],
+                },
+                then: { $arrayElemAt: ["$issueType", 0] },
+                else: "$detailedDescription",
+              },
+            },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              issue: "$issue",
+              state: "$state",
+              district: "$district",
+              productBrand: "$productBrand",
+              productName: "$productName",
+            },
+            productBrand: { $first: "$productBrand" },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+    ]);
+
+    // 3️⃣ Send Final Response
     res.status(200).json({
       complaintsByBrand,
       complaintsByLocationAndProduct,
       commonFaults,
-      pendingComplaintsByBrand
+      pendingComplaintsByBrand,
+      complaintsByStateAndDistrict,
     });
-
   } catch (error) {
-    console.error('Error fetching complaint insights:', error);
-    res.status(500).json({ error: 'Error fetching complaint insights' });
+    console.error("Error fetching complaint insights:", error);
+    res.status(500).json({
+      error: "Error fetching complaint insights",
+      details: error.message,
+    });
   }
 });
+
+
+
+
+ 
+// router.get('/getComplaintInsights', async (req, res) => {
+//   try {
+//     // 1️⃣ Fetch all active brands
+//     const activeBrands = await BrandRegistrationModel.find({ status: "ACTIVE" }).select("_id brandName").lean();
+//     const brandMap = {};
+//     activeBrands.forEach(b => {
+//       brandMap[b._id.toString()] = b.brandName;
+//     });
+
+//     const activeBrandIds = Object.keys(brandMap);
+
+//     // 2️⃣ Fetch all complaints for active brands
+//     const complaints = await Complaints.find({ brandId: { $in: activeBrandIds } }).lean();
+
+//     // 3️⃣ Complaints by Brand
+//     const complaintsByBrandMap = {};
+//     complaints.forEach(c => {
+//       const brandName = brandMap[c.brandId];
+//       if (!brandName) return;
+//       complaintsByBrandMap[brandName] = (complaintsByBrandMap[brandName] || 0) + 1;
+//     });
+//     const complaintsByBrand = Object.entries(complaintsByBrandMap).map(([brand, count]) => ({ _id: brand, count }));
+
+//     // 4️⃣ Complaints by Location and Product
+//     const complaintsByLocationAndProductMap = {};
+//     complaints.forEach(c => {
+//       const brandName = brandMap[c.brandId];
+//       if (!brandName) return;
+//       const key = JSON.stringify({ product: c.productName, productBrand: brandName });
+//       complaintsByLocationAndProductMap[key] = (complaintsByLocationAndProductMap[key] || 0) + 1;
+//     });
+//     const complaintsByLocationAndProduct = Object.entries(complaintsByLocationAndProductMap)
+//       .map(([key, count]) => ({ _id: JSON.parse(key), count }));
+
+//     // 5️⃣ Common Faults (issue + productBrand)
+//     const commonFaultsMap = {};
+//     complaints.forEach(c => {
+//       const brandName = brandMap[c.brandId];
+//       if (!brandName) return;
+//       const issue = Array.isArray(c.issueType) && c.issueType.length ? c.issueType[0] : c.detailedDescription;
+//       const key = JSON.stringify({ _id: issue, productBrand: brandName });
+//       commonFaultsMap[key] = (commonFaultsMap[key] || 0) + 1;
+//     });
+//     const commonFaults = Object.entries(commonFaultsMap).map(([key, count]) => ({ ...JSON.parse(key), count }));
+
+//     // 6️⃣ Pending Complaints by Brand
+//     const pendingComplaintsByBrandMap = {};
+//     complaints.forEach(c => {
+//       if (c.status !== "PENDING") return;
+//       const brandName = brandMap[c.brandId];
+//       if (!brandName) return;
+//       pendingComplaintsByBrandMap[brandName] = (pendingComplaintsByBrandMap[brandName] || 0) + 1;
+//     });
+//     const pendingComplaintsByBrand = Object.entries(pendingComplaintsByBrandMap)
+//       .map(([brand, count]) => ({ _id: brand, count }));
+
+//     res.status(200).json({
+//       complaintsByBrand,
+//       complaintsByLocationAndProduct,
+//       commonFaults,
+//       pendingComplaintsByBrand
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching complaint insights:', error);
+//     res.status(500).json({ error: 'Error fetching complaint insights' });
+//   }
+// });
 
 
 
