@@ -393,7 +393,7 @@ const deleteBrand = async (req, res) => {
 //         res.status(400).send(err);
 //     }
 // }
-const getAllServiceCenter = async (req, res) => {
+const getAllServiceCenterAdmin = async (req, res) => {
     try {
         const data = await ServiceModel.find({}).sort({ _id: -1 }).lean();
         res.send(data);
@@ -402,9 +402,22 @@ const getAllServiceCenter = async (req, res) => {
     }
 }
 
+const getAllServiceCenter = async (req, res) => {
+    try {
+        const data = await ServiceModel.find({ status: "ACTIVE" })
+            .sort({ _id: -1 })
+            .lean();
+
+        res.send(data);
+    } catch (err) {
+        res.status(400).send(err);
+    }
+};
+
+
 const getAllServiceCenterAction = async (req, res) => {
     try {
-      const data = await ServiceModel.find({})
+      const data = await ServiceModel.find({ status: "ACTIVE" })
         .sort({ _id: -1 })
         .select('serviceCenterName contact pincodeSupported   postalCode')
         .lean();
@@ -938,7 +951,7 @@ const forgetPassword = async (req, res) => {
 
 module.exports = {
     getProfileById, getUserServerById, adminLoginController, dashboardLoginController, brandRegistration, serviceRegistration, empolyeeRegistration, dealerRegistration, adminRegistration, userRegistration,
-    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand,getAllServiceCenterAction, getAllServiceCenter, getServiceCenterById,editServiceCenterStatusUpdate, editServiceCenter, deleteServiceCenter,
+    getAllBrand, getBrandById, updateBrandTerms, editBrand, deleteBrand,getAllServiceCenterAdmin,getAllServiceCenterAction, getAllServiceCenter, getServiceCenterById,editServiceCenterStatusUpdate, editServiceCenter, deleteServiceCenter,
     getAllEmployee, getEmployeeById, editEmployee, deleteEmployee, getAllUser, getUserById, editUser, deleteUser,
     brandEmpolyeeRegistration, getAllBrandEmployee, getBrandEmployeeById, editBrandEmployee, deleteBrandEmployee,
     getAllDealer, getDealerById, editDealer, deleteDealer, otpVerification, otpVerificationSending, mobileEmailVerification, forgetPassword, otpSending
