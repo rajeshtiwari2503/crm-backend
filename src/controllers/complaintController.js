@@ -1330,6 +1330,121 @@ const getCompleteComplaintByRole = async (req, res) => {
 };
 
 
+const getComplaintsByClose = async (req, res) => {
+
+   try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const skip = (page - 1) * limit;
+
+      // Step 1: Get all ACTIVE brand IDs
+      const activeBrandIds = await BrandRegistrationModel
+         .find({ status: "ACTIVE" }, { _id: 1 })
+         .lean()
+         .then(brands => brands.map(b => b._id));
+
+
+
+      // Step 3: Build the complaint query
+      const complaintQuery = {
+         brandId: { $in: activeBrandIds },
+         status: "CANCELED"
+      };
+
+      // Step 4: Fetch complaints and total count
+      const [complaints, total] = await Promise.all([
+         ComplaintModal.find(complaintQuery)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean(),
+         ComplaintModal.countDocuments(complaintQuery)
+      ]);
+
+      // Step 5: Return response
+      res.status(200).json({
+         data: complaints,
+         totalComplaints: total,
+         currentPage: page,
+         totalPages: Math.ceil(total / limit)
+      });
+   } catch (err) {
+      console.error("Error in getAllComplaint:", err);
+      res.status(500).json({ error: "Internal server error" });
+   }
+};
+const getCloseComplaintByRole = async (req, res) => {
+   try {
+      // Pagination params
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      const {
+         brandId,
+         serviceCenterId,
+         technicianId,
+         userId,
+         dealerId,
+         role,
+         employeeId
+      } = req.query;
+
+      let filterConditions = { status: "CANCELED" };
+
+      if (employeeId) {
+         if (!employeeId) {
+            return res.status(400).json({ message: "employeeId required for EMPLOYEE role" });
+         }
+
+         // Fetch employee details
+         const employee = await EmployeeModel.findById(employeeId).lean();
+         if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+         }
+
+         // Extract brand IDs (array of brand _id strings)
+         const brandIds = Array.isArray(employee.brand)
+            ? employee.brand.map(b => b.value)
+            : [];
+
+         // Extract state zones
+         const stateZones = Array.isArray(employee.stateZone) ? employee.stateZone : [];
+
+         // Apply brand filter if brands exist
+         if (brandIds.length > 0) {
+            filterConditions.brandId = { $in: brandIds };
+         }
+
+         // Apply state filter if states exist
+         if (stateZones.length > 0) {
+            filterConditions.state = { $in: stateZones };
+         }
+      } else {
+         // Other roles filtering
+         if (brandId) filterConditions.brandId = brandId;
+         if (serviceCenterId) filterConditions.assignServiceCenterId = serviceCenterId;
+         if (technicianId) filterConditions.technicianId = technicianId;
+         if (userId) filterConditions.userId = userId;
+         if (dealerId) filterConditions.userId = dealerId;
+      }
+
+      // Count total complaints
+      const totalComplaints = await ComplaintModal.countDocuments(filterConditions);
+
+      // Fetch complaints paginated
+      const data = await ComplaintModal.find(filterConditions)
+         .sort({ _id: -1 })
+         .skip(skip)
+         .limit(limit)
+         .lean();
+
+      res.status(200).json({ data, totalComplaints });
+   } catch (error) {
+      console.error("Error fetching complaints:", error);
+      res.status(500).json({ message: "Internal server error" });
+   }
+};
 
 const getComplaintsByCancel = async (req, res) => {
    try {
@@ -2684,7 +2799,7 @@ const updateComplaint = async (req, res) => {
 }
 
 module.exports = {
-   addComplaint, createComplaintWithVideo, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel, getComplaintsByComplete
+   addComplaint, createComplaintWithVideo, addDealerComplaint, getComplaintByUniqueId, getComplaintsByAssign, getComplaintsByCancel,getCloseComplaintByRole,getComplaintsByClose, getComplaintsByComplete
    , getComplaintsByInProgress, getComplaintsByUpcomming, getComplaintsByCustomerSidePending,getComplaintsByPartDelivered, getComplaintsByPartPending, getCompleteComplaintByUserContact, getComplaintsByHighPriorityPending, getComplaintsByPending, getComplaintsByFinalVerification,
    getPendingComplaints, getTodayCompletedComplaints, getTodayCreatedComplaints, getPartPendingComplaints, addAPPComplaint, getAllBrandComplaint, getCompleteComplaintByRole, getAllComplaintByRole, getAllComplaint, getComplaintByUserId, getComplaintByTechId, getComplaintBydealerId, getComplaintByCenterId, getComplaintById, updateComplaintComments, editIssueImage, updateFinalVerification, updateMultiImageImage, updatePartPendingImage, editComplaint, deleteComplaint, updateComplaint
 };

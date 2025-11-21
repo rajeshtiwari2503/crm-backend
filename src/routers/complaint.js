@@ -4,7 +4,7 @@ const {
   BrandRegistrationModel
 } = require('../models/registration');
 
-const {addComplaint,createComplaintWithVideo,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getComplaintsByComplete
+const {addComplaint,createComplaintWithVideo,addDealerComplaint,getComplaintByUniqueId,getAllBrandComplaint,getCompleteComplaintByUserContact,getCompleteComplaintByRole,getAllComplaintByRole,getComplaintsByAssign,getComplaintsByCancel,getCloseComplaintByRole,getComplaintsByClose,getComplaintsByComplete
     ,getComplaintsByInProgress,getComplaintsByUpcomming,getComplaintsByCustomerSidePending,getComplaintsByPartDelivered,getComplaintsByPartPending,getComplaintsByHighPriorityPending,getComplaintsByPending,getComplaintsByFinalVerification, 
     getPendingComplaints,getTodayCompletedComplaints,getTodayCreatedComplaints,getPartPendingComplaints,addAPPComplaint,getAllComplaint,getComplaintById,getComplaintByTechId,getComplaintBydealerId,getComplaintByCenterId,getComplaintByUserId,updateComplaintComments,editIssueImage ,updateFinalVerification,updateMultiImageImage,updatePartPendingImage,editComplaint,deleteComplaint,updateComplaint}=require("../controllers/complaintController")
 const {upload, uploadAudio}  = require("../services/service");
@@ -37,6 +37,8 @@ router.get("/getCompleteComplaintByRole",getCompleteComplaintByRole)
 router.get("/getCompleteComplaintByUserContact",getCompleteComplaintByUserContact)
 
 router.get("/getComplaintsByAssign",getComplaintsByAssign)
+router.get("/getComplaintsByClose",getComplaintsByClose)
+router.get("/getCloseComplaintByRole",getCloseComplaintByRole)
 router.get("/getComplaintsByCancel",getComplaintsByCancel)
 router.get("/getComplaintsByComplete",getComplaintsByComplete)
 router.get("/getComplaintsByInProgress",getComplaintsByInProgress)
