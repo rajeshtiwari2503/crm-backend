@@ -608,9 +608,10 @@ const activateWarrantyWithImage = async (req, res) => {
       productName,
       categoryName,
       categoryId,
-      year,
+      year,purchaseDate,
     } = req.body;
-
+// console.log("req.body",req.body);
+ 
     if (!uniqueId || !contact) {
       return res.status(400).json({ status: false, msg: "uniqueId and contact are required" });
     }
@@ -663,7 +664,7 @@ const activateWarrantyWithImage = async (req, res) => {
       "records.$.pincode": pincode,
       "records.$.termsCondtions": !!termsCondtions,
       "records.$.status": "PENDING",
-      "records.$.activationDate": new Date(),
+      "records.$.activationDate": purchaseDate?purchaseDate: new Date(),
     };
 
     if (warrantyImage) updateFields["records.$.warrantyImage"] = warrantyImage;
