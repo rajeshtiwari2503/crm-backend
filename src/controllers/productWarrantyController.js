@@ -989,15 +989,94 @@ const getAllActivationWarranty = async (req, res) => {
   }
 };
 
+// const getAllActivationWarrantyWithPage = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1; // Default page = 1
+//     const limit = parseInt(req.query.limit) || 10; // Default limit = 10
+//     const skip = (page - 1) * limit;
+
+//     const result = await ProductWarrantyModal.aggregate([
+//       { $unwind: "$records" },
+//       { $match: { "records.isActivated": true } },
+//       {
+//         $project: {
+//           _id: "$records._id",
+//           brandName: "$records.brandName",
+//           brandId: "$records.brandId",
+//           productName: "$records.productName",
+//           productId: "$records.productId",
+//           categoryId: "$records.categoryId",
+//           categoryName: "$records.categoryName",
+//           uniqueId: "$records.uniqueId",
+//           year: "$records.year",
+//           batchNo: "$records.batchNo",
+//           warrantyInDays: "$records.warrantyInDays",
+//           qrCodes: "$records.qrCodes",
+//           userId: "$records.userId",
+//           userName: "$records.userName",
+//           email: "$records.email",
+//           contact: "$records.contact",
+//           address: "$records.address",
+//           status: "$records.status",
+//           warrantyImage: "$records.warrantyImage",
+//           lat: "$records.lat",
+//           long: "$records.long",
+//           pincode: "$records.pincode",
+//           district: "$records.district",
+//           state: "$records.state",
+//           complaintId: "$records.complaintId",
+//           activationDate: "$records.activationDate",
+//           isActivated: "$records.isActivated",
+//           termsCondtions: "$records.termsCondtions",
+//         }
+//       },
+//       { $sort: { activationDate: -1 } },
+//       {
+//         $facet: {
+//           data: [{ $skip: skip }, { $limit: limit }],
+//           totalCount: [{ $count: "count" }]
+//         }
+//       }
+//     ]);
+
+//     const data = result[0]?.data || [];
+//     const total = result[0]?.totalCount[0]?.count || 0;
+
+//     res.send({
+//       success: true,
+//       currentPage: page,
+//       totalPages: Math.ceil(total / limit),
+//       totalItems: total,
+//       data
+//     });
+//   } catch (err) {
+//     res.status(400).json({ success: false, error: err.message });
+//   }
+// };
+
+
+
 const getAllActivationWarrantyWithPage = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; // Default page = 1
-    const limit = parseInt(req.query.limit) || 10; // Default limit = 10
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+
+    const { brandId } = req.query; // brandId optional
+
+    // Dynamic match condition
+    const matchCondition = { "records.isActivated": true };
+
+    if (brandId) {
+      matchCondition["records.brandId"] = brandId;
+    }
 
     const result = await ProductWarrantyModal.aggregate([
       { $unwind: "$records" },
-      { $match: { "records.isActivated": true } },
+
+      // 👉 Match condition dynamically applied
+      { $match: matchCondition },
+
       {
         $project: {
           _id: "$records._id",
@@ -1053,6 +1132,7 @@ const getAllActivationWarrantyWithPage = async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 };
+
 
 // const getActivationWarrantySearch = async (req, res) => {
 //   try {
