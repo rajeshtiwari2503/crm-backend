@@ -1259,6 +1259,7 @@ const getActivationWarrantySearch = async (req, res) => {
           userId: "$records.userId",
           userName: "$records.userName",
           email: "$records.email",
+          status:"$records.status",
           contact: "$records.contact",
           address: "$records.address",
           lat: "$records.lat",
@@ -1603,46 +1604,90 @@ const editActivationWarranty = async (req, res) => {
   }
 };
 
-const updateWarrantyStatus = async (req, res) => {
+// const updateWarrantyStatus = async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+//     const { status, adminName } = req.body; // now adminName is string
+
+//     if (!["APPROVE", "DISAPPROVE"].includes(status)) {
+//       return res.status(400).json({ success: false, msg: "Invalid status value" });
+//     }
+
+//     const warranty = await ProductWarrantyModal.findOne({ "records.uniqueId": uniqueId });
+//     if (!warranty) {
+//       return res.status(404).json({ success: false, msg: "Warranty not found" });
+//     }
+
+//     const record = warranty.records.find(r => r.uniqueId === uniqueId);
+//     if (!record) {
+//       return res.status(404).json({ status: false, msg: "Warranty record not found" });
+//     }
+
+//     // if (record.status !== "PENDING") {
+//     //   return res.status(400).json({ success: false, msg: `Already ${record.status}` });
+//     // }
+
+//     record.status = status;
+//     record.reviewedBy = adminName;  // store admin name
+//     record.reviewedAt = new Date();
+
+//     await warranty.save();
+
+//     res.status(200).json({
+//       success: true,
+//       status: true,
+//       msg: `Warranty has been ${status.toLowerCase()} successfully`,
+//       data: record
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({ success: false, msg: error.message });
+//   }
+// };
+
+ const updateWarrantyStatus = async (req, res) => {
   try {
     const { uniqueId } = req.params;
-    const { status, adminName } = req.body; // now adminName is string
+    const { status, adminName } = req.body;
 
     if (!["APPROVE", "DISAPPROVE"].includes(status)) {
       return res.status(400).json({ success: false, msg: "Invalid status value" });
     }
 
-    const warranty = await ProductWarrantyModal.findOne({ "records.uniqueId": uniqueId });
-    if (!warranty) {
-      return res.status(404).json({ success: false, msg: "Warranty not found" });
+    // Update the specific record in-place
+    const updateResult = await ProductWarrantyModal.updateOne(
+      { "records.uniqueId": uniqueId },
+      {
+        $set: {
+          "records.$.status": status,
+          "records.$.reviewedBy": adminName,
+          "records.$.reviewedAt": new Date()
+        }
+      }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      return res.status(404).json({ success: false, msg: "Warranty record not found" });
     }
 
-    const record = warranty.records.find(r => r.uniqueId === uniqueId);
-    if (!record) {
-      return res.status(404).json({ status: false, msg: "Warranty record not found" });
-    }
-
-    // if (record.status !== "PENDING") {
-    //   return res.status(400).json({ success: false, msg: `Already ${record.status}` });
-    // }
-
-    record.status = status;
-    record.reviewedBy = adminName;  // store admin name
-    record.reviewedAt = new Date();
-
-    await warranty.save();
+    // Fetch only the updated record
+    const warranty = await ProductWarrantyModal.findOne(
+      { "records.uniqueId": uniqueId },
+      { "records.$": 1 } // fetch only the updated array element
+    );
 
     res.status(200).json({
       success: true,
       status: true,
       msg: `Warranty has been ${status.toLowerCase()} successfully`,
-      data: record
+      data: warranty.records[0]
     });
 
   } catch (error) {
     res.status(500).json({ success: false, msg: error.message });
   }
 };
+
 
 
 const deleteProductWarranty = async (req, res) => {
