@@ -76,7 +76,7 @@ async function sendBlessTemplateSms(to, templateId, smsVars) {
   // console.log('\n📨 Final message being sent:\n', filledText, '\n');
 
   const params = {
-    user: 'Lybley@gmail.comNOOO',
+    user: 'Lybley@gmail.com',
     password: 'Lay@5875',
     senderid: 'LYBLEY',
     number: mobile,
