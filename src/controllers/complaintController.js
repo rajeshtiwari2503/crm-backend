@@ -347,6 +347,7 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
                'records.$.contact': contact,
                'records.$.address': address,
                'records.$.district': district,
+               'records.$.status': "APPROVE",
                'records.$.state': state,
                'records.$.pincode': pincode,
                'records.$.activationDate': new Date()
