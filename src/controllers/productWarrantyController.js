@@ -902,6 +902,181 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
 };
 
 
+//  const getProductWarrantyByBrandCategoryProduct = async (req, res) => {
+//   try {
+//     console.log("✅ API HIT");
+
+//     const { id:brandId } = req.params // 👈 IMPORTANT
+//     console.log("➡️ brandId:", brandId);
+//     console.log("➡️ req.query:", req.params);
+
+//     if (!brandId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "brandId is required",
+//       });
+//     }
+
+//     const data = await ProductWarrantyModal.aggregate([
+//       {
+//         $match: { brandId },
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             categoryId: "$categoryId",
+//             categoryName: "$categoryName",
+//             productId: "$productId",
+//             productName: "$productName",
+//           },
+//           totalStickers: { $sum: 1 },
+//           totalGenerated: {
+//             $sum: { $toInt: "$numberOfGenerate" },
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             categoryId: "$_id.categoryId",
+//             categoryName: "$_id.categoryName",
+//           },
+//           products: {
+//             $push: {
+//               productId: "$_id.productId",
+//               productName: "$_id.productName",
+//               totalStickers: "$totalStickers",
+//               totalGenerated: "$totalGenerated",
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 0,
+//           categoryId: "$_id.categoryId",
+//           categoryName: "$_id.categoryName",
+//           products: 1,
+//         },
+//       },
+//     ]);
+
+//     console.log("📊 Aggregation result:", data);
+
+//     res.status(200).json({
+//       success: true,
+//       brandId,
+//       data,
+//     });
+//   } catch (error) {
+//     console.error("❌ ERROR:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+
+ const getProductWarrantyByBrandCategoryProduct = async (req, res) => {
+  try {
+    const { id: brandId } = req.params;
+
+    if (!brandId) {
+      return res.status(400).json({
+        success: false,
+        message: "brandId is required",
+      });
+    }
+
+    const data = await ProductWarrantyModal.aggregate([
+      // Match only the selected brand and non-deleted records
+      {
+        $match: {
+          brandId,
+          isDeleted: false,
+        },
+      },
+
+      // Group by category → subcategory → product
+      {
+        $group: {
+          _id: {
+            categoryId: "$categoryId",
+            categoryName: "$categoryName",
+            subCategoryId: "$subCategoryId",
+            subCategoryName: "$subCategoryName",
+            productId: "$productId",
+            productName: "$productName",
+          },
+          totalStickers: { $sum: { $size: "$records" } },
+          totalGenerated: { $sum: { $toInt: "$numberOfGenerate" } },
+        },
+      },
+
+      // Group by category → subcategories array
+      {
+        $group: {
+          _id: {
+            categoryId: "$_id.categoryId",
+            categoryName: "$_id.categoryName",
+            subCategoryId: "$_id.subCategoryId",
+            subCategoryName: "$_id.subCategoryName",
+          },
+          products: {
+            $push: {
+              productId: "$_id.productId",
+              productName: "$_id.productName",
+              totalStickers: "$totalStickers",
+              totalGenerated: "$totalGenerated",
+            },
+          },
+        },
+      },
+
+      // Group by category → subcategories array
+      {
+        $group: {
+          _id: {
+            categoryId: "$_id.categoryId",
+            categoryName: "$_id.categoryName",
+          },
+          subcategories: {
+            $push: {
+              subCategoryId: "$_id.subCategoryId",
+              subCategoryName: "$_id.subCategoryName",
+              products: "$products",
+            },
+          },
+        },
+      },
+
+      // Final projection
+      {
+        $project: {
+          _id: 0,
+          categoryId: "$_id.categoryId",
+          categoryName: "$_id.categoryName",
+          subcategories: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      brandId,
+      data,
+    });
+  } catch (error) {
+    console.error("❌ ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
 
 
 const getAllProductWarrantyById = async (req, res) => {
@@ -1716,4 +1891,4 @@ const deleteProductWarranty = async (req, res) => {
 
 
 
-module.exports = { addProductWarranty, updateWarrantyStatus, activateWarranty, activateWarrantyWithImage, getAllProductWarranty, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
+module.exports = { addProductWarranty, updateWarrantyStatus, activateWarranty, activateWarrantyWithImage, getAllProductWarranty,getProductWarrantyByBrandCategoryProduct, getAllProductWarrantyByBrandStickers, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantySearch, getAllActivationWarrantyWithPage, getAllActivationWarranty, getActivationWarrantyByUserId, getActivationWarrantyById, getProductWarrantyByUniqueId, getProductWarrantyById, editActivationWarranty, editProductWarranty, deleteProductWarranty };
