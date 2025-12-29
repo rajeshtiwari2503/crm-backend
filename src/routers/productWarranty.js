@@ -4,13 +4,14 @@ const express = require("express");
 const router = express.Router();
 const {upload}  = require("../services/service");
 const ProductWarrantyModal = require("../models/productWarranty")
-const { addProductWarranty, activateWarranty, getAllActivationWarrantyWithPage, getActivationWarrantySearch, getAllProductWarranty, getAllProductWarrantyByBrandStickers, editActivationWarranty, getActivationWarrantyByUserId, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantyById, getAllActivationWarranty, getProductWarrantyByUniqueId, getProductWarrantyById, editProductWarranty, deleteProductWarranty, activateWarrantyWithImage, updateWarrantyStatus } = require("../controllers/productWarrantyController")
+const { addProductWarranty, activateWarranty, getAllActivationWarrantyWithPage,getProductWarrantyByBrandCategoryProduct, getActivationWarrantySearch, getAllProductWarranty, getAllProductWarrantyByBrandStickers, editActivationWarranty, getActivationWarrantyByUserId, getAllProductWarrantyWithPage, getAllProductWarrantyByIdWithPage, getAllProductWarrantyByBrandIdTotal, getAllProductWarrantyById, getActivationWarrantyById, getAllActivationWarranty, getProductWarrantyByUniqueId, getProductWarrantyById, editProductWarranty, deleteProductWarranty, activateWarrantyWithImage, updateWarrantyStatus } = require("../controllers/productWarrantyController")
 
 router.post("/addProductWarranty", addProductWarranty);
 router.post("/activateWarranty", activateWarranty);
 router.post("/activateWarrantyWithImage",  upload().single("warrantyImage"), activateWarrantyWithImage);
 router.get("/getAllProductWarranty", getAllProductWarranty);
 router.get("/getAllProductWarrantyByBrandStickers", getAllProductWarrantyByBrandStickers);
+router.get("/getProductWarrantyByBrandCategoryProduct/:id", getProductWarrantyByBrandCategoryProduct);
 router.get("/getAllProductWarrantyWithPage", getAllProductWarrantyWithPage);
 router.get("/getAllProductWarrantyByIdWithPage/:id", getAllProductWarrantyByIdWithPage);
 router.get("/getAllProductWarrantyById/:id", getAllProductWarrantyById);
