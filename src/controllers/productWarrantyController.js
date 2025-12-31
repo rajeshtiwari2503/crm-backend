@@ -902,13 +902,11 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
 };
 
 
+ 
+
 //  const getProductWarrantyByBrandCategoryProduct = async (req, res) => {
 //   try {
-//     console.log("✅ API HIT");
-
-//     const { id:brandId } = req.params // 👈 IMPORTANT
-//     console.log("➡️ brandId:", brandId);
-//     console.log("➡️ req.query:", req.params);
+//     const { id: brandId } = req.params;
 
 //     if (!brandId) {
 //       return res.status(400).json({
@@ -918,28 +916,38 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
 //     }
 
 //     const data = await ProductWarrantyModal.aggregate([
+//       // Match only the selected brand and non-deleted records
 //       {
-//         $match: { brandId },
+//         $match: {
+//           brandId,
+//           isDeleted: false,
+//         },
 //       },
+
+//       // Group by category → subcategory → product
 //       {
 //         $group: {
 //           _id: {
 //             categoryId: "$categoryId",
 //             categoryName: "$categoryName",
+//             subCategoryId: "$subCategoryId",
+//             subCategoryName: "$subCategoryName",
 //             productId: "$productId",
 //             productName: "$productName",
 //           },
-//           totalStickers: { $sum: 1 },
-//           totalGenerated: {
-//             $sum: { $toInt: "$numberOfGenerate" },
-//           },
+//           totalStickers: { $sum: { $size: "$records" } },
+//           totalGenerated: { $sum: { $toInt: "$numberOfGenerate" } },
 //         },
 //       },
+
+//       // Group by category → subcategories array
 //       {
 //         $group: {
 //           _id: {
 //             categoryId: "$_id.categoryId",
 //             categoryName: "$_id.categoryName",
+//             subCategoryId: "$_id.subCategoryId",
+//             subCategoryName: "$_id.subCategoryName",
 //           },
 //           products: {
 //             $push: {
@@ -951,17 +959,34 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
 //           },
 //         },
 //       },
+
+//       // Group by category → subcategories array
+//       {
+//         $group: {
+//           _id: {
+//             categoryId: "$_id.categoryId",
+//             categoryName: "$_id.categoryName",
+//           },
+//           subcategories: {
+//             $push: {
+//               subCategoryId: "$_id.subCategoryId",
+//               subCategoryName: "$_id.subCategoryName",
+//               products: "$products",
+//             },
+//           },
+//         },
+//       },
+
+//       // Final projection
 //       {
 //         $project: {
 //           _id: 0,
 //           categoryId: "$_id.categoryId",
 //           categoryName: "$_id.categoryName",
-//           products: 1,
+//           subcategories: 1,
 //         },
 //       },
 //     ]);
-
-//     console.log("📊 Aggregation result:", data);
 
 //     res.status(200).json({
 //       success: true,
@@ -978,7 +1003,7 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
 // };
 
 
- const getProductWarrantyByBrandCategoryProduct = async (req, res) => {
+const getProductWarrantyByBrandCategoryProduct = async (req, res) => {
   try {
     const { id: brandId } = req.params;
 
@@ -990,7 +1015,7 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
     }
 
     const data = await ProductWarrantyModal.aggregate([
-      // Match only the selected brand and non-deleted records
+      // 1️⃣ Filter brand & active data
       {
         $match: {
           brandId,
@@ -998,7 +1023,62 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
         },
       },
 
-      // Group by category → subcategory → product
+      // 2️⃣ Create MASTER product key (productId > productName)
+      {
+        $addFields: {
+          productKey: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: ["$productId", null] },
+                  { $ne: ["$productId", ""] },
+                ],
+              },
+              "$productId",
+              "$productName",
+            ],
+          },
+        },
+      },
+
+      // 3️⃣ Merge SAME products (fix duplicate issue)
+      {
+        $group: {
+          _id: "$productKey",
+
+          productId: { $first: "$productId" },
+          productName: { $first: "$productName" },
+
+          categoryId: {
+            $max: {
+              $cond: [{ $ne: ["$categoryId", ""] }, "$categoryId", null],
+            },
+          },
+          categoryName: {
+            $max: {
+              $cond: [{ $ne: ["$categoryName", ""] }, "$categoryName", "Miscellaneous"],
+            },
+          },
+
+          subCategoryId: {
+            $max: {
+              $cond: [{ $ne: ["$subCategoryId", ""] }, "$subCategoryId", null],
+            },
+          },
+          subCategoryName: {
+            $max: {
+              $cond: [{ $ne: ["$subCategoryName", ""] }, "$subCategoryName", "Others"],
+            },
+          },
+
+          totalStickers: { $sum: { $size: "$records" } },
+          totalGenerated: {
+            $sum: { $ifNull: [{ $toInt: "$numberOfGenerate" }, 0] },
+          },
+        },
+      },
+
+      // 4️⃣ Group by category + subcategory
       {
         $group: {
           _id: {
@@ -1006,27 +1086,11 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
             categoryName: "$categoryName",
             subCategoryId: "$subCategoryId",
             subCategoryName: "$subCategoryName",
-            productId: "$productId",
-            productName: "$productName",
-          },
-          totalStickers: { $sum: { $size: "$records" } },
-          totalGenerated: { $sum: { $toInt: "$numberOfGenerate" } },
-        },
-      },
-
-      // Group by category → subcategories array
-      {
-        $group: {
-          _id: {
-            categoryId: "$_id.categoryId",
-            categoryName: "$_id.categoryName",
-            subCategoryId: "$_id.subCategoryId",
-            subCategoryName: "$_id.subCategoryName",
           },
           products: {
             $push: {
-              productId: "$_id.productId",
-              productName: "$_id.productName",
+              productId: "$productId",
+              productName: "$productName",
               totalStickers: "$totalStickers",
               totalGenerated: "$totalGenerated",
             },
@@ -1034,7 +1098,7 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
         },
       },
 
-      // Group by category → subcategories array
+      // 5️⃣ Group subcategories under category
       {
         $group: {
           _id: {
@@ -1051,7 +1115,7 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
         },
       },
 
-      // Final projection
+      // 6️⃣ Final clean response
       {
         $project: {
           _id: 0,
@@ -1062,14 +1126,14 @@ const getAllProductWarrantyByBrandStickers = async (req, res) => {
       },
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       brandId,
       data,
     });
   } catch (error) {
     console.error("❌ ERROR:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
