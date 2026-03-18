@@ -132,7 +132,8 @@ const moment = require('moment');
 const { Client } = require('@googlemaps/google-maps-services-js');
 const client = new Client({});
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyC_L9VzjnWL4ent9VzCRAabM52RCcJJd2k";
+// const GOOGLE_MAPS_API_KEY = "AIzaSyC_L9VzjnWL4ent9VzCRAabM52RCcJJd2k";
+const GOOGLE_MAPS_API_KEY = "AIzaSyA1sx421f5I0tCkt1t7VVztAZJALcXaWw4";
 
 const ServicePaymentModel = require('./models/servicePaymentModel');
 const ProductWarrantyModal = require("./models/productWarranty");
@@ -452,6 +453,175 @@ const getDistanceInKm = async (originPincode, destinationPincode) => {
 //   }
 // };
 
+
+//15/01/26
+
+
+// const createWalletTransactions = async () => {
+//   try {
+//     // 📅 Get previous month range
+//     const startOfPrevMonth = moment().subtract(1, "month").startOf("month").toDate();
+//     const endOfPrevMonth = moment().subtract(1, "month").endOf("month").toDate();
+
+//     console.log("startOfPrevMonth", startOfPrevMonth);
+//     console.log("endOfPrevMonth", endOfPrevMonth);
+
+//     // ✅ Already paid complaint IDs
+//     const paidComplaintIds = await ServicePaymentModel.distinct("complaintId");
+
+//     // 🔍 Complaints eligible for payments
+//     const complaints = await ComplaintModal.find({
+//       complaintCloseTime: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
+//       status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
+//       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
+//       _id: { $nin: paidComplaintIds },
+//     });
+
+//     console.log("Complaints eligible for wallet transaction:", complaints.length);
+
+//     // 🟡 Group complaints by service center
+//     const groupedByCenter = {};
+//     for (const complaint of complaints) {
+//       const centerId = complaint.assignServiceCenterId.toString();
+//       if (!groupedByCenter[centerId]) {
+//         groupedByCenter[centerId] = [];
+//       }
+//       groupedByCenter[centerId].push(complaint);
+//     }
+
+//     let createdCount = 0;
+
+//     // 🟢 Loop through each service center
+//     for (const [centerId, centerComplaints] of Object.entries(groupedByCenter)) {
+//       console.log(`\n🔧 Processing Service Center ID: ${centerId}, Complaints: ${centerComplaints.length}`);
+
+//       const serviceCenter = await ServiceModel.findOne({
+//         _id: centerId,
+//         serviceCenterType: "Authorized",
+//       });
+
+//       if (!serviceCenter) {
+//         console.warn(`❌ Skipping service center ${centerId} — not found or not Authorized`);
+//         continue;
+//       }
+
+//       console.log(`Processing service center ${centerId} - ${serviceCenter.serviceCenterName}`);
+
+//       for (const data of centerComplaints) {
+//         if (!data.pincode || !serviceCenter.postalCode) continue;
+
+//         // ✅ Skip if payment already exists
+//         const existingPayment = await ServicePaymentModel.findOne({
+//           serviceCenterId: centerId,
+//           complaintId: data._id,
+//         });
+
+//         if (existingPayment) {
+//           console.log("Payment already exists for complaint:", data._id);
+//           continue;
+//         }
+
+//         // ✅ Distance check (cast to string to avoid mismatch issues)
+//         const distance = await getDistanceInKm(String(data.pincode), String(serviceCenter.postalCode));
+//         if (distance === null || isNaN(distance)) {
+//           console.warn("Skipping complaint due to distance calculation failure:", data._id);
+//           continue;
+//         }
+
+//         const isCSP = data.cspStatus === "YES";
+//         const isInCity = distance <= 30;
+//         let paymentAmount = 0;
+//         let timeDiffInHours = 0;
+
+//         if (isCSP) {
+//           paymentAmount = isInCity ? 250 : 350;
+//         } else {
+//           const assignTime = moment(data.assignServiceCenterTime);
+//           const closeTime = moment(data.complaintCloseTime);
+
+//           if (!assignTime.isValid() || !closeTime.isValid()) {
+//             console.warn("Invalid assignTime or closeTime:", data._id);
+//             continue;
+//           }
+
+//           // ✅ Safe calculation (hour-by-hour, skipping Sundays)
+
+//           let sundayCount = 0;
+
+//           let currentHour = assignTime.clone();
+
+//           while (currentHour.isBefore(closeTime)) {
+//             if (currentHour.day() !== 0) {
+//               // Count only non-Sunday hours
+//               timeDiffInHours++;
+//             } else {
+//               // Track Sunday hours
+//               sundayCount++;
+//             }
+//             currentHour.add(1, "hour");
+//           }
+
+//           console.log("⏱️ Hours excluding Sundays:", timeDiffInHours);
+//           console.log("📅 Hours on Sundays (excluded):", sundayCount);
+//           console.log("📆 Total hours (raw diff):", assignTime.diff(closeTime, "hours") * -1);
+
+
+//           // ✅ Payment slab calculation
+//           if (isInCity) {
+//             if (timeDiffInHours <= 24) {
+//               paymentAmount = 250;
+//             } else if (timeDiffInHours <= 48) {
+//               paymentAmount = 180;
+//             } else if (timeDiffInHours <= 72) {
+//               paymentAmount = 130;
+//             } else {
+//               paymentAmount = 80;
+//             }
+//           } else {
+//             if (timeDiffInHours <= 48) {
+//               paymentAmount = 350;
+//             } else if (timeDiffInHours <= 72) {
+//               paymentAmount = 300;
+//             } else if (timeDiffInHours <= 90) {
+//               paymentAmount = 250;
+//             } else {
+//               paymentAmount = 200;
+//             }
+//           }
+//         }
+
+//         // ✅ Build payment object
+//         const paymentData = {
+//           serviceCenterId: centerId,
+//           serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
+//           payment: paymentAmount.toString(),
+//           description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : "CSP: NO,"
+//             }${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${
+//             // isCSP ? "N/A" : timeDiffInHours + " hours"
+//             timeDiffInHours + " hours"
+//             } , charge, ₹${paymentAmount})`,
+//           contactNo: serviceCenter.contact,
+//           month: moment(data.complaintCloseTime).format("MMMM YYYY"),
+//           complaintId: data._id,
+//           city: serviceCenter.city,
+//           address: serviceCenter.streetAddress,
+//           status: "UNPAID",
+//           ...(serviceCenter.qrCode ? { qrCode: serviceCenter.qrCode } : {}),
+//           ...(serviceCenter.UPIid ? { UPIid: serviceCenter.UPIid } : {}),
+//         };
+
+//         console.log("Creating service center payment:", paymentData);
+//         await ServicePaymentModel.create(paymentData);
+//         createdCount++;
+//       }
+//     }
+
+//     console.log(`✅ Wallet transactions generated successfully. Total created: ${createdCount}`);
+//   } catch (error) {
+//     console.error("❌ Error creating wallet transactions:", error);
+//   }
+// };
+
 const createWalletTransactions = async () => {
   try {
     // 📅 Get previous month range
@@ -469,6 +639,7 @@ const createWalletTransactions = async () => {
       complaintCloseTime: { $gte: startOfPrevMonth, $lte: endOfPrevMonth },
       status: { $in: ["COMPLETED", "FINAL VERIFICATION"] },
       assignServiceCenterId: { $exists: true, $ne: null, $ne: "" },
+      // assignServiceCenterId: "67b2e5b4799e2ed53996b6ca",
       _id: { $nin: paidComplaintIds },
     });
 
@@ -478,9 +649,7 @@ const createWalletTransactions = async () => {
     const groupedByCenter = {};
     for (const complaint of complaints) {
       const centerId = complaint.assignServiceCenterId.toString();
-      if (!groupedByCenter[centerId]) {
-        groupedByCenter[centerId] = [];
-      }
+      if (!groupedByCenter[centerId]) groupedByCenter[centerId] = [];
       groupedByCenter[centerId].push(complaint);
     }
 
@@ -510,13 +679,12 @@ const createWalletTransactions = async () => {
           serviceCenterId: centerId,
           complaintId: data._id,
         });
-
         if (existingPayment) {
           console.log("Payment already exists for complaint:", data._id);
           continue;
         }
 
-        // ✅ Distance check (cast to string to avoid mismatch issues)
+        // ✅ Distance check
         const distance = await getDistanceInKm(String(data.pincode), String(serviceCenter.postalCode));
         if (distance === null || isNaN(distance)) {
           console.warn("Skipping complaint due to distance calculation failure:", data._id);
@@ -528,73 +696,110 @@ const createWalletTransactions = async () => {
         let paymentAmount = 0;
         let timeDiffInHours = 0;
 
-        if (isCSP) {
-          paymentAmount = isInCity ? 250 : 350;
-        } else {
-          const assignTime = moment(data.assignServiceCenterTime);
-          const closeTime = moment(data.complaintCloseTime);
+        // ✅ Determine assignTime based on CSP and updateHistory
+        let assignTime = null;
+        // console.log("data", data);
 
-          if (!assignTime.isValid() || !closeTime.isValid()) {
-            console.warn("Invalid assignTime or closeTime:", data._id);
-            continue;
-          }
+        if (data.cspStatus === "YES" && data.updateHistory && data.updateHistory.length) {
+          // Look for PARTS DELIVERED in the updateHistory Map
+          const partDeliverEntry = data.updateHistory.find((uh) => {
+            const status = uh.changes.get("status"); // Map, not object
+            return status && status.toString().trim().toUpperCase() === "PARTS DELIVERED";
+          });
 
-          // ✅ Safe calculation (hour-by-hour, skipping Sundays)
-
-          let sundayCount = 0;
-
-          let currentHour = assignTime.clone();
-
-          while (currentHour.isBefore(closeTime)) {
-            if (currentHour.day() !== 0) {
-              // Count only non-Sunday hours
-              timeDiffInHours++;
-            } else {
-              // Track Sunday hours
-              sundayCount++;
-            }
-            currentHour.add(1, "hour");
-          }
-
-          console.log("⏱️ Hours excluding Sundays:", timeDiffInHours);
-          console.log("📅 Hours on Sundays (excluded):", sundayCount);
-          console.log("📆 Total hours (raw diff):", assignTime.diff(closeTime, "hours") * -1);
-
-
-          // ✅ Payment slab calculation
-          if (isInCity) {
-            if (timeDiffInHours <= 24) {
-              paymentAmount = 250;
-            } else if (timeDiffInHours <= 48) {
-              paymentAmount = 180;
-            } else if (timeDiffInHours <= 72) {
-              paymentAmount = 130;
-            } else {
-              paymentAmount = 80;
-            }
+          if (partDeliverEntry) {
+            assignTime = moment(partDeliverEntry.updatedAt);
+            console.log("✅ assignTime from PARTS DELIVERED:", assignTime.format());
           } else {
-            if (timeDiffInHours <= 48) {
-              paymentAmount = 350;
-            } else if (timeDiffInHours <= 72) {
-              paymentAmount = 300;
-            } else if (timeDiffInHours <= 90) {
-              paymentAmount = 250;
-            } else {
-              paymentAmount = 200;
-            }
+            console.log(
+              "⚠️ PARTS DELIVERED entry not found in updateHistory. Using top-level assignServiceCenterTime."
+            );
           }
         }
 
+        // Fallback to top-level assignServiceCenterTime
+        if (!assignTime || !assignTime.isValid()) {
+          assignTime = moment(data.assignServiceCenterTime);
+          console.log("ℹ️ Fallback assignTime:", assignTime.format());
+        }
+
+
+
+        //  console.log("closeTime",closeTime);
+        console.log("assignTime", assignTime);
+        // Fallback to top-level field if history not found or invalid
+
+
+        // Closing time = updatedAt of FINAL VERIFICATION
+        let closeEntry = data.updateHistory.find(
+          (uh) => uh.changes.get("status")?.toUpperCase() === "FINAL VERIFICATION"
+        );
+        console.log("closeEntry", closeEntry);
+
+        let closeTime;
+        if (closeEntry) {
+          closeTime = moment(closeEntry.updatedAt);
+        } else {
+          closeTime = moment(data.complaintCloseTime); // fallback
+        }
+        console.log("assignTime", assignTime);
+        console.log("closeTime", closeTime);
+
+        if (!assignTime.isValid() || !closeTime.isValid()) {
+          console.warn("Invalid assignTime or closeTime:", data._id);
+          continue;
+        }
+        if (data.brandId === "687b60524784729ee719776e") {
+          let incentive = 0;
+          let penalty = 0;
+
+          const isSameDay = assignTime.isSame(closeTime, "day");
+          if (isSameDay) {
+            incentive = 50;
+          }else{
+            penalty=50
+          }
+
+          paymentAmount = 200 + incentive - penalty;
+          const totalDays = closeTime.clone().startOf("day").diff(assignTime.clone().startOf("day"), "days") + 1;
+          const startDay = assignTime.day(); // 0=Sunday
+          const sundays = Math.floor((totalDays + startDay) / 7);
+          timeDiffInHours = closeTime.diff(assignTime, "hours") - sundays * 24;
+          console.log("timeDiffInHours", timeDiffInHours);
+        }
+        else {
+          if (isCSP === "wwgg") {
+            // CSP → fixed payment slab
+            paymentAmount = isInCity ? 250 : 350;
+            timeDiffInHours = Math.max(0, closeTime.diff(assignTime, "hours"));
+          } else {
+            // Non-CSP → optimized hours calculation excluding Sundays
+            const totalDays = closeTime.clone().startOf("day").diff(assignTime.clone().startOf("day"), "days") + 1;
+            const startDay = assignTime.day(); // 0=Sunday
+            const sundays = Math.floor((totalDays + startDay) / 7);
+            timeDiffInHours = closeTime.diff(assignTime, "hours") - sundays * 24;
+            console.log("timeDiffInHours", timeDiffInHours);
+
+            // ✅ Payment slab calculation
+            if (isInCity) {
+              if (timeDiffInHours <= 24) paymentAmount = 250;
+              else if (timeDiffInHours <= 48) paymentAmount = 180;
+              else if (timeDiffInHours <= 72) paymentAmount = 130;
+              else paymentAmount = 80;
+            } else {
+              if (timeDiffInHours <= 48) paymentAmount = 350;
+              else if (timeDiffInHours <= 72) paymentAmount = 300;
+              else if (timeDiffInHours <= 90) paymentAmount = 250;
+              else paymentAmount = 200;
+            }
+          }
+        }
         // ✅ Build payment object
         const paymentData = {
           serviceCenterId: centerId,
           serviceCenterName: data.assignServiceCenter || serviceCenter.serviceCenterName,
           payment: paymentAmount.toString(),
-          description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : "CSP: NO,"
-            }${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km , Tat : ${
-            // isCSP ? "N/A" : timeDiffInHours + " hours"
-            timeDiffInHours + " hours"
-            } , charge, ₹${paymentAmount})`,
+          description: `Payment for Service Complaint ID ${data._id} - ${moment(data.createdAt).format("MMMM YYYY")} (${isCSP ? "CSP: YES, " : "CSP: NO,"}${isInCity ? "In City" : "Out City"}, ${distance.toFixed(1)} km, Tat: ${timeDiffInHours} hours, charge: ₹${paymentAmount})`,
           contactNo: serviceCenter.contact,
           month: moment(data.complaintCloseTime).format("MMMM YYYY"),
           complaintId: data._id,
@@ -617,7 +822,9 @@ const createWalletTransactions = async () => {
   }
 };
 
-cron.schedule("55 15 11 12 *", () => {
+
+
+cron.schedule("58 13 10 3 *", () => {
   console.log("⏰ Running wallet transaction job on Dec 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
 
@@ -1462,7 +1669,7 @@ async function reopenCanceledComplaints() {
       // Step 6: Save the complaint
       await complaint.save(); // Uncomment to actually save
     }
-console.log(`Found ${canceledComplaints.length} canceled complaints:`);
+    console.log(`Found ${canceledComplaints.length} canceled complaints:`);
     console.log("All eligible canceled complaints have been processed.");
 
   } catch (error) {
