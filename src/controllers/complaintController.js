@@ -90,10 +90,11 @@ const addComplaint = async (req, res) => {
 
       const smsVars = smsTemplates.COMPLAINT_REGISTERED.buildVars({
          fullName,
-         complaintId: complaint.complaintId || complaint._id.toString(),
+         complaintId: complaint.complaintId || complaint._id.toString(), 
          issueType: complaint?.detailedDescription,
-         serviceCenterName: 'Service Center visit your location',
-         visitTime: visitTime, // Dynamically set your visit time here
+         // serviceCenterName: 'Service Center visit your location',
+         serviceCenterName: 'Service Center',
+         visitTime: '03:00 PM', // Dynamically set your visit time here
          phoneNumber: phoneNumber,
          otp: complaint.otp || Math.floor(100000 + Math.random() * 900000).toString(), // Save this OTP in DB if used
          complaintId: complaint.complaintId || complaint._id.toString(),
