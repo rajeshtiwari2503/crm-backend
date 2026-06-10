@@ -749,7 +749,9 @@ const createWalletTransactions = async () => {
           console.warn("Invalid assignTime or closeTime:", data._id);
           continue;
         }
-        if (data.brandId === "687b60524784729ee719776e") {
+      const isCeilingFan = data.productName && data.productName.trim().toLowerCase().includes("ceiling fan");
+      
+        if (data.brandId === "687b60524784729ee719776e"  && isCeilingFan) {
           let incentive = 0;
           let penalty = 0;
 
@@ -757,7 +759,7 @@ const createWalletTransactions = async () => {
           if (isSameDay) {
             incentive = 50;
           }else{
-            penalty=50
+            penalty=0
           }
 
           paymentAmount = 200 + incentive - penalty;
@@ -824,7 +826,7 @@ const createWalletTransactions = async () => {
 
 
 
-cron.schedule("58 13 10 3 *", () => {
+cron.schedule("47 11 12 5 *", () => {
   console.log("⏰ Running wallet transaction job on Dec 1st, 2025 at 11:08 AM...");
   createWalletTransactions();
 
@@ -954,6 +956,78 @@ async function deleteComplaintNullData() {
   }
 };
 // deleteComplaintNullData()
+
+
+
+const deleteApril2026Transactions = async () => {
+  try {
+    const startOfDay = new Date("2026-04-01T00:00:00.000Z");
+    const endOfDay = new Date("2026-04-30T23:59:59.999Z");
+
+    console.log("🔍 Deleting wallet transactions created in April 2026...");
+
+    // Step 1: Get all authorized service centers
+    const authorizedCenters = await ServiceModel.find(
+      { serviceCenterType: "Authorized" },
+      "_id serviceCenterName"
+    );
+
+    const authorizedCenterIds = authorizedCenters.map(c => c._id.toString());
+
+    // Step 2: Find wallet transactions created in April 2026 for these centers
+    const transactions = await ServicePaymentModel.find({
+      serviceCenterId: { $in: authorizedCenterIds },
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (transactions.length === 0) {
+      console.log("✅ No wallet transactions found for deletion in April 2026.");
+      return;
+    }
+
+    // Step 3: Extract complaintIds from transactions
+    const complaintIds = transactions
+      .map(txn => txn.complaintId)
+      .filter(Boolean);
+
+    // Step 4: Fetch complaints and filter by brandId
+    const matchingComplaints = await ComplaintModal.find(
+      {
+        _id: { $in: complaintIds },
+        brandId: "687b60524784729ee719776e"
+      },
+      "_id"
+    );
+
+    const matchingComplaintIds = new Set(
+      matchingComplaints.map(c => c._id.toString())
+    );
+
+    // Step 5: Filter transactions whose complaintId matches the brandId filter
+    const transactionsToDelete = transactions.filter(txn =>
+      matchingComplaintIds.has(txn.complaintId?.toString())
+    );
+
+    if (transactionsToDelete.length === 0) {
+      console.log("✅ No transactions matched brandId filter. Nothing to delete.");
+      return;
+    }
+
+    console.log(`🧾 Found ${transactionsToDelete.length} transactions to delete after brandId filter:`);
+
+    // Step 6: Delete filtered transactions
+    const result = await ServicePaymentModel.deleteMany({
+      _id: { $in: transactionsToDelete.map(t => t._id) }
+    });
+
+    console.log(`🗑️ Deleted ${result.deletedCount} wallet transactions created in April 2026.`);
+  } catch (error) {
+    console.error("❌ Error deleting wallet transactions:", error);
+  }
+};
+
+// deleteApril2026Transactions()
+
 
 const deleteJuly31Transactions = async () => {
   try {
