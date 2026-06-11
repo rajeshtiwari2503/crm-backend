@@ -36,19 +36,21 @@ const addComplaint = async (req, res) => {
          district,
          createEmpName,
          state,
+         purchaseDate
       } = body;
 
       const email = emailAddress;
       const productName = body?.productName;
       const productId = body?.productId;
       const createEmpName1 = createEmpName || fullName;
-
+      // console.log("purchaseDate:", purchaseDate);
+// return
       // Create or find user
       const user = await findOrCreateUser(email, fullName, phoneNumber, serviceAddress);
 
       // Handle warranty lookup and update
       if (uniqueId) {
-         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode);
+         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode,purchaseDate);
          if (!success) {
             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
          }
@@ -163,6 +165,7 @@ const createComplaintWithVideo = async (req, res) => {
          district,
          createEmpName,
          state,
+         purchaseDate
       } = body;
 
       const email = emailAddress;
@@ -228,7 +231,7 @@ const createComplaintWithVideo = async (req, res) => {
 
       // Handle warranty lookup and update
       if (uniqueId) {
-         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode);
+         const success = await handleWarrantyUpdate(uniqueId, productName, productId, fullName, email, phoneNumber, serviceAddress, district, state, pincode,purchaseDate);
          if (!success) {
             return res.status(404).json({ status: false, msg: 'Warranty record not found' });
          }
@@ -330,7 +333,7 @@ const findOrCreateUser = async (email, name, contact, address) => {
    return user;
 };
 
-const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, email, contact, address, district, state, pincode) => {
+const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, email, contact, address, district, state, pincode,purchaseDate) => {
    try {
       console.time('Update Warranty');
 
@@ -351,7 +354,7 @@ const handleWarrantyUpdate = async (uniqueId, productName, productId, fullName, 
                'records.$.status': "APPROVE",
                'records.$.state': state,
                'records.$.pincode': pincode,
-               'records.$.activationDate': new Date()
+               'records.$.activationDate': new Date(purchaseDate),
             }
          }
       );
