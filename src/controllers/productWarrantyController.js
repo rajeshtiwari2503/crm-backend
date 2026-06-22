@@ -191,7 +191,7 @@ const generateSafeUniqueIds = async (count) => {
 
   // Step 1: Generate random IDs
   while (uniqueIds.size < count) {
-    uniqueIds.add(Math.floor(1000000 + Math.random() * 9000000).toString());
+    uniqueIds.add(Math.floor(10000000 + Math.random() * 90000000).toString());
   }
 
   // Step 2: Check existing IDs in DB
@@ -208,7 +208,7 @@ const generateSafeUniqueIds = async (count) => {
   for (const id of existingIds) uniqueIds.delete(id);
 
   while (uniqueIds.size < count) {
-    const newId = Math.floor(1000000 + Math.random() * 9000000).toString();
+    const newId = Math.floor(10000000 + Math.random() * 90000000).toString();
     if (!existingIds.has(newId)) uniqueIds.add(newId);
   }
 
